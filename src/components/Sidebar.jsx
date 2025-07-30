@@ -5,7 +5,8 @@ import {
   FiUpload,
   FiTool,
   FiBarChart2,
-  FiSettings
+  FiSettings,
+  FiBookmark
 } from "react-icons/fi";
 
 export default function Sidebar({ collapsed }) {
@@ -17,6 +18,16 @@ export default function Sidebar({ collapsed }) {
       label: "Dashboard",
       icon: <FiHome />,
       path: "/dashboard",
+    },
+    {
+      label: "Project Configuration",
+      icon: <FiBookmark/>,
+      path: "/projectconfiguration",
+    },
+    {
+      label: "Data Import",
+      icon: <FiUpload />,
+      path: "/dataimport",
     },
     {
       label: "Excel Upload",
