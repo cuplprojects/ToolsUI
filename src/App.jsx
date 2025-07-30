@@ -7,6 +7,8 @@ import ExcelUpload from "./components/ExcelUpload";
 import MainLayout from "./components/MainLayout";
 import axios from "axios";
 import { ToastProvider } from './services/notification/ToastProvider';
+import ProjectConfiguration from "./ProjectConfig/ProjectConfiguration";
+import DataImport from "./ToolsProcessing/DataImport";
 
 export default function App() {
   const [token, setToken] = useState(localStorage.getItem("token"));
@@ -38,6 +40,22 @@ export default function App() {
                     <Dashboard />
                   </MainLayout>
                 }
+              />
+              <Route
+              path="/projectconfiguration"
+              element={
+                <MainLayout setToken={setToken}>
+                  <ProjectConfiguration/>
+                </MainLayout>
+              }
+              />
+              <Route
+              path="/dataimport"
+              element={
+                <MainLayout setToken={setToken}>
+                  <DataImport/>
+                </MainLayout>
+              }
               />
               <Route
                 path="/correctiontool"
