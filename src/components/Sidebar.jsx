@@ -6,8 +6,10 @@ import {
   FiTool,
   FiBarChart2,
   FiSettings,
-  FiBookmark
+  FiBookmark,
+  FiBook
 } from "react-icons/fi";
+import { label } from "framer-motion/client";
 
 export default function Sidebar({ collapsed }) {
   const navigate = useNavigate();
@@ -18,6 +20,11 @@ export default function Sidebar({ collapsed }) {
       label: "Dashboard",
       icon: <FiHome />,
       path: "/dashboard",
+    },
+    {
+      label: "Masters",
+      icon: <FiBook/>,
+      path: "/masters",
     },
     {
       label: "Project Configuration",
