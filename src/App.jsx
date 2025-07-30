@@ -9,6 +9,7 @@ import axios from "axios";
 import { ToastProvider } from './services/notification/ToastProvider';
 import ProjectConfiguration from "./ProjectConfig/ProjectConfiguration";
 import DataImport from "./ToolsProcessing/DataImport";
+import Master from "./Masters/Master";
 
 export default function App() {
   const [token, setToken] = useState(localStorage.getItem("token"));
@@ -40,6 +41,14 @@ export default function App() {
                     <Dashboard />
                   </MainLayout>
                 }
+              />
+              <Route 
+              path="/masters" 
+                element={
+                  <MainLayout setToken={setToken}>
+                    <Master />
+                  </MainLayout>
+                } 
               />
               <Route
               path="/projectconfiguration"

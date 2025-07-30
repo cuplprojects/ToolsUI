@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Row,
   Col,
@@ -13,22 +13,34 @@ import {
   Radio,
 } from "antd";
 import { div } from "framer-motion/client";
+import axios from "axios";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
+
+const url = import.meta.env.VITE_API_BASE_URL ;
 
 const ToolSetupForm = () => {
   const [selectedProject, setSelectedProject] = useState(null);
   const [enabledModules, setEnabledModules] = useState([]);
   const [boxBreakingCriteria, setBoxBreakingCriteria] = useState([]);
-
+  const [projects, setProjects] = useState([]);
   const [nodalExtraType, setNodalExtraType] = useState("Fixed");
   const [univExtraType, setUnivExtraType] = useState("Fixed");
-
+const token = localStorage.getItem('token');
   const [extraProcessingConfig, setExtraProcessingConfig] = useState({
     nodal: { fixedQty: 10, range: 5, percentage: 2.5 },
     university: { fixedQty: 5, range: 3, percentage: 1.5 },
   });
+
+  useEffect(()=> {
+    axios.get(`${url}/Project`, {
+      headers: { Authorization : `Bearer ${token}`,}
+    }) 
+    .then(res => setProjects(res.data))
+    .catch(err => console.error("Failed to fetch projects",err));
+      
+  }, [])
 
   const handleSave = () => {
     const payload = {
@@ -81,8 +93,10 @@ const ToolSetupForm = () => {
                   option.children.toLowerCase().includes(input.toLowerCase())
                 }
               >
-                <Option value="p1">Project 1</Option>
-                <Option value="p2">Project 2</Option>
+                <Option value="">Choose a Project...</Option>
+                {projects.map(project => (
+                  <Option key={project.projectId} value={project.projectId}>{project.name}</Option>
+                ))}
               </Select>
             </Form.Item>
 
