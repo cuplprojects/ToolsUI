@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Row,
   Col,
@@ -14,9 +14,12 @@ import {
 } from 'antd';
 import { UploadOutlined, DownloadOutlined } from '@ant-design/icons';
 import ProcessingPipeline from './ProcessingPipeline'; // Your pipeline component
+import axios from 'axios';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
+const url = import.meta.env.VITE_API_BASE_URL ;
+
 
 const DataImport = () => {
   const [project, setProject] = useState(null);
@@ -25,6 +28,18 @@ const DataImport = () => {
   const [roundUp, setRoundUp] = useState(true);
   const [percent, setPercent] = useState(2.5);
   const [processingStarted, setProcessingStarted] = useState(false);
+  const [projects, setProjects] = useState([]);
+  const token = localStorage.getItem('token');
+
+
+    useEffect(()=> {
+    axios.get(`${url}/Project`, {
+      headers: { Authorization : `Bearer ${token}`,}
+    }) 
+    .then(res => setProjects(res.data))
+    .catch(err => console.error("Failed to fetch projects",err));
+      
+  }, [])
 
   const handleStartProcessing = () => {
     setProcessingStarted(true);
@@ -108,8 +123,10 @@ const DataImport = () => {
                   placeholder="Choose a project..."
                   onChange={setProject}
                 >
-                  <Option value="p1">Project 1</Option>
-                  <Option value="p2">Project 2</Option>
+                  <Option value="">Choose a Project...</Option>
+                {projects.map(project => (
+                  <Option key={project.projectId} value={project.projectId}>{project.name}</Option>
+                ))}
                 </Select>
               </div>
 
