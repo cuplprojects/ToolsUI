@@ -1,87 +1,92 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Modal, Input, Space, message } from 'antd';
+import { Table, Button, Modal, Input, Space, Switch, message } from 'antd';
 import { EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
 import axios from 'axios';
 
-const BoxCapacity = () => {
-    const [boxCapacities, setBoxCapacities] = useState([]);
+const Field = () => {
+    const [fields, setFields] = useState([]);
     const [loading, setLoading] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
-    const [capacity, setCapacity] = useState('');
-    const [searchText, setSearchText] = useState('');
+    const [name, setName] = useState('');
+    const [isUnique, setIsUnique] = useState(false);
 
-    const fetchBoxCapacities = async () => {
+    const fetchFields = async () => {
         setLoading(true);
         try {
-            const res = await axios.get('https://localhost:7276/api/BoxCapacities');
-            setBoxCapacities(res.data);
+            const res = await axios.get('https://localhost:7276/api/Fields');
+            setFields(res.data);
         } catch (err) {
-            message.error('Failed to fetch box capacities');
+            message.error('Failed to fetch fields');
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchBoxCapacities();
+        fetchFields();
     }, []);
 
     const handleAdd = () => {
         setEditingItem(null);
-        setCapacity('');
+        setName('');
+        setIsUnique(false);
         setModalVisible(true);
     };
 
     const handleEdit = (record) => {
         setEditingItem(record);
-        setCapacity(record.capacity);
+        setName(record.name);
+        setIsUnique(record.isUnique);
         setModalVisible(true);
     };
 
     const handleDelete = async (id) => {
         try {
-            await axios.delete(`https://localhost:7276/api/BoxCapacities/${id}`);
+            await axios.delete(`https://localhost:7276/api/Fields/${id}`);
             message.success('Deleted successfully');
-            fetchBoxCapacities();
+            fetchFields();
         } catch {
             message.error('Delete failed');
         }
     };
 
     const handleSave = async () => {
-        if (!capacity) {
-            message.warning('Capacity is required');
+        if (!name) {
+            message.warning('Name is required');
             return;
         }
 
         // Check for duplicates
-        const isDuplicate = boxCapacities.some(item => 
-            item.capacity.toLowerCase() === capacity.toLowerCase() && 
-            (!editingItem || item.boxCapacityId !== editingItem.boxCapacityId)
+        const isDuplicate = fields.some(item => 
+            item.name.toLowerCase() === name.toLowerCase() && 
+            (!editingItem || item.fieldId !== editingItem.fieldId)
         );
 
         if (isDuplicate) {
-            message.warning('This capacity already exists');
+            message.warning('This field name already exists');
             return;
         }
 
         try {
             if (editingItem) {
-                await axios.put(`https://localhost:7276/api/BoxCapacities/${editingItem.boxCapacityId}`, {
-                    boxCapacityId: editingItem.boxCapacityId,
-                    capacity
+                await axios.put(`https://localhost:7276/api/Fields/${editingItem.fieldId}`, {
+                    fieldId: editingItem.fieldId,
+                    name,
+                    isUnique,
                 });
                 message.success('Updated successfully');
             } else {
-                await axios.post('https://localhost:7276/api/BoxCapacities', {
-                    capacity
+                await axios.post('https://localhost:7276/api/Fields', {
+                    fieldId: 0, // or omit if backend generates it
+                    name,
+                    isUnique,
                 });
                 message.success('Added successfully');
             }
 
             setModalVisible(false);
-            fetchBoxCapacities();
+            fetchFields();
         } catch {
             message.error('Save failed');
         }
@@ -122,23 +127,35 @@ const BoxCapacity = () => {
 
     const columns = [
         {
-            title: 'Capacity',
-            dataIndex: 'capacity',
-            key: 'capacity',
-            sorter: (a, b) => a.capacity.localeCompare(b.capacity),
-            ...getColumnSearchProps('capacity'),
+            title: 'Name',
+            dataIndex: 'name',
+            key: 'name',
+            sorter: (a, b) => a.name.localeCompare(b.name),
+            ...getColumnSearchProps('name'),
+        },
+        {
+            title: 'Is Unique',
+            dataIndex: 'isUnique',
+            key: 'isUnique',
+            render: (value) => (value ? 'Yes' : 'No'),
+            sorter: (a, b) => a.isUnique - b.isUnique,
+            filters: [
+                { text: 'Yes', value: true },
+                { text: 'No', value: false },
+            ],
+            onFilter: (value, record) => record.isUnique === value,
         },
         {
             title: 'Actions',
+            key: 'actions',
             render: (_, record) => (
                 <Space>
                     <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)} />
-                    <Button type="link" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.boxCapacityId)} />
+                    <Button type="link" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.fieldId)} />
                 </Space>
             ),
         },
     ];
-
 
     return (
         <div>
@@ -148,26 +165,31 @@ const BoxCapacity = () => {
                 </Button>
             </div>
             <Table
-                dataSource={boxCapacities}
+                dataSource={fields}
                 columns={columns}
-                rowKey="boxCapacityId"
+                rowKey="fieldId"
                 loading={loading}
             />
             <Modal
-                title={editingItem ? 'Edit Capacity' : 'Add Capacity'}
+                title={editingItem ? 'Edit Field' : 'Add Field'}
                 open={modalVisible}
                 onOk={handleSave}
                 onCancel={() => setModalVisible(false)}
                 okText="Save"
             >
                 <Input
-                    value={capacity}
-                    onChange={(e) => setCapacity(e.target.value)}
-                    placeholder="Enter capacity"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Enter name"
+                    style={{ marginBottom: 16 }}
                 />
+                <div>
+                    <span style={{ marginRight: 8 }}>Is Unique:</span>
+                    <Switch checked={isUnique} onChange={setIsUnique} />
+                </div>
             </Modal>
         </div>
     );
 };
 
-export default BoxCapacity;
+export default Field;
