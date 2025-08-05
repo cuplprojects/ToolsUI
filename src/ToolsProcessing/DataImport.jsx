@@ -18,7 +18,7 @@ import axios from 'axios';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
-const url = import.meta.env.VITE_API_BASE_URL ;
+const url = import.meta.env.VITE_API_BASE_URL;
 
 
 const DataImport = () => {
@@ -30,20 +30,74 @@ const DataImport = () => {
   const [processingStarted, setProcessingStarted] = useState(false);
   const [projects, setProjects] = useState([]);
   const token = localStorage.getItem('token');
+  const [fileHeaders, setFileHeaders] = useState([]);
+  const [expectedFields, setExpectedFields] = useState([]);
+  const [fieldMappings, setFieldMappings] = useState({});
 
-
-    useEffect(()=> {
+  useEffect(() => {
     axios.get(`${url}/Project`, {
-      headers: { Authorization : `Bearer ${token}`,}
-    }) 
-    .then(res => setProjects(res.data))
-    .catch(err => console.error("Failed to fetch projects",err));
-      
+      headers: { Authorization: `Bearer ${token}`, }
+    })
+      .then(res => setProjects(res.data))
+      .catch(err => console.error("Failed to fetch projects", err));
+
   }, [])
+
+  useEffect(() => {
+    if (!project) return;
+
+    axios.get(`${url}/Project/${project}/fields`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => setExpectedFields(res.data)) // e.g., ['center_code', 'catch_number', 'quantity']
+      .catch(err => console.error("Failed to fetch fields", err));
+  }, [project]);
+
+  const readExcel = (file) => {
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }); // Get rows as arrays
+      const headers = jsonData[0]; // First row = headers
+
+      console.log("Excel Headers:", headers);
+      setFileHeaders(headers);
+    };
+
+    reader.readAsArrayBuffer(file);
+  };
 
   const handleStartProcessing = () => {
     setProcessingStarted(true);
   };
+
+  const handleUpload = () => {
+    const payload = {
+      projectId: project,
+      mappings: fieldMappings,
+      strategy,
+      enhance,
+      percent,
+      roundUp
+    };
+
+    axios.post(`${url}/upload/validate`, payload, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => {
+        console.log('Validation result:', res.data);
+        message.success("Validation successful");
+      })
+      .catch(err => {
+        console.error("Validation failed", err);
+        message.error("Validation failed");
+      });
+  };
+
 
   // Extracted Processing Options as a function to render in 2 places
   const renderProcessingOptions = () => (
@@ -124,9 +178,9 @@ const DataImport = () => {
                   onChange={setProject}
                 >
                   <Option value="">Choose a Project...</Option>
-                {projects.map(project => (
-                  <Option key={project.projectId} value={project.projectId}>{project.name}</Option>
-                ))}
+                  {projects.map(project => (
+                    <Option key={project.projectId} value={project.projectId}>{project.name}</Option>
+                  ))}
                 </Select>
               </div>
 
@@ -147,6 +201,33 @@ const DataImport = () => {
               <Button type="primary" block>Upload and Validate</Button>
             </Space>
           </Card>
+          {fileHeaders.length > 0 && expectedFields.length > 0 && (
+            <Card title="Field Mapping" style={{ marginTop: 24 }}>
+              {expectedFields.map((expectedField) => (
+                <Row key={expectedField} gutter={16} align="middle" style={{ marginBottom: 12 }}>
+                  <Col span={8}><Text>{expectedField}</Text></Col>
+                  <Col span={16}>
+                    <Select
+                      style={{ width: '100%' }}
+                      placeholder="Select matching column from file"
+                      value={fieldMappings[expectedField]}
+                      onChange={(value) => {
+                        setFieldMappings(prev => ({
+                          ...prev,
+                          [expectedField]: value
+                        }));
+                      }}
+                    >
+                      {fileHeaders.map(header => (
+                        <Option key={header} value={header}>{header}</Option>
+                      ))}
+                    </Select>
+                  </Col>
+                </Row>
+              ))}
+            </Card>
+          )}
+
 
           {/* Replace Processing Options with Pipeline once processing starts */}
           <div style={{ marginTop: 24 }}>
