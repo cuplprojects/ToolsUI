@@ -13,13 +13,14 @@ import {
   Space,
 } from 'antd';
 import { UploadOutlined, DownloadOutlined } from '@ant-design/icons';
+import * as XLSX from 'xlsx';
 import ProcessingPipeline from './ProcessingPipeline'; // Your pipeline component
 import axios from 'axios';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
 const url = import.meta.env.VITE_API_BASE_URL;
-
+const url1 = import.meta.env.VITE_API_URL;
 
 const DataImport = () => {
   const [project, setProject] = useState(null);
@@ -33,6 +34,8 @@ const DataImport = () => {
   const [fileHeaders, setFileHeaders] = useState([]);
   const [expectedFields, setExpectedFields] = useState([]);
   const [fieldMappings, setFieldMappings] = useState({});
+  const [excelData, setExcelData] = useState([]); // Entire Excel content
+
 
   useEffect(() => {
     axios.get(`${url}/Project`, {
@@ -46,12 +49,13 @@ const DataImport = () => {
   useEffect(() => {
     if (!project) return;
 
-    axios.get(`${url}/Project/${project}/fields`, {
+    axios.get(`${url1}/Fields`, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => setExpectedFields(res.data)) // e.g., ['center_code', 'catch_number', 'quantity']
       .catch(err => console.error("Failed to fetch fields", err));
   }, [project]);
+
 
   const readExcel = (file) => {
     const reader = new FileReader();
@@ -63,9 +67,10 @@ const DataImport = () => {
 
       const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }); // Get rows as arrays
       const headers = jsonData[0]; // First row = headers
-
+      const rows = jsonData.slice(1);
       console.log("Excel Headers:", headers);
       setFileHeaders(headers);
+      setExcelData(rows);
     };
 
     reader.readAsArrayBuffer(file);
@@ -76,16 +81,13 @@ const DataImport = () => {
   };
 
   const handleUpload = () => {
+    const mappedData = getMappedData();
     const payload = {
       projectId: project,
-      mappings: fieldMappings,
-      strategy,
-      enhance,
-      percent,
-      roundUp
+      data:mappedData
     };
 
-    axios.post(`${url}/upload/validate`, payload, {
+    axios.post(`${url1}/NRDatas`, payload, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => {
@@ -96,6 +98,22 @@ const DataImport = () => {
         console.error("Validation failed", err);
         message.error("Validation failed");
       });
+  };
+
+  const getMappedData = () => {
+    if (!excelData.length || !fileHeaders.length) return [];
+
+    return excelData.map((row) => {
+      const mappedRow = {};
+      expectedFields.forEach((field) => {
+        const column = fieldMappings[field.fieldId];
+        if (column) {
+          const colIndex = fileHeaders.indexOf(column);
+          mappedRow[field.name] = row[colIndex] ?? null;
+        }
+      });
+      return mappedRow;
+    });
   };
 
 
@@ -187,7 +205,10 @@ const DataImport = () => {
               <Upload.Dragger
                 name="file"
                 accept=".xls,.xlsx,.csv"
-                beforeUpload={() => false}
+                beforeUpload={(file) => {
+                  readExcel(file); // Read file and extract headers
+                  return false; // Prevent auto-upload
+                }}
                 maxCount={1}
               >
                 <p style={{ fontSize: 24 }}>📤</p>
@@ -198,28 +219,28 @@ const DataImport = () => {
                 </p>
               </Upload.Dragger>
 
-              <Button type="primary" block>Upload and Validate</Button>
+              <Button type="primary" block onClick={handleUpload}>Upload and Validate</Button>
             </Space>
           </Card>
           {fileHeaders.length > 0 && expectedFields.length > 0 && (
             <Card title="Field Mapping" style={{ marginTop: 24 }}>
               {expectedFields.map((expectedField) => (
-                <Row key={expectedField} gutter={16} align="middle" style={{ marginBottom: 12 }}>
-                  <Col span={8}><Text>{expectedField}</Text></Col>
+                <Row key={expectedField.fieldId} gutter={16} align="middle" style={{ marginBottom: 12 }}>
+                  <Col span={8}><Text>{expectedField.name}</Text></Col>
                   <Col span={16}>
                     <Select
                       style={{ width: '100%' }}
                       placeholder="Select matching column from file"
-                      value={fieldMappings[expectedField]}
+                      value={fieldMappings[expectedField.fieldId]}
                       onChange={(value) => {
                         setFieldMappings(prev => ({
                           ...prev,
-                          [expectedField]: value
+                          [expectedField.fieldId]: value
                         }));
                       }}
                     >
-                      {fileHeaders.map(header => (
-                        <Option key={header} value={header}>{header}</Option>
+                      {fileHeaders.map((header, index) => (
+                        <Option key={`${header}-${index}`} value={header}>{header}</Option>
                       ))}
                     </Select>
                   </Col>
