@@ -56,6 +56,9 @@ const DataImport = () => {
       .catch(err => console.error("Failed to fetch fields", err));
   }, [project]);
 
+  const isAnyFieldMapped = () => {
+    return expectedFields.some(field => fieldMappings[field.fieldId]);
+  };
 
   const readExcel = (file) => {
     const reader = new FileReader();
@@ -80,11 +83,20 @@ const DataImport = () => {
     setProcessingStarted(true);
   };
 
+  const resetForm = () => {
+    setProject(null);
+    setFileHeaders([]);
+    setFieldMappings({});
+    setExcelData([]);
+    setProcessingStarted(false);
+    setExpectedFields([]);
+  };
+
   const handleUpload = () => {
     const mappedData = getMappedData();
     const payload = {
       projectId: project,
-      data:mappedData
+      data: mappedData
     };
 
     axios.post(`${url1}/NRDatas`, payload, {
@@ -93,10 +105,12 @@ const DataImport = () => {
       .then(res => {
         console.log('Validation result:', res.data);
         message.success("Validation successful");
+        resetForm();
       })
       .catch(err => {
         console.error("Validation failed", err);
         message.error("Validation failed");
+        resetForm();
       });
   };
 
@@ -219,7 +233,9 @@ const DataImport = () => {
                 </p>
               </Upload.Dragger>
 
-              <Button type="primary" block onClick={handleUpload}>Upload and Validate</Button>
+              {isAnyFieldMapped() && (<Button
+                type="primary" block onClick={handleUpload}>Upload and Validate
+              </Button>)}
             </Space>
           </Card>
           {fileHeaders.length > 0 && expectedFields.length > 0 && (
@@ -239,9 +255,15 @@ const DataImport = () => {
                         }));
                       }}
                     >
-                      {fileHeaders.map((header, index) => (
-                        <Option key={`${header}-${index}`} value={header}>{header}</Option>
-                      ))}
+                      {fileHeaders
+                        .filter(header =>
+                          // Allow header if it's not used or it's the one currently selected for this field
+                          !Object.values(fieldMappings).includes(header) || fieldMappings[expectedField.fieldId] === header
+                        )
+                        .map((header, index) => (
+                          <Option key={`${header}-${index}`} value={header}>{header}</Option>
+                        ))}
+
                     </Select>
                   </Col>
                 </Row>
