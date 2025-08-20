@@ -13,13 +13,14 @@ import {
   Space,
 } from 'antd';
 import { UploadOutlined, DownloadOutlined } from '@ant-design/icons';
+import * as XLSX from 'xlsx';
 import ProcessingPipeline from './ProcessingPipeline'; // Your pipeline component
 import axios from 'axios';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
-const url = import.meta.env.VITE_API_BASE_URL ;
-
+const url = import.meta.env.VITE_API_BASE_URL;
+const url1 = import.meta.env.VITE_API_URL;
 
 const DataImport = () => {
   const [project, setProject] = useState(null);
@@ -30,20 +31,105 @@ const DataImport = () => {
   const [processingStarted, setProcessingStarted] = useState(false);
   const [projects, setProjects] = useState([]);
   const token = localStorage.getItem('token');
+  const [fileHeaders, setFileHeaders] = useState([]);
+  const [expectedFields, setExpectedFields] = useState([]);
+  const [fieldMappings, setFieldMappings] = useState({});
+  const [excelData, setExcelData] = useState([]); // Entire Excel content
 
 
-    useEffect(()=> {
+  useEffect(() => {
     axios.get(`${url}/Project`, {
-      headers: { Authorization : `Bearer ${token}`,}
-    }) 
-    .then(res => setProjects(res.data))
-    .catch(err => console.error("Failed to fetch projects",err));
-      
+      headers: { Authorization: `Bearer ${token}`, }
+    })
+      .then(res => setProjects(res.data))
+      .catch(err => console.error("Failed to fetch projects", err));
+
   }, [])
+
+  useEffect(() => {
+    if (!project) return;
+
+    axios.get(`${url1}/Fields`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => setExpectedFields(res.data)) // e.g., ['center_code', 'catch_number', 'quantity']
+      .catch(err => console.error("Failed to fetch fields", err));
+  }, [project]);
+
+  const isAnyFieldMapped = () => {
+    return expectedFields.some(field => fieldMappings[field.fieldId]);
+  };
+
+  const readExcel = (file) => {
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }); // Get rows as arrays
+      const headers = jsonData[0]; // First row = headers
+      const rows = jsonData.slice(1);
+      console.log("Excel Headers:", headers);
+      setFileHeaders(headers);
+      setExcelData(rows);
+    };
+
+    reader.readAsArrayBuffer(file);
+  };
 
   const handleStartProcessing = () => {
     setProcessingStarted(true);
   };
+
+  const resetForm = () => {
+    setProject(null);
+    setFileHeaders([]);
+    setFieldMappings({});
+    setExcelData([]);
+    setProcessingStarted(false);
+    setExpectedFields([]);
+  };
+
+  const handleUpload = () => {
+    const mappedData = getMappedData();
+    const payload = {
+      projectId: project,
+      data: mappedData
+    };
+
+    axios.post(`${url1}/NRDatas`, payload, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => {
+        console.log('Validation result:', res.data);
+        message.success("Validation successful");
+        resetForm();
+      })
+      .catch(err => {
+        console.error("Validation failed", err);
+        message.error("Validation failed");
+        resetForm();
+      });
+  };
+
+  const getMappedData = () => {
+    if (!excelData.length || !fileHeaders.length) return [];
+
+    return excelData.map((row) => {
+      const mappedRow = {};
+      expectedFields.forEach((field) => {
+        const column = fieldMappings[field.fieldId];
+        if (column) {
+          const colIndex = fileHeaders.indexOf(column);
+          mappedRow[field.name] = row[colIndex] ?? null;
+        }
+      });
+      return mappedRow;
+    });
+  };
+
 
   // Extracted Processing Options as a function to render in 2 places
   const renderProcessingOptions = () => (
@@ -124,16 +210,19 @@ const DataImport = () => {
                   onChange={setProject}
                 >
                   <Option value="">Choose a Project...</Option>
-                {projects.map(project => (
-                  <Option key={project.projectId} value={project.projectId}>{project.name}</Option>
-                ))}
+                  {projects.map(project => (
+                    <Option key={project.projectId} value={project.projectId}>{project.name}</Option>
+                  ))}
                 </Select>
               </div>
 
               <Upload.Dragger
                 name="file"
                 accept=".xls,.xlsx,.csv"
-                beforeUpload={() => false}
+                beforeUpload={(file) => {
+                  readExcel(file); // Read file and extract headers
+                  return false; // Prevent auto-upload
+                }}
                 maxCount={1}
               >
                 <p style={{ fontSize: 24 }}>📤</p>
@@ -144,9 +233,44 @@ const DataImport = () => {
                 </p>
               </Upload.Dragger>
 
-              <Button type="primary" block>Upload and Validate</Button>
+              {isAnyFieldMapped() && (<Button
+                type="primary" block onClick={handleUpload}>Upload and Validate
+              </Button>)}
             </Space>
           </Card>
+          {fileHeaders.length > 0 && expectedFields.length > 0 && (
+            <Card title="Field Mapping" style={{ marginTop: 24 }}>
+              {expectedFields.map((expectedField) => (
+                <Row key={expectedField.fieldId} gutter={16} align="middle" style={{ marginBottom: 12 }}>
+                  <Col span={8}><Text>{expectedField.name}</Text></Col>
+                  <Col span={16}>
+                    <Select
+                      style={{ width: '100%' }}
+                      placeholder="Select matching column from file"
+                      value={fieldMappings[expectedField.fieldId]}
+                      onChange={(value) => {
+                        setFieldMappings(prev => ({
+                          ...prev,
+                          [expectedField.fieldId]: value
+                        }));
+                      }}
+                    >
+                      {fileHeaders
+                        .filter(header =>
+                          // Allow header if it's not used or it's the one currently selected for this field
+                          !Object.values(fieldMappings).includes(header) || fieldMappings[expectedField.fieldId] === header
+                        )
+                        .map((header, index) => (
+                          <Option key={`${header}-${index}`} value={header}>{header}</Option>
+                        ))}
+
+                    </Select>
+                  </Col>
+                </Row>
+              ))}
+            </Card>
+          )}
+
 
           {/* Replace Processing Options with Pipeline once processing starts */}
           <div style={{ marginTop: 24 }}>
