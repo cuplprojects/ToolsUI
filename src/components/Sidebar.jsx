@@ -37,6 +37,11 @@ export default function Sidebar({ collapsed }) {
       path: "/dataimport",
     },
     {
+      label: "Duplicate Tool",
+      icon: <FiTool />,
+      path: "/duplicate",
+    },
+    {
       label: "Excel Upload",
       icon: <FiUpload />,
       path: "/excelupload",

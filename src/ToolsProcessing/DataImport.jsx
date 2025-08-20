@@ -28,10 +28,11 @@ const url1 = import.meta.env.VITE_API_URL;
 
 const DataImport = () => {
   const [project, setProject] = useState(null);
-  const [strategy, setStrategy] = useState('consolidate');
-  const [enhance, setEnhance] = useState(false);
-  const [roundUp, setRoundUp] = useState(true);
-  const [percent, setPercent] = useState(2.5);
+  // Processing options moved to Duplicate Tool
+  // const [strategy, setStrategy] = useState('consolidate');
+  // const [enhance, setEnhance] = useState(false);
+  // const [roundUp, setRoundUp] = useState(true);
+  // const [percent, setPercent] = useState(2.5);
   const [processingStarted, setProcessingStarted] = useState(false);
   const [projects, setProjects] = useState([]);
   const [fileHeaders, setFileHeaders] = useState([]);
@@ -86,6 +87,8 @@ const DataImport = () => {
   const handleStartProcessing = () => {
     setProcessingStarted(true);
   };
+  
+  // Processing Options removed from Data Import page
 
   const resetForm = () => {
     setProject(null);
@@ -154,67 +157,8 @@ const DataImport = () => {
     }
   };
 
-  const renderProcessingOptions = () => (
-    <Card title="Processing Options" style={{ marginTop: 24 }} bordered={false}>
-      <Row gutter={[16, 16]}>
-        <Col xs={24} md={12}>
-          <Title level={5}>Duplicate Handling Strategy</Title>
-          <Radio.Group
-            onChange={(e) => setStrategy(e.target.value)}
-            value={strategy}
-            style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
-          >
-            <Radio value="consolidate">Consolidate (Sum quantities)</Radio>
-            <Radio value="first">Keep first occurrence</Radio>
-            <Radio value="manual">Manual review required</Radio>
-          </Radio.Group>
-        </Col>
-
-        <Col xs={24} md={12}>
-          <Title level={5}>Enhancement Options</Title>
-          <Checkbox
-            checked={enhance}
-            onChange={(e) => setEnhance(e.target.checked)}
-          >
-            Apply enhancement percentage
-          </Checkbox>
-
-          {enhance && (
-            <InputNumber
-              value={percent}
-              onChange={setPercent}
-              style={{ marginTop: 8, width: '100%' }}
-              addonAfter="%"
-            />
-          )}
-
-          <Checkbox
-            checked={roundUp}
-            onChange={(e) => setRoundUp(e.target.checked)}
-            style={{ marginTop: 12 }}
-          >
-            Round up to envelope size
-          </Checkbox>
-        </Col>
-      </Row>
-
-      {!processingStarted && (
-        <Row justify="space-between" align="middle" style={{ marginTop: 24 }}>
-          <Col>
-            <Button icon={<DownloadOutlined />}>Download Template</Button>
-          </Col>
-          <Col>
-            <Space>
-              <Button onClick={resetForm}>Clear Data</Button>
-              <Button type="primary" onClick={handleStartProcessing}>
-                Start Processing
-              </Button>
-            </Space>
-          </Col>
-        </Row>
-      )}
-    </Card>
-  );
+  // Processing Options removed - now located on Duplicate Tool page
+  const renderProcessingOptions = () => null;
 
   const handleSelectionChange = (catchNo, value) => {
     setConflictSelections(prev => ({
@@ -418,16 +362,12 @@ const DataImport = () => {
         <Col xs={24} lg={6}>
           <Card title="Quick Actions" bordered={false}>
             <Space direction="vertical" style={{ width: '100%' }}>
-              <Button block>🔁 Auto-fix duplicates</Button>
-              <Button block>📥 Download error report</Button>
-              <Button block onClick={fetchConflictReport}>👁️ View conflicts only</Button>
+              <Button block onClick={fetchConflictReport}>� Load conflict report</Button>
               {viewConflicts && (
-                <Button block onClick={() => setViewConflicts(false)}>⬅️ Back to options</Button>
+                <Button block onClick={() => setViewConflicts(false)}>⬅️ Back</Button>
               )}
             </Space>
           </Card>
-
-          {viewConflicts && renderProcessingOptions()}
         </Col>
       </Row>
     </div>
