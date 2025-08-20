@@ -9,6 +9,7 @@ import axios from "axios";
 import { ToastProvider } from './services/notification/ToastProvider';
 import ProjectConfiguration from "./ProjectConfig/ProjectConfiguration";
 import DataImport from "./ToolsProcessing/DataImport";
+import DuplicateTool from "./ToolsProcessing/DuplicateTool";
 import Master from "./Masters/Master";
 
 export default function App() {
@@ -65,6 +66,14 @@ export default function App() {
                   <DataImport/>
                 </MainLayout>
               }
+              />
+              <Route
+                path="/duplicate"
+                element={
+                  <MainLayout setToken={setToken}>
+                    <DuplicateTool />
+                  </MainLayout>
+                }
               />
               <Route
                 path="/correctiontool"
