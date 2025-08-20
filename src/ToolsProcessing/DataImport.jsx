@@ -41,7 +41,7 @@ const DataImport = () => {
 
   const [viewConflicts, setViewConflicts] = useState(false);
   const [conflicts, setConflicts] = useState(null);
-const [conflictSelections, setConflictSelections] = useState({});
+  const [conflictSelections, setConflictSelections] = useState({});
   const token = localStorage.getItem('token');
 
   useEffect(() => {
@@ -216,76 +216,114 @@ const [conflictSelections, setConflictSelections] = useState({});
     </Card>
   );
 
-const handleSelectionChange = (catchNo, value) => {
-  setConflictSelections(prev => ({
-    ...prev,
-    [catchNo]: value
-  }));
-};
+  const handleSelectionChange = (catchNo, value) => {
+    setConflictSelections(prev => ({
+      ...prev,
+      [catchNo]: value
+    }));
+  };
 
-const renderConflicts = () => {
-  if (!conflicts) return null;
+  const handleSave = async (record) => {
+    const selectedValue = conflictSelections[record.catchNo];
 
-  const columns = [
-    {
-      title: 'Catch No.',
-      dataIndex: 'catchNo',
-      key: 'catchNo',
-    },
-    {
-      title: 'Conflicting Field',
-      dataIndex: 'uniqueField',
-      key: 'uniqueField',
-    },
-    {
-      title: 'Value 1',
-      dataIndex: 'value1',
-      key: 'value1',
-    },
-    {
-      title: 'Value 2',
-      dataIndex: 'value2',
-      key: 'value2',
-    },
-    {
-      title: 'Action',
-      key: 'action',
-      render: (_, record) => (
-        <Select
-          style={{ width: '100%' }}
-          placeholder="Select value to keep"
-          value={conflictSelections[record.catchNo]}
-          onChange={(value) => handleSelectionChange(record.catchNo, value)}
-        >
-          <Option value={record.value1}>{record.value1}</Option>
-          <Option value={record.value2}>{record.value2}</Option>
-        </Select>
-      ),
-    },
-  ];
+    if (!selectedValue) {
+      message.warning('Please select a value before saving.');
+      return;
+    }
 
-  const dataSource = conflicts.errors.map((error, index) => ({
-    key: index,
-    catchNo: error.catchNo,
-    uniqueField: error.uniqueField,
-    value1: error.conflictingValues[0],
-    value2: error.conflictingValues[1],
-  }));
+    const payload = {
+      catchNo: record.catchNo,
+      uniqueField: record.uniqueField,
+      selectedValue: selectedValue
+    };
 
-  return (
-    <Card title="Conflict Report" style={{ marginTop: 24 }}>
-      {conflicts.duplicatesFound ? (
-        <Table
-          columns={columns}
-          dataSource={dataSource}
-          pagination={false}
-        />
-      ) : (
-        <Text type="success">✅ No duplicates found</Text>
-      )}
-    </Card>
-  );
-};
+    try {
+      await axios.put(`${url1}/NRDatas?ProjectId=${project}`, payload, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      message.success(`Resolved conflict for ${record.catchNo}`);
+      fetchConflictReport();
+    } catch (error) {
+      console.error('Error saving resolution:', error);
+      message.error('Failed to resolve conflict');
+    }
+  };
+
+
+  const renderConflicts = () => {
+    if (!conflicts) return null;
+
+    const columns = [
+      {
+        title: 'Catch No.',
+        dataIndex: 'catchNo',
+        key: 'catchNo',
+      },
+      {
+        title: 'Conflicting Field',
+        dataIndex: 'uniqueField',
+        key: 'uniqueField',
+      },
+      {
+        title: 'Value 1',
+        dataIndex: 'value1',
+        key: 'value1',
+      },
+      {
+        title: 'Value 2',
+        dataIndex: 'value2',
+        key: 'value2',
+      },
+      {
+        title: 'ResolveConflicts',
+        key: 'resolveconflicts',
+        render: (_, record) => {
+          const selectedValue = conflictSelections[record.catchNo];
+          return(
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <Select
+              style={{ width: '100%' }}
+              placeholder="Select value to keep"
+              value={conflictSelections[record.catchNo]}
+              onChange={(value) => handleSelectionChange(record.catchNo, value)}
+            >
+              <Option value={record.value1}>{record.value1}</Option>
+              <Option value={record.value2}>{record.value2}</Option>
+            </Select>
+            <Button type="primary" onClick={() => handleSave(record)} disabled={!selectedValue}>
+              Save
+            </Button>
+          </Space>
+          )
+        }
+      },
+    ];
+
+    const dataSource = (conflicts?.errors ?? []).map((error, index) => ({
+      key: index,
+      catchNo: error.catchNo,
+      uniqueField: error.uniqueField,
+      value1: error.conflictingValues[0],
+      value2: error.conflictingValues[1],
+    }));
+
+    return (
+      <Card title="Conflict Report" style={{ marginTop: 24 }}>
+        {!conflicts || !Array.isArray(conflicts.errors) ? (
+          <Text type="warning">⚠️ No conflicts found</Text>
+        ) : conflicts.duplicatesFound ? (
+          <Table
+            columns={columns}
+            dataSource={dataSource}
+            pagination={false}
+          />
+        ) : (
+          <Text type="success">✅ No duplicates found</Text>
+        )}
+      </Card>
+
+    );
+  };
 
   return (
     <div style={{ padding: 24 }}>
