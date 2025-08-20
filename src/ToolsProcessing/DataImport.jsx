@@ -11,11 +11,15 @@ import {
   Checkbox,
   InputNumber,
   Space,
+  message,
+  Table,
 } from 'antd';
 import { UploadOutlined, DownloadOutlined } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
 import ProcessingPipeline from './ProcessingPipeline'; // Your pipeline component
 import axios from 'axios';
+
+
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -30,21 +34,23 @@ const DataImport = () => {
   const [percent, setPercent] = useState(2.5);
   const [processingStarted, setProcessingStarted] = useState(false);
   const [projects, setProjects] = useState([]);
-  const token = localStorage.getItem('token');
   const [fileHeaders, setFileHeaders] = useState([]);
   const [expectedFields, setExpectedFields] = useState([]);
   const [fieldMappings, setFieldMappings] = useState({});
-  const [excelData, setExcelData] = useState([]); // Entire Excel content
+  const [excelData, setExcelData] = useState([]);
 
+  const [viewConflicts, setViewConflicts] = useState(false);
+  const [conflicts, setConflicts] = useState(null);
+const [conflictSelections, setConflictSelections] = useState({});
+  const token = localStorage.getItem('token');
 
   useEffect(() => {
     axios.get(`${url}/Project`, {
-      headers: { Authorization: `Bearer ${token}`, }
+      headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => setProjects(res.data))
       .catch(err => console.error("Failed to fetch projects", err));
-
-  }, [])
+  }, []);
 
   useEffect(() => {
     if (!project) return;
@@ -52,7 +58,7 @@ const DataImport = () => {
     axios.get(`${url1}/Fields`, {
       headers: { Authorization: `Bearer ${token}` }
     })
-      .then(res => setExpectedFields(res.data)) // e.g., ['center_code', 'catch_number', 'quantity']
+      .then(res => setExpectedFields(res.data))
       .catch(err => console.error("Failed to fetch fields", err));
   }, [project]);
 
@@ -67,11 +73,9 @@ const DataImport = () => {
       const data = new Uint8Array(e.target.result);
       const workbook = XLSX.read(data, { type: 'array' });
       const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-
-      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }); // Get rows as arrays
-      const headers = jsonData[0]; // First row = headers
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+      const headers = jsonData[0];
       const rows = jsonData.slice(1);
-      console.log("Excel Headers:", headers);
       setFileHeaders(headers);
       setExcelData(rows);
     };
@@ -90,6 +94,8 @@ const DataImport = () => {
     setExcelData([]);
     setProcessingStarted(false);
     setExpectedFields([]);
+    setViewConflicts(false);
+    setConflicts(null);
   };
 
   const handleUpload = () => {
@@ -130,8 +136,24 @@ const DataImport = () => {
     });
   };
 
+  const fetchConflictReport = async () => {
+    if (!project) {
+      message.warning("Please select a project first.");
+      return;
+    }
 
-  // Extracted Processing Options as a function to render in 2 places
+    try {
+      const res = await axios.get(`${url1}/NRDatas/ErrorReport?ProjectId=${project}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setConflicts(res.data);
+      setViewConflicts(true);
+    } catch (err) {
+      console.error("Failed to fetch conflict report", err);
+      message.error("Failed to load conflicts");
+    }
+  };
+
   const renderProcessingOptions = () => (
     <Card title="Processing Options" style={{ marginTop: 24 }} bordered={false}>
       <Row gutter={[16, 16]}>
@@ -183,7 +205,7 @@ const DataImport = () => {
           </Col>
           <Col>
             <Space>
-              <Button>Clear Data</Button>
+              <Button onClick={resetForm}>Clear Data</Button>
               <Button type="primary" onClick={handleStartProcessing}>
                 Start Processing
               </Button>
@@ -193,6 +215,77 @@ const DataImport = () => {
       )}
     </Card>
   );
+
+const handleSelectionChange = (catchNo, value) => {
+  setConflictSelections(prev => ({
+    ...prev,
+    [catchNo]: value
+  }));
+};
+
+const renderConflicts = () => {
+  if (!conflicts) return null;
+
+  const columns = [
+    {
+      title: 'Catch No.',
+      dataIndex: 'catchNo',
+      key: 'catchNo',
+    },
+    {
+      title: 'Conflicting Field',
+      dataIndex: 'uniqueField',
+      key: 'uniqueField',
+    },
+    {
+      title: 'Value 1',
+      dataIndex: 'value1',
+      key: 'value1',
+    },
+    {
+      title: 'Value 2',
+      dataIndex: 'value2',
+      key: 'value2',
+    },
+    {
+      title: 'Action',
+      key: 'action',
+      render: (_, record) => (
+        <Select
+          style={{ width: '100%' }}
+          placeholder="Select value to keep"
+          value={conflictSelections[record.catchNo]}
+          onChange={(value) => handleSelectionChange(record.catchNo, value)}
+        >
+          <Option value={record.value1}>{record.value1}</Option>
+          <Option value={record.value2}>{record.value2}</Option>
+        </Select>
+      ),
+    },
+  ];
+
+  const dataSource = conflicts.errors.map((error, index) => ({
+    key: index,
+    catchNo: error.catchNo,
+    uniqueField: error.uniqueField,
+    value1: error.conflictingValues[0],
+    value2: error.conflictingValues[1],
+  }));
+
+  return (
+    <Card title="Conflict Report" style={{ marginTop: 24 }}>
+      {conflicts.duplicatesFound ? (
+        <Table
+          columns={columns}
+          dataSource={dataSource}
+          pagination={false}
+        />
+      ) : (
+        <Text type="success">✅ No duplicates found</Text>
+      )}
+    </Card>
+  );
+};
 
   return (
     <div style={{ padding: 24 }}>
@@ -220,8 +313,8 @@ const DataImport = () => {
                 name="file"
                 accept=".xls,.xlsx,.csv"
                 beforeUpload={(file) => {
-                  readExcel(file); // Read file and extract headers
-                  return false; // Prevent auto-upload
+                  readExcel(file);
+                  return false;
                 }}
                 maxCount={1}
               >
@@ -233,11 +326,14 @@ const DataImport = () => {
                 </p>
               </Upload.Dragger>
 
-              {isAnyFieldMapped() && (<Button
-                type="primary" block onClick={handleUpload}>Upload and Validate
-              </Button>)}
+              {isAnyFieldMapped() && (
+                <Button type="primary" block onClick={handleUpload}>
+                  Upload and Validate
+                </Button>
+              )}
             </Space>
           </Card>
+
           {fileHeaders.length > 0 && expectedFields.length > 0 && (
             <Card title="Field Mapping" style={{ marginTop: 24 }}>
               {expectedFields.map((expectedField) => (
@@ -257,13 +353,11 @@ const DataImport = () => {
                     >
                       {fileHeaders
                         .filter(header =>
-                          // Allow header if it's not used or it's the one currently selected for this field
                           !Object.values(fieldMappings).includes(header) || fieldMappings[expectedField.fieldId] === header
                         )
                         .map((header, index) => (
                           <Option key={`${header}-${index}`} value={header}>{header}</Option>
                         ))}
-
                     </Select>
                   </Col>
                 </Row>
@@ -271,10 +365,14 @@ const DataImport = () => {
             </Card>
           )}
 
-
-          {/* Replace Processing Options with Pipeline once processing starts */}
           <div style={{ marginTop: 24 }}>
-            {processingStarted ? <ProcessingPipeline /> : renderProcessingOptions()}
+            {processingStarted ? (
+              <ProcessingPipeline />
+            ) : viewConflicts ? (
+              renderConflicts()
+            ) : (
+              renderProcessingOptions()
+            )}
           </div>
         </Col>
 
@@ -284,12 +382,14 @@ const DataImport = () => {
             <Space direction="vertical" style={{ width: '100%' }}>
               <Button block>🔁 Auto-fix duplicates</Button>
               <Button block>📥 Download error report</Button>
-              <Button block>👁️ View conflicts only</Button>
+              <Button block onClick={fetchConflictReport}>👁️ View conflicts only</Button>
+              {viewConflicts && (
+                <Button block onClick={() => setViewConflicts(false)}>⬅️ Back to options</Button>
+              )}
             </Space>
           </Card>
 
-          {/* Show Processing Options here once processing has started */}
-          {processingStarted && renderProcessingOptions()}
+          {viewConflicts && renderProcessingOptions()}
         </Col>
       </Row>
     </div>
