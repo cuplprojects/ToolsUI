@@ -27,8 +27,8 @@ const Field = () => {
         fetchFields();
     }, []);
 
-    const handleAdd = () => {
-        setEditingItem(null);
+    const handleAdd = () => {9+
+        setEditingItem(null); 
         setName('');
         setIsUnique(false);
         setModalVisible(true);
