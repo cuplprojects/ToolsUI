@@ -15,7 +15,7 @@ const DuplicateTool = () => {
 
   const [strategy, setStrategy] = useState('consolidate');
   const [enhance, setEnhance] = useState(false);
-  const [roundUp, setRoundUp] = useState(true);
+  const [enhanceType, setEnhanceType] = useState("percent"); // 'percent' | 'round'
   const [percent, setPercent] = useState(2.5);
 
   const token = localStorage.getItem('token');
@@ -36,51 +36,60 @@ const DuplicateTool = () => {
   }, [project]);
 
   const handleRun = async () => {
-    if (!project) {
-      message.warning('Please select a project');
-      return;
-    }
-    if (selectedFieldIds.length === 0) {
-      message.warning('Select at least one field');
-      return;
+  if (!project) {
+    message.warning('Please select a project');
+    return;
+  }
+
+  if (selectedFieldIds.length === 0) {
+    message.warning('Select at least one field');
+    return;
+  }
+
+  // ✅ Your original mergefields logic untouched
+  const fieldIdToName = new Map(fields.map(f => [f.fieldId, f.name]));
+  const mergefields = selectedFieldIds
+    .map(id => fieldIdToName.get(id))
+    .filter(Boolean)
+    .join(',');
+
+  if (!mergefields) {
+    message.warning('Selected fields are invalid.');
+    return;
+  }
+
+  try {
+    const queryParams = {
+      ProjectId: project,
+      consolidate: strategy === 'consolidate',
+      mergefields: mergefields, // ✅ Merged cleanly into query
+    };
+
+    // ✅ Handle enhancement options precisely
+    if (enhance) {
+      if (enhanceType === 'percent') {
+        queryParams.enhancement = true;
+        queryParams.percent = percent;
+      } else if (enhanceType === 'round') {
+        queryParams.enhancement = false;
+        queryParams.percent = 0;
+      }
     }
 
-    const fieldIdToName = new Map(fields.map(f => [f.fieldId, f.name]));
-    const mergefields = selectedFieldIds
-      .map(id => fieldIdToName.get(id))
-      .filter(Boolean)
-      .join(',');
+    const query = new URLSearchParams(queryParams).toString();
 
-    if (!mergefields) {
-      message.warning('Selected fields are invalid.');
-      return;
-    }
+    const res = await axios.post(`${url1}/Duplicate?${query}`, null, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
-    try {
-      // const res = await axios.get(`${url1}/Duplicate`, {
-      //   params: {
-      //     ProjectId: project,
-      //     mergefields,
-      //     consolidate: strategy === 'consolidate',
-      //   },
-      //   headers: { Authorization: `Bearer ${token}` },
-      // });
-      const query = new URLSearchParams({
-        ProjectId: project,
-        consolidate: strategy === 'consolidate',
-      }).toString();
+    message.success('Duplicate processing completed');
+    // Optional: handle response
+  } catch (err) {
+    console.error('Duplicate processing failed', err);
+    message.error('Duplicate processing failed');
+  }
+};
 
-      const encodedMergeFields = encodeURIComponent(mergefields);
-      const res = await axios.post(`${url1}/Duplicate?${query}&mergefields=${encodedMergeFields}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      message.success('Duplicate processing completed');
-      // You can handle `res.data` here if needed
-    } catch (err) {
-      console.error('Duplicate processing failed', err);
-      message.error('Duplicate processing failed');
-    }
-  };
 
   return (
     <div style={{ padding: 24 }}>
@@ -141,10 +150,21 @@ const DuplicateTool = () => {
                   <Col xs={24} md={12}>
                     <Title level={5}>Enhancement Options</Title>
                     <Checkbox checked={enhance} onChange={(e) => setEnhance(e.target.checked)}>
-                      Apply enhancement percentage
+                      Enable Enhancement
                     </Checkbox>
 
                     {enhance && (
+                      <Radio.Group
+                        value={enhanceType}
+                        onChange={(e) => setEnhanceType(e.target.value)}
+                        style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}
+                      >
+                        <Radio value="percent">Apply enhancement percentage</Radio>
+                        <Radio value="round">Round up to envelope size</Radio>
+                      </Radio.Group>
+                    )}
+
+                    {enhance && enhanceType === "percent" && (
                       <InputNumber
                         value={percent}
                         onChange={setPercent}
@@ -153,13 +173,6 @@ const DuplicateTool = () => {
                       />
                     )}
 
-                    <Checkbox
-                      checked={roundUp}
-                      onChange={(e) => setRoundUp(e.target.checked)}
-                      style={{ marginTop: 12 }}
-                    >
-                      Round up to envelope size
-                    </Checkbox>
                   </Col>
                 </Row>
               </Card>
