@@ -30,6 +30,10 @@ const ProjectConfiguration = () => {
   const [univExtraType, setUnivExtraType] = useState("Fixed");
   const [envelope, setEnvelope] = useState(""); // Added envelope state
   const token = localStorage.getItem("token");
+    // New: envelope types and selections
+  const [envelopeOptions, setEnvelopeOptions] = useState([]);
+  const [innerEnvelopes, setInnerEnvelopes] = useState([]);
+  const [outerEnvelopes, setOuterEnvelopes] = useState([]);
 
   const [extraProcessingConfig, setExtraProcessingConfig] = useState({
     nodal: { fixedQty: 10, range: 5, percentage: 2.5 },
@@ -56,6 +60,15 @@ const ProjectConfiguration = () => {
       .catch((err) => console.error("Failed to fetch modules", err));
   }, []);
 
+   useEffect(() => {
+    axios
+      .get(`${url1}/EnvelopeTypes`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((res) => setEnvelopeOptions(res.data))
+      .catch((err) => console.error("Failed to fetch envelope types", err));
+  }, []);
+
   const handleSave = async () => {
     const moduleIds = toolModules
       .filter((mod) => enabledModules.includes(mod.name))
@@ -78,11 +91,23 @@ const ProjectConfiguration = () => {
       config: extraProcessingConfig,
     };
 
+      const getEnvelopeNames = (ids) =>
+    envelopeOptions
+      .filter((e) => ids.includes(e.envelopeId))
+      .map((e) => e.envelopeName)
+      .join(",");
+
+  const envelopePayload = {
+    Inner: getEnvelopeNames(innerEnvelopes),
+    Outer: getEnvelopeNames(outerEnvelopes),
+  };
+
+
     const payload = {
       id: 0,
       projectId: selectedProject,
       modules: moduleIds,
-      envelope: envelope || "",
+      envelope:JSON.stringify(envelopePayload),
       boxBreaking: boxBreakingIds,
       extras: JSON.stringify(extrasPayload),
     };
@@ -168,17 +193,37 @@ const ProjectConfiguration = () => {
             </Card>
           </Col>
 
-          {/* Envelope Setup */}
-          <Col xs={24} sm={24} md={12} lg={12} xl={12}>
+                    {/* Envelope Setup */}
+          <Col xs={24} sm={24} md={12}>
             <Card title="Envelope Setup" style={cardStyle}>
-              <Form.Item label="Default Inner Envelope">
+              <Form.Item label="Inner Envelope(s)">
                 <Select
-                  placeholder="Select envelope"
+                  mode="multiple"
+                  placeholder="Select inner envelope(s)"
                   disabled={!isEnabled("Envelope Breaking")}
-                  onChange={setEnvelope}
+                  value={innerEnvelopes}
+                  onChange={setInnerEnvelopes}
                 >
-                  <Option value="A5">A5</Option>
-                  <Option value="A4">A4</Option>
+                  {envelopeOptions.map((e) => (
+                    <Option key={e.envelopeId} value={e.envelopeId}>
+                      {e.envelopeName} (Capacity: {e.capacity})
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+              <Form.Item label="Outer Envelope(s)">
+                <Select
+                  mode="multiple"
+                  placeholder="Select outer envelope(s)"
+                  disabled={!isEnabled("Envelope Breaking")}
+                  value={outerEnvelopes}
+                  onChange={setOuterEnvelopes}
+                >
+                  {envelopeOptions.map((e) => (
+                    <Option key={e.envelopeId} value={e.envelopeId}>
+                      {e.envelopeName} (Capacity: {e.capacity})
+                    </Option>
+                  ))}
                 </Select>
               </Form.Item>
               {renderDisabledMessage(isEnabled("Envelope Breaking"))}
