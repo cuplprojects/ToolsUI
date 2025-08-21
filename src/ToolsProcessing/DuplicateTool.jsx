@@ -49,7 +49,7 @@ const DuplicateTool = () => {
     const mergefields = selectedFieldIds
       .map(id => fieldIdToName.get(id))
       .filter(Boolean)
-      .join(' ');
+      .join(',');
 
     if (!mergefields) {
       message.warning('Selected fields are invalid.');
