@@ -28,6 +28,7 @@ const ProjectConfiguration = () => {
   const [toolModules, setToolModules] = useState([]);
   const [nodalExtraType, setNodalExtraType] = useState("Fixed");
   const [univExtraType, setUnivExtraType] = useState("Fixed");
+  const [envelope, setEnvelope] = useState(""); // Added envelope state
   const token = localStorage.getItem("token");
 
   const [extraProcessingConfig, setExtraProcessingConfig] = useState({
@@ -55,19 +56,50 @@ const ProjectConfiguration = () => {
       .catch((err) => console.error("Failed to fetch modules", err));
   }, []);
 
-  const handleSave = () => {
-    const payload = {
-      projectId: selectedProject,
-      modules: enabledModules,
-      boxBreakingCriteria,
-      extraProcessingConfig,
+  const handleSave = async () => {
+    const moduleIds = toolModules
+      .filter((mod) => enabledModules.includes(mod.name))
+      .map((mod) => mod.id);
+
+    const boxBreakingMap = {
+      "Route Change": 0,
+      "Nodal Change": 1,
+      "Date Change": 2,
+      "Center Change": 3,
     };
-    console.log("Payload:", payload);
+
+    const boxBreakingIds = boxBreakingCriteria.map(
+      (crit) => boxBreakingMap[crit]
+    );
+
+    const extrasPayload = {
+      nodalExtraType,
+      universityExtraType: univExtraType,
+      config: extraProcessingConfig,
+    };
+
+    const payload = {
+      id: 0,
+      projectId: selectedProject,
+      modules: moduleIds,
+      envelope: envelope || "",
+      boxBreaking: boxBreakingIds,
+      extras: JSON.stringify(extrasPayload),
+    };
+
+    console.log("Submitting Payload:", payload);
+
+    try {
+      const response = await axios.post(`${url1}/ProjectConfigs`, payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      console.log("Configuration saved successfully:", response.data);
+    } catch (error) {
+      console.error("Save failed:", error);
+    }
   };
 
   const isEnabled = (toolName) => enabledModules.includes(toolName);
-
-  const getToolName = (name) => name?.toLowerCase(); // Simplify comparison
 
   const renderDisabledMessage = (enabled) =>
     !enabled && (
@@ -111,10 +143,7 @@ const ProjectConfiguration = () => {
                 >
                   <Option value="">Choose a Project...</Option>
                   {projects.map((project) => (
-                    <Option
-                      key={project.projectId}
-                      value={project.projectId}
-                    >
+                    <Option key={project.projectId} value={project.projectId}>
                       {project.name}
                     </Option>
                   ))}
@@ -144,20 +173,12 @@ const ProjectConfiguration = () => {
             <Card title="Envelope Setup" style={cardStyle}>
               <Form.Item label="Default Inner Envelope">
                 <Select
-                  placeholder="Select inner envelope"
+                  placeholder="Select envelope"
                   disabled={!isEnabled("Envelope Breaking")}
+                  onChange={setEnvelope}
                 >
                   <Option value="A5">A5</Option>
                   <Option value="A4">A4</Option>
-                </Select>
-              </Form.Item>
-              <Form.Item label="Default Outer Envelope">
-                <Select
-                  placeholder="Select outer envelope"
-                  disabled={!isEnabled("Envelope Breaking")}
-                >
-                  <Option value="B5">B5</Option>
-                  <Option value="B4">B4</Option>
                 </Select>
               </Form.Item>
               {renderDisabledMessage(isEnabled("Envelope Breaking"))}
@@ -297,7 +318,8 @@ const ProjectConfiguration = () => {
               )}
 
               {renderDisabledMessage(
-                isEnabled("Nodal") || isEnabled("University Extra Calculation")
+                isEnabled("Nodal Extra Calculation") ||
+                  isEnabled("University Extra Calculation")
               )}
             </Card>
           </Col>
@@ -314,4 +336,4 @@ const ProjectConfiguration = () => {
   );
 };
 
-export default ProjectConfiguration ;
+export default ProjectConfiguration;
