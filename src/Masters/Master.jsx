@@ -2,6 +2,7 @@ import React from 'react';
 import BoxCapacity from './BoxCapacity'; // adjust the path if needed
 import EnvelopeType from './EnvelopeType';
 import Field from './Field';
+import ToolsModule from './ToolsModule';
 import { Tabs } from 'antd';
 
 const Master = () => {
@@ -21,6 +22,11 @@ const Master = () => {
       label: 'Field',
       children: <Field />,
     },
+    {
+      key: '4',
+      label: 'Tools Module',
+      children: <ToolsModule />,
+    }
   ];
 
   return (
