@@ -154,12 +154,6 @@ const ProjectConfiguration = () => {
           if (!et) return null;
 
           const config = extraProcessingConfig[typeName] || {};
-
-          // normalize envelope
-    const normalizedEnvelope = {
-      Inner: String(config.envelopeType?.inner || ""),
-      Outer: String(config.envelopeType?.outer || ""),
-    };
           return {
             id: 0,
             projectId: selectedProject,
@@ -171,7 +165,7 @@ const ProjectConfiguration = () => {
                 : mode === "Range"
                   ? String(config.range || 0)
                   : String(config.percentage || 0),
-            envelopeType: JSON.stringify(normalizedEnvelope),
+            envelopeType: JSON.stringify(config.envelopeType || { inner: [], outer: [] }),
           };
         })
         .filter(Boolean);
@@ -206,155 +200,246 @@ const ProjectConfiguration = () => {
   const extraConfigured = isEnabled(EXTRA_ALIAS_NAME);
 
   return (
-    <div style={{ padding: 16 }}>
-      <Row gutter={16} align="top">
+    
+      <div style={{ padding: 2 }}>
+      <Row gutter={16} align="stretch">
         {/* LEFT SIDE */}
         <Col xs={24} md={16}>
-          {/* Project Selection */}
-          <Card
-            style={cardStyle}
-            title={
-              <div>
-                <span>
-                  <AppstoreOutlined style={iconStyle} /> Project Selection
-                </span>
-                <br />
-                <Text type="secondary">
-                  Select a project to configure its modules and settings
-                </Text>
-              </div>
-            }
-          >
-            <Form.Item style={{ marginTop: 16 }} required>
-              <Select
-                placeholder="Select Project"
-                onChange={setSelectedProject}
-                value={selectedProject}
-              >
-                {projects.map((p) => (
-                  <Option key={p.projectId} value={p.projectId}>
-                    {p.name}
-                  </Option>
-                ))}
-              </Select>
-            </Form.Item>
-            {!selectedProject && (
-              <Text type="warning">
-                Please select a project to enable configuration options below.
-              </Text>
-            )}
-          </Card>
+          <Row gutter={16} align="stretch" style={{ marginBottom: 16 }}>
+            {/* Project Selection */}
+            <Col xs={24} md={12}>
+              <Card
 
-          {/* Module Selection */}
-          <Card
-            style={cardStyle}
-            title={
-              <div>
-                <span>
-                  <ToolOutlined style={iconStyle} /> Module Selection
-                </span>
-                <br />
-                <Text type="secondary">
-                  Enable or disable modules based on project requirements
-                </Text>
-              </div>
-
-            }
-          >
-
-            <Checkbox.Group
-              style={{ display: "block", marginTop: 12 }}
-              value={enabledModules}
-              onChange={setEnabledModules}
-            >
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr", // two columns
-                  columnGap: 12,
-                  rowGap: 8,
-                }}
-              >
-                {mergedModules.map((tool) => (
-                  <Checkbox key={tool.id} value={tool.name}>
-                    <b>{tool.name}</b>
+                style={{ ...cardStyle, height: "100%" }}
+                title={
+                  <div className="py-1">
+                    <span>
+                      <AppstoreOutlined style={iconStyle} /> Project Selection
+                    </span>
                     <br />
-                    <Text type="secondary" style={{ fontSize: 12 }}>
-                      {tool.description}
+                    <Text type="secondary">
+                      Select a project to configure its modules and settings
                     </Text>
-                  </Checkbox>
-                ))}
-              </div>
-            </Checkbox.Group>
-          </Card>
+                  </div>
+                }
+              >
+                <Form.Item style={{ marginTop: 16 }} required>
+                  <Select
+                    placeholder="Select Project"
+                    onChange={setSelectedProject}
+                    value={selectedProject}
+                    style={{ width: "100%" }}
+                  >
+                    {projects.map((p) => (
+                      <Option key={p.projectId} value={p.projectId}>
+                        {p.name}
+                      </Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+                {!selectedProject && (
+                  <Text type="warning">
+                    Please select a project to enable configuration options below.
+                  </Text>
+                )}
+              </Card>
+            </Col>
 
-          {/* Envelope Setup */}
+            {/* Module Selection */}
+            <Col xs={24} md={12}>
+              <Card
+                style={{ ...cardStyle, onHoverflowY: "auto",height: "100%" }}
+                title={
+                  <div className="py-1">
+                    <span>
+                      <ToolOutlined style={iconStyle} /> Module Selection
+                    </span>
+                    <br />
+                    <Text type="secondary">
+                      Enable or disable modules based on project requirements
+                    </Text>
+                  </div>
+                }
+              >
+                <Checkbox.Group
+                  style={{ display: "block", marginTop: 12 }}
+                  value={enabledModules}
+                  onChange={setEnabledModules}
+                >
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      columnGap: 12,
+                      rowGap: 8,
+                    }}
+                  >
+                    {mergedModules.map((tool) => (
+                      <Checkbox key={tool.id} value={tool.name}>
+                        <b>{tool.name}</b>
+                        <br />
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          {tool.description}
+                        </Text>
+                      </Checkbox>
+                    ))}
+                  </div>
+                </Checkbox.Group>
+              </Card>
+            </Col>
+          </Row>
+
+          {/* 🔄 Extra Processing (moved to left side, where Envelope was) */}
           <Card
             style={cardStyle}
             title={
-              <div>
+              <div className="py-1">
                 <span>
-                  <MailOutlined style={iconStyle} /> Envelope Setup
+                  <ToolOutlined style={iconStyle} /> Extra Processing Configuration
                 </span>
                 <br />
-                <Text type="secondary">
-                  Configure inner and outer envelope types and capacities
-                </Text>
+                <Text type="secondary">Configure extra packet calculations</Text>
               </div>
-
             }
             extra={
-              !isEnabled("Envelope Breaking") ? (
-                <Tag icon={<LockOutlined style={{ color: PRIMARY_COLOR }} />}>Disabled</Tag>
+              !isEnabled(EXTRA_ALIAS_NAME) ? (
+                <Tag icon={<LockOutlined style={{ color: PRIMARY_COLOR }} />}>
+                  Disabled
+                </Tag>
               ) : null
             }
           >
+            <Row gutter={24} style={{ marginTop: 12 }}>
+              {extraTypes.map((et) => (
+                <Col span={8} key={et.extraTypeId}>
+                  {/* Column for each Extra type */}
+                  <Title level={5}>{et.type} Extra</Title>
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                columnGap: 12,
-                rowGap: 8,
-                marginTop: 12,
-              }}
-            >
-              <Text strong>Inner Envelopes</Text>
-              <Text strong>Outer Envelopes</Text>
+                  {/* Inner Envelope */}
+                  <Select
+                    placeholder="Select Inner Envelope"
+                    value={extraProcessingConfig[et.type]?.envelopeType?.inner || ""}
+                    onChange={(val) =>
+                      setExtraProcessingConfig((prev) => ({
+                        ...prev,
+                        [et.type]: {
+                          ...prev[et.type],
+                          envelopeType: {
+                            ...prev[et.type]?.envelopeType,
+                            inner: val,
+                          },
+                        },
+                      }))
+                    }
+                    style={{ width: "100%", marginBottom: 8 }}
+                  >
+                    {envelopeOptions.map((e) => (
+                      <Option key={e.envelopeId} value={e.envelopeId}>
+                        {e.envelopeName} (Cap: {e.capacity})
+                      </Option>
+                    ))}
+                  </Select>
 
-              <Select
-                mode="multiple"
-                disabled={!isEnabled("Envelope Breaking")}
-                value={innerEnvelopes}
-                onChange={setInnerEnvelopes}
-              >
-                {envelopeOptions.map((e) => (
-                  <Option key={e.envelopeId} value={e.envelopeName}>
-                    {e.envelopeName} (Cap: {e.capacity})
-                  </Option>
-                ))}
-              </Select>
+                  {/* Outer Envelope */}
+                  <Select
+                    placeholder="Select Outer Envelope"
+                    value={extraProcessingConfig[et.type]?.envelopeType?.outer || ""}
+                    onChange={(val) =>
+                      setExtraProcessingConfig((prev) => ({
+                        ...prev,
+                        [et.type]: {
+                          ...prev[et.type],
+                          envelopeType: {
+                            ...prev[et.type]?.envelopeType,
+                            outer: val,
+                          },
+                        },
+                      }))
+                    }
+                    style={{ width: "100%", marginBottom: 12 }}
+                  >
+                    {envelopeOptions.map((e) => (
+                      <Option key={e.envelopeId} value={e.envelopeId}>
+                        {e.envelopeName} (Cap: {e.capacity})
+                      </Option>
+                    ))}
+                  </Select>
 
-              <Select
-                mode="multiple"
-                disabled={!isEnabled("Envelope Breaking")}
-                value={outerEnvelopes}
-                onChange={setOuterEnvelopes}
-              >
-                {envelopeOptions.map((e) => (
-                  <Option key={e.envelopeId} value={e.envelopeName}>
-                    {e.envelopeName} (Cap: {e.capacity})
-                  </Option>
-                ))}
-              </Select>
-            </div>
+                  {/* Radio group */}
+                  <Radio.Group
+                    value={extraTypeSelection[et.type] || "Fixed"}
+                    onChange={(e) =>
+                      setExtraTypeSelection((prev) => ({
+                        ...prev,
+                        [et.type]: e.target.value,
+                      }))
+                    }
+                    disabled={!isEnabled(EXTRA_ALIAS_NAME)}
+                    style={{ marginBottom: 12 }}
+                  >
+                    <Radio value="Fixed">Fixed</Radio>
+                    <Radio value="Range">Range</Radio>
+                    <Radio value="Percentage">Percentage</Radio>
+                  </Radio.Group>
+
+                  {/* Input depending on selection */}
+                  {extraTypeSelection[et.type] === "Fixed" && (
+                    <InputNumber
+                      placeholder="Fixed Qty"
+                      min={0}
+                      value={extraProcessingConfig[et.type]?.fixedQty || 0}
+                      onChange={(v) =>
+                        setExtraProcessingConfig((prev) => ({
+                          ...prev,
+                          [et.type]: { ...prev[et.type], fixedQty: v ?? 0 },
+                        }))
+                      }
+                      style={{ width: "100%" }}
+                    />
+                  )}
+                  {extraTypeSelection[et.type] === "Range" && (
+                    <InputNumber
+                      placeholder="Range %"
+                      min={0}
+                      max={100}
+                      step={0.1}
+                      value={extraProcessingConfig[et.type]?.range || 0}
+                      onChange={(v) =>
+                        setExtraProcessingConfig((prev) => ({
+                          ...prev,
+                          [et.type]: { ...prev[et.type], range: v ?? 0 },
+                        }))
+                      }
+                      style={{ width: "100%" }}
+                    />
+                  )}
+                  {extraTypeSelection[et.type] === "Percentage" && (
+                    <InputNumber
+                      placeholder="Percentage %"
+                      min={0}
+                      max={100}
+                      step={0.1}
+                      value={extraProcessingConfig[et.type]?.percentage || 0}
+                      onChange={(v) =>
+                        setExtraProcessingConfig((prev) => ({
+                          ...prev,
+                          [et.type]: { ...prev[et.type], percentage: v ?? 0 },
+                        }))
+                      }
+                      style={{ width: "100%" }}
+                    />
+                  )}
+                </Col>
+              ))}
+            </Row>
           </Card>
+
 
           {/* Box Breaking */}
           <Card
             style={cardStyle}
             title={
-              <div>
+              <div className="py-1">
                 <span>
                   <InboxOutlined style={iconStyle} /> Box Breaking Criteria
                 </span>
@@ -414,164 +499,64 @@ const ProjectConfiguration = () => {
 
         {/* RIGHT SIDE */}
         <Col xs={24} md={8}>
-          {/* Extra Processing */}
+          {/* Envelope Setup */}
           <Card
-            style={cardStyle}
+            style={{ ...cardStyle }}
             title={
-              <div>
+              <div className="py-1">
                 <span>
-                  <ToolOutlined style={iconStyle} /> Extra Processing Configuration
+                  <MailOutlined style={iconStyle} /> Envelope Setup
                 </span>
                 <br />
-                <Text type="secondary">Configure extra packet calculations</Text>
+                <Text type="secondary">
+                  Configure inner and outer envelope types and capacities
+                </Text>
               </div>
             }
             extra={
-              !isEnabled(EXTRA_ALIAS_NAME) ? (
+              !isEnabled("Envelope Breaking") ? (
                 <Tag icon={<LockOutlined style={{ color: PRIMARY_COLOR }} />}>
                   Disabled
                 </Tag>
               ) : null
             }
           >
-            {extraTypes.map((et, index) => (
-              <div key={et.extraTypeId}>
-                {index > 0 && <Divider />}
-                <Title level={5}>{et.type} Extra</Title>
-
-                {/* 🔼 Envelope Dropdowns above */}
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr",
-                    gap: 12,
-                    marginTop: 12,
-                  }}
-                >
-                  <Col>
-                  
-                  </Col>
-                  <Select
-                    placeholder="Select Inner Envelopes"
-                    value={extraProcessingConfig[et.type]?.envelopeType?.inner || []}
-                    onChange={(vals) =>
-                      setExtraProcessingConfig((prev) => ({
-                        ...prev,
-                        [et.type]: {
-                          ...prev[et.type],
-                          envelopeType: {
-                            ...prev[et.type]?.envelopeType,
-                            inner: vals,
-                          },
-                        },
-                      }))
-                    }
-                  >
-                    {envelopeOptions.map((e) => (
-                      <Option key={e.envelopeId} value={e.envelopeName}>
-                        {e.envelopeName} (Capacity: {e.capacity})
-                      </Option>
-                    ))}
-                  </Select>
-
-                  <Select
-                    placeholder="Select Outer Envelopes"
-                    value={extraProcessingConfig[et.type]?.envelopeType?.outer || []}
-                    onChange={(vals) =>
-                      setExtraProcessingConfig((prev) => ({
-                        ...prev,
-                        [et.type]: {
-                          ...prev[et.type],
-                          envelopeType: {
-                            ...prev[et.type]?.envelopeType,
-                            outer: vals,
-                          },
-                        },
-                      }))
-                    }
-                  >
-                    {envelopeOptions.map((e) => (
-                      <Option key={e.envelopeId} value={e.envelopeName}>
-                        {e.envelopeName} (Capacity: {e.capacity})
-                      </Option>
-                    ))}
-                  </Select>
-                </div>
-
-                {/* Radio group for mode */}
-                <Radio.Group
-                  value={extraTypeSelection[et.type] || "Fixed"}
-                  onChange={(e) =>
-                    setExtraTypeSelection((prev) => ({
-                      ...prev,
-                      [et.type]: e.target.value,
-                    }))
-                  }
-                  disabled={!isEnabled(EXTRA_ALIAS_NAME)}
-                  style={{ marginTop: 16 }}
-                >
-                  <Radio value="Fixed">Fixed Qty</Radio>
-                  <Radio value="Range">Range (%)</Radio>
-                  <Radio value="Percentage">Percentage</Radio>
-                </Radio.Group>
-
-                {/* Inputs depending on type selection */}
-                {extraTypeSelection[et.type] === "Fixed" && (
-                  <Form.Item style={{ marginTop: 12 }}>
-                    <InputNumber
-                      placeholder="Enter fixed quantity"
-                      min={0}
-                      value={extraProcessingConfig[et.type]?.fixedQty || 0}
-                      onChange={(v) =>
-                        setExtraProcessingConfig((prev) => ({
-                          ...prev,
-                          [et.type]: { ...prev[et.type], fixedQty: v ?? 0 },
-                        }))
-                      }
-                      disabled={!isEnabled(EXTRA_ALIAS_NAME)}
-                    />
-                  </Form.Item>
-                )}
-
-                {extraTypeSelection[et.type] === "Range" && (
-                  <Form.Item style={{ marginTop: 12 }}>
-                    <InputNumber
-                      placeholder="Enter range (%)"
-                      min={0}
-                      max={100}
-                      step={0.1}
-                      value={extraProcessingConfig[et.type]?.range || 0}
-                      onChange={(v) =>
-                        setExtraProcessingConfig((prev) => ({
-                          ...prev,
-                          [et.type]: { ...prev[et.type], range: v ?? 0 },
-                        }))
-                      }
-                      disabled={!isEnabled(EXTRA_ALIAS_NAME)}
-                    />
-                  </Form.Item>
-                )}
-
-                {extraTypeSelection[et.type] === "Percentage" && (
-                  <Form.Item style={{ marginTop: 12 }}>
-                    <InputNumber
-                      placeholder="Enter percentage (%)"
-                      min={0}
-                      max={100}
-                      step={0.1}
-                      value={extraProcessingConfig[et.type]?.percentage || 0}
-                      onChange={(v) =>
-                        setExtraProcessingConfig((prev) => ({
-                          ...prev,
-                          [et.type]: { ...prev[et.type], percentage: v ?? 0 },
-                        }))
-                      }
-                      disabled={!isEnabled(EXTRA_ALIAS_NAME)}
-                    />
-                  </Form.Item>
-                )}
-              </div>
-            ))}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                columnGap: 12,
+                rowGap: 8,
+                marginTop: 12,
+              }}
+            >
+              <Text strong>Inner Envelopes</Text>
+              <Text strong>Outer Envelopes</Text>
+              <Select
+                mode="multiple"
+                disabled={!isEnabled("Envelope Breaking")}
+                value={innerEnvelopes}
+                onChange={setInnerEnvelopes}
+              >
+                {envelopeOptions.map((e) => (
+                  <Option key={e.envelopeId} value={e.envelopeId}>
+                    {e.envelopeName} (Cap: {e.capacity})
+                  </Option>
+                ))}
+              </Select>
+              <Select
+                mode="multiple"
+                disabled={!isEnabled("Envelope Breaking")}
+                value={outerEnvelopes}
+                onChange={setOuterEnvelopes}
+              >
+                {envelopeOptions.map((e) => (
+                  <Option key={e.envelopeId} value={e.envelopeId}>
+                    {e.envelopeName} (Cap: {e.capacity})
+                  </Option>
+                ))}
+              </Select>
+            </div>
           </Card>
 
 
@@ -581,7 +566,7 @@ const ProjectConfiguration = () => {
           <Card
             style={cardStyle}
             title={
-              <div>
+              <div className="py-1">
                 <span>
                   <ToolOutlined style={iconStyle} />Configuration Summary
                 </span>
@@ -654,6 +639,8 @@ const ProjectConfiguration = () => {
         </Col>
       </Row>
     </div>
+ 
+    
   );
 };
 
