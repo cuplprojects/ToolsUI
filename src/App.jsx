@@ -11,6 +11,7 @@ import ProjectConfiguration from "./ProjectConfig/ProjectConfiguration";
 import DataImport from "./ToolsProcessing/DataImport";
 import DuplicateTool from "./ToolsProcessing/DuplicateTool";
 import Master from "./Masters/Master";
+import EnvelopeBreaking from "./ToolsProcessing/Envelope/EnvelopeBreaking";
 
 export default function App() {
   const [token, setToken] = useState(localStorage.getItem("token"));
@@ -88,6 +89,15 @@ export default function App() {
                 element={
                   <MainLayout setToken={setToken}>
                     <ExcelUpload />
+                  </MainLayout>
+                }
+              />
+
+              <Route
+                path="/envelopebreaking"
+                element={
+                  <MainLayout setToken={setToken}>
+                    <EnvelopeBreaking/>
                   </MainLayout>
                 }
               />

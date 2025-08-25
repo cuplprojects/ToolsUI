@@ -42,6 +42,11 @@ export default function Sidebar({ collapsed }) {
       path: "/duplicate",
     },
     {
+      label: "Envelope Breaking",
+      icon: <FiBookmark/>,
+      path:"/envelopebreaking",
+    },
+    {
       label: "Excel Upload",
       icon: <FiUpload />,
       path: "/excelupload",

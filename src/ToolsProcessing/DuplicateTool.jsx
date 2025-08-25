@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Row, Col, Card, Select, Button, Typography, Radio, Checkbox, InputNumber, Space, message } from 'antd';
+import { Row, Col, Card, Select, Button, Typography, Radio, Checkbox, InputNumber, Space, message, Statistic } from 'antd';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -8,6 +9,7 @@ const url = import.meta.env.VITE_API_BASE_URL;
 const url1 = import.meta.env.VITE_API_URL;
 
 const DuplicateTool = () => {
+  const navigate = useNavigate();
   const [project, setProject] = useState(null);
   const [projects, setProjects] = useState([]);
   const [fields, setFields] = useState([]);
@@ -15,8 +17,13 @@ const DuplicateTool = () => {
 
   const [strategy, setStrategy] = useState('consolidate');
   const [enhance, setEnhance] = useState(false);
-  const [enhanceType, setEnhanceType] = useState("percent"); // 'percent' | 'round'
+  const [enhanceType, setEnhanceType] = useState('percent'); // 'percent' | 'round'
   const [percent, setPercent] = useState(2.5);
+
+  // Summary stats and UI state
+  const [stats, setStats] = useState({ filesCleaned: 0, errorsDetected: 0, duplicatesRemoved: 0 });
+  const [lastRunProject, setLastRunProject] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const token = localStorage.getItem('token');
 
@@ -36,63 +43,116 @@ const DuplicateTool = () => {
   }, [project]);
 
   const handleRun = async () => {
-  if (!project) {
-    message.warning('Please select a project');
-    return;
-  }
-
-  if (selectedFieldIds.length === 0) {
-    message.warning('Select at least one field');
-    return;
-  }
-
-  // ✅ Your original mergefields logic untouched
-  const fieldIdToName = new Map(fields.map(f => [f.fieldId, f.name]));
-  const mergefields = selectedFieldIds
-    .map(id => fieldIdToName.get(id))
-    .filter(Boolean)
-    .join(',');
-
-  if (!mergefields) {
-    message.warning('Selected fields are invalid.');
-    return;
-  }
-
-  try {
-    const queryParams = {
-      ProjectId: project,
-      consolidate: strategy === 'consolidate',
-      mergefields: mergefields, // ✅ Merged cleanly into query
-    };
-
-    // ✅ Handle enhancement options precisely
-    if (enhance) {
-      if (enhanceType === 'percent') {
-        queryParams.enhancement = true;
-        queryParams.percent = percent;
-      } else if (enhanceType === 'round') {
-        queryParams.enhancement = false;
-        queryParams.percent = 0;
-      }
+    if (!project) {
+      message.warning('Please select a project');
+      return;
     }
 
-    const query = new URLSearchParams(queryParams).toString();
+    if (selectedFieldIds.length === 0) {
+      message.warning('Select at least one field');
+      return;
+    }
 
-    const res = await axios.post(`${url1}/Duplicate?${query}`, null, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    // Build merge fields list from selected ids
+    const fieldIdToName = new Map(fields.map((f) => [f.fieldId, f.name]));
+    const mergefields = selectedFieldIds
+      .map((id) => fieldIdToName.get(id))
+      .filter(Boolean)
+      .join(',');
 
-    message.success('Duplicate processing completed');
-    // Optional: handle response
-  } catch (err) {
-    console.error('Duplicate processing failed', err);
-    message.error('Duplicate processing failed');
-  }
-};
+    if (!mergefields) {
+      message.warning('Selected fields are invalid.');
+      return;
+    }
 
+    try {
+      setLoading(true);
+
+      const queryParams = {
+        ProjectId: project,
+        consolidate: strategy === 'consolidate',
+        mergefields: mergefields,
+      };
+
+      // Enhancement options
+      if (enhance) {
+        if (enhanceType === 'percent') {
+          queryParams.enhancement = true;
+          queryParams.percent = percent;
+        } else if (enhanceType === 'round') {
+          queryParams.enhancement = false;
+          queryParams.percent = 0;
+        }
+      }
+
+      const query = new URLSearchParams(queryParams).toString();
+
+      const res = await axios.post(`${url1}/Duplicate?${query}`, null, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      // Try to read counts from API response; fall back to 0 if not provided
+      const data = res?.data || {};
+      const filesCleaned = data.filesCleaned ?? data.cleanedFiles ?? data.totalFiles ?? 0;
+      const errorsDetected = data.errorsDetected ?? data.errorCount ?? 0;
+      const duplicatesRemoved = data.duplicatesRemoved ?? data.removedCount ?? data.duplicates ?? 0;
+
+      setStats({ filesCleaned, errorsDetected, duplicatesRemoved });
+      setLastRunProject(project);
+
+      message.success(
+        `Duplicate processing completed. Duplicates removed: ${duplicatesRemoved}`
+      );
+
+      // Navigate to Envelope Breaking with the same project preselected
+      navigate('/envelopebreaking', { state: { projectId: project } });
+    } catch (err) {
+      console.error('Duplicate processing failed', err);
+      const apiMsg = err?.response?.data?.message || err?.message || 'Duplicate processing failed';
+      const errorsDetected = err?.response?.data?.errorsDetected ?? stats.errorsDetected;
+      if (typeof errorsDetected === 'number') {
+        setStats((prev) => ({ ...prev, errorsDetected }));
+      }
+      message.error(apiMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div style={{ padding: 24 }}>
+      {/* Top summary cards */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+        <Col xs={24} md={8}>
+          <Card bordered>
+            <Statistic title="Files Cleaned" value={stats.filesCleaned} />
+          </Card>
+        </Col>
+        <Col xs={24} md={8}>
+          <Card bordered>
+            <Statistic
+              title="Errors Detected"
+              value={stats.errorsDetected}
+              valueStyle={{ color: stats.errorsDetected > 0 ? '#cf1322' : undefined }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} md={8}>
+          <Card bordered>
+            <Statistic title="Duplicates Removed" value={stats.duplicatesRemoved} />
+            <div style={{ marginTop: 4 }}>
+              <Text type="secondary">
+                {lastRunProject
+                  ? project === lastRunProject
+                    ? 'For current project'
+                    : `Last run: Project ${lastRunProject}`
+                  : 'No runs yet'}
+              </Text>
+            </div>
+          </Card>
+        </Col>
+      </Row>
+
       <Row gutter={[24, 24]}>
         <Col xs={24} lg={18}>
           <Card title="Duplicate Tool" bordered={false}>
@@ -157,14 +217,14 @@ const DuplicateTool = () => {
                       <Radio.Group
                         value={enhanceType}
                         onChange={(e) => setEnhanceType(e.target.value)}
-                        style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}
+                        style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}
                       >
                         <Radio value="percent">Apply enhancement percentage</Radio>
                         <Radio value="round">Round up to envelope size</Radio>
                       </Radio.Group>
                     )}
 
-                    {enhance && enhanceType === "percent" && (
+                    {enhance && enhanceType === 'percent' && (
                       <InputNumber
                         value={percent}
                         onChange={setPercent}
@@ -172,22 +232,25 @@ const DuplicateTool = () => {
                         addonAfter="%"
                       />
                     )}
-
                   </Col>
                 </Row>
               </Card>
 
               <Space>
-                <Button onClick={() => {
-                  setSelectedFieldIds([]);
-                  setStrategy('consolidate');
-                  setEnhance(false);
-                  setPercent(2.5);
-                  setRoundUp(true);
-                }}>
+                <Button
+                  onClick={() => {
+                    setSelectedFieldIds([]);
+                    setStrategy('consolidate');
+                    setEnhance(false);
+                    setEnhanceType('percent');
+                    setPercent(2.5);
+                  }}
+                >
                   Reset
                 </Button>
-                <Button type="primary" onClick={handleRun}>Run Duplicate Processing</Button>
+                <Button type="primary" onClick={handleRun} loading={loading}>
+                  Run Duplicate Processing
+                </Button>
               </Space>
             </Space>
           </Card>
