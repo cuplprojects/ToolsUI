@@ -53,7 +53,7 @@ const EnvelopeBreaking = () => {
       setLoading(true);
 
       const res = await axios.post(
-        `${url1}/Duplicate/EnvelopeConfiguration?ProjectId=${project}`,
+        `${url1}/EnvelopeBreakages/EnvelopeConfiguration?ProjectId=${project}`,
         null,
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -79,7 +79,7 @@ const EnvelopeBreaking = () => {
       setTableLoading(true);
 
       const response = await axios.get(
-        `https://localhost:7276/api/NRDatas?projectId=${projectId}`,
+        `${url1}/EnvelopeBreakages?ProjectId=${projectId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
