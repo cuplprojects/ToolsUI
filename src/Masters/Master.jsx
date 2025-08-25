@@ -4,6 +4,7 @@ import EnvelopeType from './EnvelopeType';
 import Field from './Field';
 import ToolsModule from './ToolsModule';
 import { Tabs } from 'antd';
+import NodalUnivExtra from './NodalUnivExtra';
 
 const Master = () => {
   const tabItems = [
@@ -26,6 +27,11 @@ const Master = () => {
       key: '4',
       label: 'Tools Module',
       children: <ToolsModule />,
+    },
+    {
+      key: '5',
+      label: 'Nodal Univ Extra',
+      children: <NodalUnivExtra/>
     }
   ];
 

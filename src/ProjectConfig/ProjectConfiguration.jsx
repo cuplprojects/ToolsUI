@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Row,
   Col,
@@ -32,6 +32,9 @@ const url = import.meta.env.VITE_API_BASE_URL;
 const url1 = import.meta.env.VITE_API_URL;
 
 const PRIMARY_COLOR = "#1677ff"; // Ant Design default primary color
+const EXTRA_ALIAS_NAME = "Extra Configuration";
+const NODAL_MODULE = "Nodal Extra Calculation";
+const UNIVERSITY_MODULE = "University Extra Calculation";
 
 const ProjectConfiguration = () => {
   const [selectedProject, setSelectedProject] = useState(null);
@@ -44,13 +47,30 @@ const ProjectConfiguration = () => {
   const [innerEnvelopes, setInnerEnvelopes] = useState([]);
   const [outerEnvelopes, setOuterEnvelopes] = useState([]);
   const [envelopeOptions, setEnvelopeOptions] = useState([]);
-
-  const [extraProcessingConfig, setExtraProcessingConfig] = useState({
-    nodal: { fixedQty: 10, range: 5, percentage: 2.5 },
-    university: { fixedQty: 5, range: 3, percentage: 1.5 },
-  });
+  const [extraTypes, setExtraTypes] = useState([]);
+  const [extraTypeSelection, setExtraTypeSelection] = useState({});
+  const [extraProcessingConfig, setExtraProcessingConfig] = useState({});
 
   const token = localStorage.getItem("token");
+
+  // Fetch ExtraTypes
+  useEffect(() => {
+    axios
+      .get(`${url1}/ExtraTypes`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((res) => {
+        setExtraTypes(res.data);
+
+        // Pre-fill selection with "Fixed"
+        const defaults = {};
+        res.data.forEach((et) => {
+          defaults[et.type] = "Fixed";
+        });
+        setExtraTypeSelection(defaults);
+      })
+      .catch((err) => console.error("Failed to fetch extra types", err));
+  }, []);
 
   // Fetch Projects
   useEffect(() => {
@@ -68,6 +88,31 @@ const ProjectConfiguration = () => {
       .catch((err) => console.error("Failed to fetch modules", err));
   }, []);
 
+  // Build a merged module list with a single Extra Configuration entry
+  const mergedModules = useMemo(() => {
+    const list = toolModules || [];
+    const others = list.filter(
+      (m) => m.name !== NODAL_MODULE && m.name !== UNIVERSITY_MODULE
+    );
+
+    // Determine description from any one of the original extra modules, if present
+    const extraDesc = list.find(
+      (m) => m.name === NODAL_MODULE || m.name === UNIVERSITY_MODULE
+    )?.description;
+
+    // Insert single alias if at least one extra module exists
+    const hasAnyExtra = list.some(
+      (m) => m.name === NODAL_MODULE || m.name === UNIVERSITY_MODULE
+    );
+
+    return hasAnyExtra
+      ? [
+        ...others,
+        { id: "extra-alias", name: EXTRA_ALIAS_NAME, description: extraDesc },
+      ]
+      : others;
+  }, [toolModules]);
+
   // Fetch Envelope Types
   useEffect(() => {
     axios
@@ -81,12 +126,78 @@ const ProjectConfiguration = () => {
   const isEnabled = (toolName) => enabledModules.includes(toolName);
 
   const handleSave = async () => {
-    // similar payload logic as your current code
-    console.log("Saving configuration...");
+    if (!selectedProject) return;
+
+    try {
+      // 1️⃣ Save ProjectConfigs
+      const projectConfigPayload = {
+        id: 0,
+        projectId: selectedProject,
+        modules: enabledModules.map(
+          (m) => toolModules.find((tm) => tm.name === m)?.id
+        ),
+        envelope: JSON.stringify({
+          Inner: innerEnvelopes.join(","),
+          Outer: outerEnvelopes.join(","),
+        }),
+        boxBreaking: [0],
+      };
+
+      await axios.post(`${url1}/ProjectConfigs`, projectConfigPayload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      // 2️⃣ Save ExtrasConfigurations
+      const extrasPayloads = Object.entries(extraTypeSelection)
+        .map(([typeName, mode]) => {
+          const et = extraTypes.find((t) => t.type === typeName);
+          if (!et) return null;
+
+          const config = extraProcessingConfig[typeName] || {};
+          return {
+            id: 0,
+            projectId: selectedProject,
+            extraType: et.extraTypeId,
+            mode,
+            value:
+              mode === "Fixed"
+                ? String(config.fixedQty || 0)
+                : mode === "Range"
+                  ? String(config.range || 0)
+                  : String(config.percentage || 0),
+            envelopeType: JSON.stringify(config.envelopeType || { inner: [], outer: [] }),
+          };
+        })
+        .filter(Boolean);
+
+      if (extrasPayloads.length > 0) {
+        await Promise.all(
+          extrasPayloads.map((payload) =>
+            axios.post(`${url1}/ExtrasConfigurations`, payload, {
+              headers: { Authorization: `Bearer ${token}` },
+            })
+          )
+        );
+      }
+
+      message.success("Configuration saved successfully!");
+      console.log("Saved:", { projectConfigPayload, extrasPayloads });
+    } catch (err) {
+      console.error("Failed to save configuration", err);
+      message.error("Failed to save configuration");
+    }
   };
+
+
+
 
   const cardStyle = { marginBottom: 16 };
   const iconStyle = { color: PRIMARY_COLOR, marginRight: 6 };
+  const selectedProjectName =
+    projects.find((p) => p.projectId === selectedProject)?.name || "None";
+  const envelopeConfigured = isEnabled("Envelope Breaking");
+  const boxConfigured = isEnabled("Box Breaking");
+  const extraConfigured = isEnabled(EXTRA_ALIAS_NAME);
 
   return (
     <div style={{ padding: 16 }}>
@@ -158,7 +269,7 @@ const ProjectConfiguration = () => {
                   rowGap: 8,
                 }}
               >
-                {toolModules.map((tool) => (
+                {mergedModules.map((tool) => (
                   <Checkbox key={tool.id} value={tool.name}>
                     <b>{tool.name}</b>
                     <br />
@@ -293,42 +404,14 @@ const ProjectConfiguration = () => {
               ))}
             </div>
           </Card>
-
-          {/* Duplicate Processing */}
-          <Card
-            style={cardStyle}
-            title={
-              <div>
-                <span>
-                  <NumberOutlined style={iconStyle} /> Duplicate Processing Configuration
-                </span>
-                <br />
-                <Text type="secondary">
-                  Define fields for duplicate record detection
-                </Text>
-              </div>
-
-            }
-            extra={
-              !isEnabled("Duplicate Processing") ? (
-                <Tag icon={<LockOutlined style={{ color: PRIMARY_COLOR }} />}>Disabled</Tag>
-              ) : null
-            }
-          >
-            <div style={{ marginTop: 12 }}>
-              <Text type="secondary">
-                Roll Number, Student Name, Subject Code, Center Code, ...
-              </Text>
-            </div>
-          </Card>
         </Col>
 
         {/* RIGHT SIDE */}
         <Col xs={24} md={8}>
           {/* Extra Processing */}
+          {/* Extra Processing */}
           <Card
             style={cardStyle}
-
             title={
               <div>
                 <span>
@@ -339,142 +422,154 @@ const ProjectConfiguration = () => {
               </div>
             }
             extra={
-              !isEnabled("Nodal Extra Calculation") &&
-                !isEnabled("University Extra Calculation") ? (
-                <Tag icon={<LockOutlined style={{ color: PRIMARY_COLOR }} />}>Disabled</Tag>
+              !isEnabled(EXTRA_ALIAS_NAME) ? (
+                <Tag icon={<LockOutlined style={{ color: PRIMARY_COLOR }} />}>
+                  Disabled
+                </Tag>
               ) : null
             }
           >
-            <Divider />
-            <Title level={5}>Nodal Extra</Title>
-            <Radio.Group
-              value={nodalExtraType}
-              onChange={(e) => setNodalExtraType(e.target.value)}
-              disabled={!isEnabled("Nodal Extra Calculation")}
-            >
-              <Radio value="Fixed">Fixed Qty</Radio>
-              <Radio value="Range">Range (%)</Radio>
-              <Radio value="Percentage">Percentage</Radio>
-            </Radio.Group>
-            {/* Inputs for Nodal based on selection */}
-            {nodalExtraType === "Fixed" && (
-              <Form.Item style={{ marginTop: 12 }}>
-                <InputNumber
-                  placeholder="Enter fixed quantity"
-                  min={0}
-                  value={extraProcessingConfig.nodal.fixedQty}
-                  onChange={(v) =>
-                    setExtraProcessingConfig((prev) => ({
-                      ...prev,
-                      nodal: { ...prev.nodal, fixedQty: v ?? 0 },
-                    }))
-                  }
-                  disabled={!isEnabled("Nodal Extra Calculation")}
-                />
-              </Form.Item>
-            )}
-            {nodalExtraType === "Range" && (
-              <Form.Item style={{ marginTop: 12 }}>
-                <InputNumber
-                  placeholder="Enter range (%)"
-                  min={0}
-                  max={100}
-                  step={0.1}
-                  value={extraProcessingConfig.nodal.range}
-                  onChange={(v) =>
-                    setExtraProcessingConfig((prev) => ({
-                      ...prev,
-                      nodal: { ...prev.nodal, range: v ?? 0 },
-                    }))
-                  }
-                  disabled={!isEnabled("Nodal Extra Calculation")}
-                />
-              </Form.Item>
-            )}
-            {nodalExtraType === "Percentage" && (
-              <Form.Item style={{ marginTop: 12 }}>
-                <InputNumber
-                  placeholder="Enter percentage (%)"
-                  min={0}
-                  max={100}
-                  step={0.1}
-                  value={extraProcessingConfig.nodal.percentage}
-                  onChange={(v) =>
-                    setExtraProcessingConfig((prev) => ({
-                      ...prev,
-                      nodal: { ...prev.nodal, percentage: v ?? 0 },
-                    }))
-                  }
-                  disabled={!isEnabled("Nodal Extra Calculation")}
-                />
-              </Form.Item>
-            )}
+            {extraTypes.map((et, index) => (
+              <div key={et.extraTypeId}>
+                {index > 0 && <Divider />}
+                <Title level={5}>{et.type} Extra</Title>
 
-            <Divider />
-            <Title level={5}>University Extra</Title>
-            <Radio.Group
-              value={univExtraType}
-              onChange={(e) => setUnivExtraType(e.target.value)}
-              disabled={!isEnabled("University Extra Calculation")}
-            >
-              <Radio value="Fixed">Fixed Qty</Radio>
-              <Radio value="Range">Range (%)</Radio>
-              <Radio value="Percentage">Percentage</Radio>
-            </Radio.Group>
-            {/* Inputs for University based on selection */}
-            {univExtraType === "Fixed" && (
-              <Form.Item style={{ marginTop: 12 }}>
-                <InputNumber
-                  placeholder="Enter fixed quantity"
-                  min={0}
-                  value={extraProcessingConfig.university.fixedQty}
-                  onChange={(v) =>
-                    setExtraProcessingConfig((prev) => ({
+                {/* 🔼 Envelope Dropdowns above */}
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr",
+                    gap: 12,
+                    marginTop: 12,
+                  }}
+                >
+                  <Select
+                    mode="multiple"
+                    placeholder="Select Inner Envelopes"
+                    value={extraProcessingConfig[et.type]?.envelopeType?.inner || []}
+                    onChange={(vals) =>
+                      setExtraProcessingConfig((prev) => ({
+                        ...prev,
+                        [et.type]: {
+                          ...prev[et.type],
+                          envelopeType: {
+                            ...prev[et.type]?.envelopeType,
+                            inner: vals,
+                          },
+                        },
+                      }))
+                    }
+                  >
+                    {envelopeOptions.map((e) => (
+                      <Option key={e.envelopeId} value={e.envelopeId}>
+                        {e.envelopeName} (Cap: {e.capacity})
+                      </Option>
+                    ))}
+                  </Select>
+
+                  <Select
+                    mode="multiple"
+                    placeholder="Select Outer Envelopes"
+                    value={extraProcessingConfig[et.type]?.envelopeType?.outer || []}
+                    onChange={(vals) =>
+                      setExtraProcessingConfig((prev) => ({
+                        ...prev,
+                        [et.type]: {
+                          ...prev[et.type],
+                          envelopeType: {
+                            ...prev[et.type]?.envelopeType,
+                            outer: vals,
+                          },
+                        },
+                      }))
+                    }
+                  >
+                    {envelopeOptions.map((e) => (
+                      <Option key={e.envelopeId} value={e.envelopeId}>
+                        {e.envelopeName} (Cap: {e.capacity})
+                      </Option>
+                    ))}
+                  </Select>
+                </div>
+
+                {/* Radio group for mode */}
+                <Radio.Group
+                  value={extraTypeSelection[et.type] || "Fixed"}
+                  onChange={(e) =>
+                    setExtraTypeSelection((prev) => ({
                       ...prev,
-                      university: { ...prev.university, fixedQty: v ?? 0 },
+                      [et.type]: e.target.value,
                     }))
                   }
-                  disabled={!isEnabled("University Extra Calculation")}
-                />
-              </Form.Item>
-            )}
-            {univExtraType === "Range" && (
-              <Form.Item style={{ marginTop: 12 }}>
-                <InputNumber
-                  placeholder="Enter range (%)"
-                  min={0}
-                  max={100}
-                  step={0.1}
-                  value={extraProcessingConfig.university.range}
-                  onChange={(v) =>
-                    setExtraProcessingConfig((prev) => ({
-                      ...prev,
-                      university: { ...prev.university, range: v ?? 0 },
-                    }))
-                  }
-                  disabled={!isEnabled("University Extra Calculation")}
-                />
-              </Form.Item>
-            )}
-            {univExtraType === "Percentage" && (
-              <Form.Item style={{ marginTop: 12 }}>
-                <InputNumber
-                  placeholder="Enter percentage (%)"
-                  min={0}
-                  max={100}
-                  step={0.1}
-                  value={extraProcessingConfig.university.percentage}
-                  onChange={(v) =>
-                    setExtraProcessingConfig((prev) => ({
-                      ...prev,
-                      university: { ...prev.university, percentage: v ?? 0 },
-                    }))
-                  }
-                  disabled={!isEnabled("University Extra Calculation")}
-                />
-              </Form.Item>
-            )}
+                  disabled={!isEnabled(EXTRA_ALIAS_NAME)}
+                  style={{ marginTop: 16 }}
+                >
+                  <Radio value="Fixed">Fixed Qty</Radio>
+                  <Radio value="Range">Range (%)</Radio>
+                  <Radio value="Percentage">Percentage</Radio>
+                </Radio.Group>
+
+                {/* Inputs depending on type selection */}
+                {extraTypeSelection[et.type] === "Fixed" && (
+                  <Form.Item style={{ marginTop: 12 }}>
+                    <InputNumber
+                      placeholder="Enter fixed quantity"
+                      min={0}
+                      value={extraProcessingConfig[et.type]?.fixedQty || 0}
+                      onChange={(v) =>
+                        setExtraProcessingConfig((prev) => ({
+                          ...prev,
+                          [et.type]: { ...prev[et.type], fixedQty: v ?? 0 },
+                        }))
+                      }
+                      disabled={!isEnabled(EXTRA_ALIAS_NAME)}
+                    />
+                  </Form.Item>
+                )}
+
+                {extraTypeSelection[et.type] === "Range" && (
+                  <Form.Item style={{ marginTop: 12 }}>
+                    <InputNumber
+                      placeholder="Enter range (%)"
+                      min={0}
+                      max={100}
+                      step={0.1}
+                      value={extraProcessingConfig[et.type]?.range || 0}
+                      onChange={(v) =>
+                        setExtraProcessingConfig((prev) => ({
+                          ...prev,
+                          [et.type]: { ...prev[et.type], range: v ?? 0 },
+                        }))
+                      }
+                      disabled={!isEnabled(EXTRA_ALIAS_NAME)}
+                    />
+                  </Form.Item>
+                )}
+
+                {extraTypeSelection[et.type] === "Percentage" && (
+                  <Form.Item style={{ marginTop: 12 }}>
+                    <InputNumber
+                      placeholder="Enter percentage (%)"
+                      min={0}
+                      max={100}
+                      step={0.1}
+                      value={extraProcessingConfig[et.type]?.percentage || 0}
+                      onChange={(v) =>
+                        setExtraProcessingConfig((prev) => ({
+                          ...prev,
+                          [et.type]: { ...prev[et.type], percentage: v ?? 0 },
+                        }))
+                      }
+                      disabled={!isEnabled(EXTRA_ALIAS_NAME)}
+                    />
+                  </Form.Item>
+                )}
+              </div>
+            ))}
           </Card>
+
+
+
 
           {/* Config Summary */}
           <Card
@@ -494,7 +589,7 @@ const ProjectConfiguration = () => {
               dataSource={[
                 {
                   label: "Selected Project",
-                  value: selectedProject ? selectedProject : "None",
+                  value: selectedProjectName,
                   strong: true,
                 },
                 {
@@ -502,9 +597,21 @@ const ProjectConfiguration = () => {
                   value: enabledModules.length,
                   strong: true,
                 },
-                { label: "Envelope Setup", value: "Not Configured", danger: true },
-                { label: "Box Breaking", value: "Not Configured", danger: true },
-                { label: "Extra Processing", value: "Not Configured", danger: true },
+                {
+                  label: "Envelope Setup",
+                  value: envelopeConfigured ? "Configured" : "Not Configured",
+                  danger: !envelopeConfigured,
+                },
+                {
+                  label: "Box Breaking",
+                  value: boxConfigured ? "Configured" : "Not Configured",
+                  danger: !boxConfigured,
+                },
+                {
+                  label: "Extra Processing",
+                  value: extraConfigured ? "Configured" : "Not Configured",
+                  danger: !extraConfigured,
+                },
               ]}
               renderItem={(item) => (
                 <List.Item>
