@@ -12,6 +12,7 @@ import DataImport from "./ToolsProcessing/DataImport";
 import DuplicateTool from "./ToolsProcessing/DuplicateTool";
 import Master from "./Masters/Master";
 import EnvelopeBreaking from "./ToolsProcessing/Envelope/EnvelopeBreaking";
+import ProcessingPipeline from "./ToolsProcessing/ProcessingPipeline";
 
 export default function App() {
   const [token, setToken] = useState(localStorage.getItem("token"));
@@ -98,6 +99,14 @@ export default function App() {
                 element={
                   <MainLayout setToken={setToken}>
                     <EnvelopeBreaking/>
+                  </MainLayout>
+                }
+              /> 
+              <Route
+                path="/processingpipeline"
+                element={
+                  <MainLayout setToken={setToken}>
+                    <ProcessingPipeline/>
                   </MainLayout>
                 }
               />

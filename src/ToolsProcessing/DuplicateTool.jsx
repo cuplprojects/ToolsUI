@@ -144,6 +144,7 @@ const handleSave = () => {
 
     localStorage.setItem('duplicateToolSettings', JSON.stringify(settings));
     message.success('Settings saved successfully!');
+    navigate('/processingpipeline', { state: { projectId: project } });
   };
 
   const handleRun = async () => {

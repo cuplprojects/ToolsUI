@@ -70,7 +70,7 @@ const DataImport = () => {
     if (!projectId) return;
     setLoading(true);
     try {
-      const res = await axios.get(`${url1}/NRDatas?projectId=${projectId}`, {
+      const res = await axios.get(`${url1}/NRDatas/GetByProjectId/${projectId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setExistingData(res.data || []);
@@ -136,12 +136,12 @@ const DataImport = () => {
     }
   };
   // Update state when user selects a value from dropdown
-const handleSelectionChange = (catchNo, value) => {
-  setConflictSelections((prev) => ({
-    ...prev,
-    [catchNo]: value,
-  }));
-};
+  const handleSelectionChange = (catchNo, value) => {
+    setConflictSelections((prev) => ({
+      ...prev,
+      [catchNo]: value,
+    }));
+  };
 
 
   const renderConflicts = () => {
@@ -197,12 +197,12 @@ const handleSelectionChange = (catchNo, value) => {
       <div>
         <Text className='mb-3' type="secondary">Please resolve all conflicts before further processing</Text>
 
-      <Table
-        columns={columns}
-        dataSource={dataSource}
-        pagination={{ pageSize: 10 }}
-        rowKey="catchNo"
-      /></div>
+        <Table
+          columns={columns}
+          dataSource={dataSource}
+          pagination={{ pageSize: 10 }}
+          rowKey="catchNo"
+        /></div>
     );
   };
 
@@ -259,6 +259,47 @@ const handleSelectionChange = (catchNo, value) => {
     setPendingFile(null);
     setIsModalVisible(false);
   };
+
+  const isAnyFieldMapped = () => {
+    return expectedFields.some(field => fieldMappings[field.fieldId]);
+  };
+
+   const handleUpload = () => {
+    const mappedData = getMappedData();
+    const payload = {
+      projectId: project,
+      data: mappedData
+    };
+
+    axios.post(`${url1}/NRDatas`, payload, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => {
+        console.log('Validation result:', res.data);
+        message.success("Validation successful");
+        resetForm();
+      })
+      .catch(err => {
+        console.error("Validation failed", err);
+        message.error("Validation failed");
+        resetForm();
+      });
+  };
+
+  const getMappedData = () => {
+  if (!excelData.length || !fileHeaders.length) return [];
+
+  return excelData.map((row) => {
+    const mappedRow = {};
+    expectedFields.forEach((field) => {
+      const column = fieldMappings[field.fieldId];  // e.g. "Name" or "Age"
+      if (column) {
+        mappedRow[field.name] = row[column] ?? null;  // ✅ directly use header name
+      }
+    });
+    return mappedRow;
+  });
+};
 
   // Render uploaded Excel preview
   const renderUploadedData = () => {
@@ -331,7 +372,7 @@ const handleSelectionChange = (catchNo, value) => {
             </Row>
 
             <Divider />
-            {existingData.length > 0 && (
+            {existingData.length > 0 ? (
               <Tabs activeKey={activeTab} onChange={(key) => setActiveTab(key)} style={{ marginTop: 16 }}>
                 <TabPane tab="Uploaded Data" key="1">
                   <Card>
@@ -351,6 +392,42 @@ const handleSelectionChange = (catchNo, value) => {
                 </TabPane>
               </Tabs>
 
+            ) : (
+             
+            <Card title="Field Mapping" style={{ marginTop: 24 }}>
+              {expectedFields.map((expectedField) => (
+                <Row key={expectedField.fieldId} gutter={16} align="middle" style={{ marginBottom: 12 }}>
+                  <Col span={8}><Text>{expectedField.name}</Text></Col>
+                  <Col span={16}>
+                    <Select
+                      style={{ width: '100%' }}
+                      placeholder="Select matching column from file"
+                      value={fieldMappings[expectedField.fieldId]}
+                      onChange={(value) => {
+                        setFieldMappings(prev => ({
+                          ...prev,
+                          [expectedField.fieldId]: value
+                        }));
+                      }}
+                    >
+                      {fileHeaders
+                        .filter(header =>
+                          !Object.values(fieldMappings).includes(header) || fieldMappings[expectedField.fieldId] === header
+                        )
+                        .map((header, index) => (
+                          <Option key={`${header}-${index}`} value={header}>{header}</Option>
+                        ))}
+                    </Select>
+                  </Col>
+                </Row>
+              ))}
+
+              {isAnyFieldMapped() && (
+                <Button type="primary" block onClick={handleUpload}>
+                  Upload and Validate
+                </Button>
+              )}
+            </Card>
             )}
           </Card>
 
@@ -364,7 +441,7 @@ const handleSelectionChange = (catchNo, value) => {
             </Button>
           </Card>
           <Card title="Duplicate Tool" bordered={false} style={{ marginTop: '10px' }}>
-            <DuplicateTool  project={project}/>
+            <DuplicateTool project={project} />
           </Card>
 
 
