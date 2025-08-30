@@ -288,7 +288,7 @@ const handleSave = () => {
               </Card>
 
               <Space>
-                <Button
+                {/* <Button
                   onClick={() => {
                     setSelectedFieldIds([]);
                     setStrategy('consolidate');
@@ -301,7 +301,7 @@ const handleSave = () => {
                 </Button>
                 <Button type="primary" onClick={handleRun} loading={loading}>
                   Run Duplicate Processing
-                </Button>
+                </Button> */}
                  <Button onClick={handleSave}>
                 Save Settings
               </Button>

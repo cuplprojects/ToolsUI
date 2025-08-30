@@ -8,6 +8,7 @@ const { Option } = Select;
 
 const url = import.meta.env.VITE_API_BASE_URL;
 const url1 = import.meta.env.VITE_API_URL;
+const url3 = import.meta.env.VITE_API_FILE_URL;
 
 const ProcessingPipeline = () => {
   const location = useLocation();
@@ -28,6 +29,7 @@ const ProcessingPipeline = () => {
   // Overall progress
   const currentStep = useMemo(() => steps.findIndex(s => s.status === "in-progress") + 1 || steps.filter(s => s.status === "completed").length, [steps]);
   const percent = useMemo(() => (steps.length ? (steps.filter(s => s.status === "completed").length / steps.length) * 100 : 0), [steps]);
+
 
   // Fetch projects on mount
   useEffect(() => {
@@ -128,10 +130,12 @@ const ProcessingPipeline = () => {
     message.success(`Duplicate processing completed. Duplicates removed: ${duplicatesRemoved}`);
   };
 
+  
   // Envelope Breaking
-  const runEnvelope = async (projectId) => {
+  const runEnvelope = async (project) => {
+    console.log("Audit clicked - calling envelope API");
     const res = await axios.post(
-      `${url1}/EnvelopeBreakages/EnvelopeConfiguration?ProjectId=${projectId}`,
+      `${url1}/EnvelopeBreakages/EnvelopeConfiguration?ProjectId=${project}`,
       null,
       { headers: { Authorization: `Bearer ${token}` } }
     );
@@ -156,7 +160,7 @@ const ProcessingPipeline = () => {
     }
 
     // Initialize steps view
-    const initialSteps = order.map(o => ({ key: o.key, title: o.title, status: "pending", duration: null }));
+    const initialSteps = order.map(o => ({ key: o.key, title: o.title, status: "pending", duration: null, fileUrl: null, }));
     setSteps(initialSteps);
     setIsProcessing(true);
 
@@ -177,7 +181,14 @@ const ProcessingPipeline = () => {
         const durationMs = Date.now() - (stepTimers.get(step.key) || Date.now());
         const mm = String(Math.floor(durationMs / 60000)).padStart(2, "0");
         const ss = String(Math.floor((durationMs % 60000) / 1000)).padStart(2, "0");
-        updateStepStatus(step.key, { status: "completed", duration: `${mm}:${ss}` });
+        updateStepStatus(step.key, {
+    status: "completed",
+    duration: `${mm}:${ss}`,
+    fileUrl:
+      step.key === "duplicate"
+        ? `${url3}/DuplicateTool_${project}.xlsx`
+        : `${url3}/EnvelopeBreaking_${project}.xlsx`,
+  });
       }
 
       message.success("Audit processing completed");
@@ -274,6 +285,16 @@ const ProcessingPipeline = () => {
                 {step.status === "completed" && `Completed in ${step.duration || "--:--"}`}
                 {step.status === "failed" && "Failed"}
               </p>
+              {step.fileUrl && (
+                <a
+                  href={step.fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-500 text-xs underline"
+                >
+                  Download Result
+                </a>
+              )}
             </div>
             {step.duration && (
               <div className="text-xs text-gray-400">{step.duration}</div>
