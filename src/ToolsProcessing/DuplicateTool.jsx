@@ -109,7 +109,7 @@ const DuplicateTool = ({ project }) => {
   //     setLoading(false);
   //   }
   // };
-const handleSave = () => {
+  const handleSave = () => {
     if (!project) {
       message.warning('Please select a project');
       return;
@@ -218,63 +218,61 @@ const handleSave = () => {
       setLoading(false);
     }
   };
-  
+
   return (
-    <div style={{ padding: 24 }}>
+    <div >
       <Row gutter={[24, 24]}>
         <Col xs={24} md={24}>
 
-        <Space direction="vertical" style={{ width: '100%' }} size="large">
+          <Space direction="vertical" style={{ width: '100%' }} size="large">
             <div>
-                <Text strong>Select fields to concatenate</Text>
-                <Select
-                  mode="multiple"
-                  allowClear
-                  style={{ width: '100%', marginTop: 4 }}
-                  placeholder="Select one or more fields"
-                  value={selectedFieldIds}
-                  onChange={setSelectedFieldIds}
+              <Text strong>Select fields to concatenate</Text>
+              <Select
+                mode="multiple"
+                allowClear
+                style={{ width: '100%', marginTop: 4 }}
+                placeholder="Select one or more fields"
+                value={selectedFieldIds}
+                onChange={setSelectedFieldIds}
+              >
+                {fields.map((f) => (
+                  <Option key={f.fieldId} value={f.fieldId}>
+                    {f.name}
+                  </Option>
+                ))}
+              </Select>
+            </div>
+
+            <Card title="Processing Options" bordered={false}>
+              <Row gutter={[16, 16]}>
+
+                <Title level={5}>Duplicate Handling Strategy</Title>
+                <Radio.Group
+                  onChange={(e) => setStrategy(e.target.value)}
+                  value={strategy}
+                  style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
                 >
-                  {fields.map((f) => (
-                    <Option key={f.fieldId} value={f.fieldId}>
-                      {f.name}
-                    </Option>
-                  ))}
-                </Select>
-              </div>
+                  <Radio value="consolidate">Sum quantities</Radio>
+                  <Radio value="first">Keep first occurrence</Radio>
+                  <Radio value="manual">Manual review required</Radio>
+                </Radio.Group>
 
-              <Card title="Processing Options" bordered={false}>
-                <Row gutter={[16, 16]}>
-                  <Col xs={24} md={12}>
-                    <Title level={5}>Duplicate Handling Strategy</Title>
-                    <Radio.Group
-                      onChange={(e) => setStrategy(e.target.value)}
-                      value={strategy}
-                      style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
-                    >
-                      <Radio value="consolidate">Consolidate (Sum quantities)</Radio>
-                      <Radio value="first">Keep first occurrence</Radio>
-                      <Radio value="manual">Manual review required</Radio>
-                    </Radio.Group>
-                  </Col>
+              </Row>
+              <Row>
 
-                  <Col xs={24} md={12}>
-                    <Title level={5}>Enhancement Options</Title>
-                    <Checkbox checked={enhance} onChange={(e) => setEnhance(e.target.checked)}>
-                      Enable Enhancement
-                    </Checkbox>
+                <div className='mt-2'><Title level={5}>Enhancement Options</Title>
+                </div>
+                <Checkbox checked={enhance} onChange={(e) => setEnhance(e.target.checked)}>
+                  Enable Enhancement
+                </Checkbox>
 
-                    {enhance && (
-                      <Radio.Group
-                        value={enhanceType}
-                        onChange={(e) => setEnhanceType(e.target.value)}
-                        style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}
-                      >
-                        <Radio value="percent">Apply enhancement percentage</Radio>
-                        <Radio value="round">Round up to envelope size</Radio>
-                      </Radio.Group>
-                    )}
-
+                {enhance && (
+                  <Radio.Group
+                    value={enhanceType}
+                    onChange={(e) => setEnhanceType(e.target.value)}
+                    style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}
+                  >
+                    <Radio value="percent">Apply enhancement percentage</Radio>
                     {enhance && enhanceType === 'percent' && (
                       <InputNumber
                         value={percent}
@@ -283,12 +281,17 @@ const handleSave = () => {
                         addonAfter="%"
                       />
                     )}
-                  </Col>
-                </Row>
-              </Card>
+                    <Radio value="round">Round up to envelope size</Radio>
+                  </Radio.Group>
+                )}
 
-              <Space>
-                {/* <Button
+
+
+              </Row>
+            </Card>
+
+            <Space>
+              {/* <Button
                   onClick={() => {
                     setSelectedFieldIds([]);
                     setStrategy('consolidate');
@@ -302,15 +305,15 @@ const handleSave = () => {
                 <Button type="primary" onClick={handleRun} loading={loading}>
                   Run Duplicate Processing
                 </Button> */}
-                 <Button onClick={handleSave}>
+              <Button onClick={handleSave}>
                 Save Settings
               </Button>
-              </Space>
             </Space>
-          
+          </Space>
+
         </Col>
 
-       
+
       </Row>
     </div>
   );
