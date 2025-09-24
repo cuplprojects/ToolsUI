@@ -264,6 +264,16 @@ const DataImport = () => {
   const isAnyFieldMapped = () => {
     return expectedFields.some(field => fieldMappings[field.fieldId]);
   };
+  const resetForm = () => {
+    setProject(null);
+    setFileHeaders([]);
+    setFieldMappings({});
+    setExcelData([]);
+    setProcessingStarted(false);
+    setExpectedFields([]);
+    setViewConflicts(false);
+    setConflicts(null);
+  };
 
   const handleUpload = () => {
     const mappedData = getMappedData();
