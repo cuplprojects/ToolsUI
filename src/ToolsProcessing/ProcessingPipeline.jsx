@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Progress, Badge, Button, Select, Card, Space, Typography, List, message, Tag } from "antd";
 import { useLocation } from "react-router-dom";
 import axios from "axios";
+import { title } from "framer-motion/client";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -84,6 +85,7 @@ const ProcessingPipeline = () => {
     const order = [];
     if (names.some(n => n.includes("duplicate"))) order.push({ key: "duplicate", title: "Duplicate Processing" });
     if (names.some(n => n.includes("envelope"))) order.push({ key: "envelope", title: "Envelope Breaking" });
+    if(names.some(n=>n.includes("extras")))order.push({key:"extras",title:"Extras"})
     return order;
   };
 
@@ -143,6 +145,16 @@ const ProcessingPipeline = () => {
     message.success(msg);
   };
 
+  const runExtras = async(projectId) =>{
+    const res = await axios.post(
+      `${url1}/Duplicate/MergeData?ProjectId=${projectId}`,
+      null,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+     const msg = res?.data?.message || "Extras calculation completed";
+    message.success(msg);
+  }
+
   const updateStepStatus = (key, patch) => {
     setSteps(prev => prev.map(s => (s.key === key ? { ...s, ...patch } : s)));
   };
@@ -176,6 +188,9 @@ const ProcessingPipeline = () => {
           await runDuplicate(project);
         } else if (step.key === "envelope") {
           await runEnvelope(project);
+        }
+        else if(step.key ==="extras"){
+          await runExtras(project)
         }
 
         const durationMs = Date.now() - (stepTimers.get(step.key) || Date.now());

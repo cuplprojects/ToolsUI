@@ -42,8 +42,6 @@ const ProjectConfiguration = () => {
   const [boxBreakingCriteria, setBoxBreakingCriteria] = useState(["capacity"]);
   const [projects, setProjects] = useState([]);
   const [toolModules, setToolModules] = useState([]);
-  const [nodalExtraType, setNodalExtraType] = useState("Fixed");
-  const [univExtraType, setUnivExtraType] = useState("Fixed");
   const [innerEnvelopes, setInnerEnvelopes] = useState([]);
   const [outerEnvelopes, setOuterEnvelopes] = useState([]);
   const [envelopeOptions, setEnvelopeOptions] = useState([]);
