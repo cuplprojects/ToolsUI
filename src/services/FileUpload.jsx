@@ -343,7 +343,7 @@ const ExcelImportService = ({ predefinedFields, onDataChange, onFileReset, debug
           {/* Manual mapping for all fields */}
           <div className="space-y-4">
             <h3 className="text-sm font-medium text-slate-700">Map Your Fields</h3>
-            <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {predefinedFields.map(field => (
                 <div key={field.key} className="space-y-2">
                   <label className="block text-sm font-medium text-slate-700">
