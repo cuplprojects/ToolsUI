@@ -24,6 +24,7 @@ import {
 } from "@ant-design/icons";
 import axios from "axios";
 import { div, span } from "framer-motion/client";
+import { useToast } from '../hooks/useToast';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -37,6 +38,7 @@ const NODAL_MODULE = "Nodal Extra Calculation";
 const UNIVERSITY_MODULE = "University Extra Calculation";
 
 const ProjectConfiguration = () => {
+  const { showToast } = useToast();
   const [selectedProject, setSelectedProject] = useState(null);
   const [enabledModules, setEnabledModules] = useState([]);
   const [boxBreakingCriteria, setBoxBreakingCriteria] = useState(["capacity"]);
@@ -184,11 +186,11 @@ const ProjectConfiguration = () => {
         );
       }
 
-      message.success("Configuration saved successfully!");
+      showToast("Configuration saved successfully!", "success");
       console.log("Saved:", { projectConfigPayload, extrasPayloads });
     } catch (err) {
       console.error("Failed to save configuration", err);
-      message.error("Failed to save configuration");
+      showToast("Failed to save configuration", "error");
     }
   };
 

@@ -8,13 +8,13 @@ import {
   Button,
   Typography,
   Space,
-  message,
   Table,
   Tabs,
   Modal,
   Divider,
 } from 'antd';
-import { UploadOutlined } from '@ant-design/icons';
+import { useToast } from '../hooks/useToast';
+import { CheckCircleOutlined, UploadOutlined } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
 import axios from 'axios';
 import DuplicateTool from './DuplicateTool';
@@ -28,6 +28,7 @@ const url = import.meta.env.VITE_API_BASE_URL;
 const url1 = import.meta.env.VITE_API_URL;
 
 const DataImport = () => {
+  const { showToast } = useToast();
   const [project, setProject] = useState(null);
   const [projects, setProjects] = useState([]);
   const [fileHeaders, setFileHeaders] = useState([]);
@@ -87,7 +88,7 @@ const DataImport = () => {
   const fetchConflictReport = async () => {
     setActiveTab("2");
     if (!project) {
-      message.warning("Please select a project first.");
+      showToast("Please select a project first.", "warning");
       return;
     }
     setLoading(true);
@@ -97,14 +98,14 @@ const DataImport = () => {
       });
       if (res.data?.duplicatesFound) {
         setConflicts(res.data);
-        message.success("Conflict report loaded");
+        showToast("Conflict report loaded", "success");
       } else {
         setConflicts([]);
-        message.info("No conflicts found");
+        showToast("No conflicts found", "info");
       }
     } catch (err) {
       console.error("Failed to fetch conflict report", err);
-      message.error("Failed to load conflict report");
+      showToast("Failed to load conflict report", "error");
     } finally {
       setLoading(false);
     }
@@ -114,7 +115,7 @@ const DataImport = () => {
     const selectedValue = conflictSelections[record.catchNo];
 
     if (!selectedValue) {
-      message.warning('Please select a value before saving.');
+      showToast('Please select a value before saving.', "warning");
       return;
     }
 
@@ -128,11 +129,11 @@ const DataImport = () => {
       await axios.put(`${url1}/NRDatas?ProjectId=${project}`, payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      message.success(`Resolved conflict for ${record.catchNo}`);
+      showToast(`Resolved conflict for ${record.catchNo}`, "success");
       fetchConflictReport();
     } catch (error) {
       console.error('Error saving resolution:', error);
-      message.error('Failed to resolve conflict');
+      showToast('Failed to resolve conflict', "error");
     }
   };
   // Update state when user selects a value from dropdown
@@ -264,7 +265,7 @@ const DataImport = () => {
     return expectedFields.some(field => fieldMappings[field.fieldId]);
   };
 
-   const handleUpload = () => {
+  const handleUpload = () => {
     const mappedData = getMappedData();
     const payload = {
       projectId: project,
@@ -276,30 +277,30 @@ const DataImport = () => {
     })
       .then(res => {
         console.log('Validation result:', res.data);
-        message.success("Validation successful");
+        showToast("Validation successful", "success");
         resetForm();
       })
       .catch(err => {
         console.error("Validation failed", err);
-        message.error("Validation failed");
+        showToast("Validation failed", "error");
         resetForm();
       });
   };
 
   const getMappedData = () => {
-  if (!excelData.length || !fileHeaders.length) return [];
+    if (!excelData.length || !fileHeaders.length) return [];
 
-  return excelData.map((row) => {
-    const mappedRow = {};
-    expectedFields.forEach((field) => {
-      const column = fieldMappings[field.fieldId];  // e.g. "Name" or "Age"
-      if (column) {
-        mappedRow[field.name] = row[column] ?? null;  // ✅ directly use header name
-      }
+    return excelData.map((row) => {
+      const mappedRow = {};
+      expectedFields.forEach((field) => {
+        const column = fieldMappings[field.fieldId];  // e.g. "Name" or "Age"
+        if (column) {
+          mappedRow[field.name] = row[column] ?? null;  // ✅ directly use header name
+        }
+      });
+      return mappedRow;
     });
-    return mappedRow;
-  });
-};
+  };
 
   // Render uploaded Excel preview
   const renderUploadedData = () => {
@@ -326,6 +327,27 @@ const DataImport = () => {
       ellipsis: true,
     }))
     : [];
+
+  const autoMapField = (expectedField, fileHeaders) => {
+  // Check if manually mapped
+  if (fieldMappings[expectedField.fieldId]) return null;
+
+  // Normalize both expected field name and file headers
+  const normalizedFieldName = expectedField.name.trim().toLowerCase();
+  
+  // Find the first match from the file headers
+  const match = fileHeaders.find(header => header.trim().toLowerCase() === normalizedFieldName);
+  if (match) {
+    // Automatically update the fieldMappings state if a match is found
+    setFieldMappings((prev) => ({
+      ...prev,
+      [expectedField.fieldId]: match,
+    }));
+  }
+  return match || null;
+};
+
+
 
   return (
     <div style={{ padding: 24 }}>
@@ -393,41 +415,70 @@ const DataImport = () => {
               </Tabs>
 
             ) : (
-             
-            <Card title="Field Mapping" style={{ marginTop: 24 }}>
-              {expectedFields.map((expectedField) => (
-                <Row key={expectedField.fieldId} gutter={16} align="middle" style={{ marginBottom: 12 }}>
-                  <Col span={8}><Text>{expectedField.name}</Text></Col>
-                  <Col span={16}>
-                    <Select
-                      style={{ width: '100%' }}
-                      placeholder="Select matching column from file"
-                      value={fieldMappings[expectedField.fieldId]}
-                      onChange={(value) => {
-                        setFieldMappings(prev => ({
-                          ...prev,
-                          [expectedField.fieldId]: value
-                        }));
-                      }}
-                    >
-                      {fileHeaders
-                        .filter(header =>
-                          !Object.values(fieldMappings).includes(header) || fieldMappings[expectedField.fieldId] === header
-                        )
-                        .map((header, index) => (
-                          <Option key={`${header}-${index}`} value={header}>{header}</Option>
-                        ))}
-                    </Select>
-                  </Col>
-                </Row>
-              ))}
+              //FieldMappingSection
+              <Card title="Field Mapping" style={{ marginTop: 24 }}>
+  <Row gutter={[16, 16]}>
+    {expectedFields.map((expectedField) => {
+      // Check for auto-mapping and update fieldMappings
+      const autoMappedValue = autoMapField(expectedField, fileHeaders);
 
-              {isAnyFieldMapped() && (
-                <Button type="primary" block onClick={handleUpload}>
-                  Upload and Validate
-                </Button>
+      return (
+        <Col key={expectedField.fieldId} xs={24} md={8}>
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <Text
+                style={{
+                  display: 'block',
+                  marginBottom: 8,
+                  marginRight: 8,
+                  color: fieldMappings[expectedField.fieldId] ? '#006400' : 'inherit', // Dark green for mapped fields
+                }}
+              >
+                {expectedField.name}
+              </Text>
+              {fieldMappings[expectedField.fieldId] && (
+                <CheckCircleOutlined style={{ color: '#006400', fontSize: '16px' }} />
               )}
-            </Card>
+            </div>
+            <Select
+              style={{
+                width: '100%',
+                borderColor: fieldMappings[expectedField.fieldId] ? '#006400' : undefined, // Dark green border
+                boxShadow: fieldMappings[expectedField.fieldId] ? '0 0 5px #006400' : undefined, // Optional: dark green shadow
+              }}
+              placeholder="Select matching column from file"
+              value={fieldMappings[expectedField.fieldId] || autoMappedValue} // Automatically select if a match is found
+              onChange={(value) => {
+                setFieldMappings((prev) => ({
+                  ...prev,
+                  [expectedField.fieldId]: value,
+                }));
+              }}
+            >
+              {fileHeaders
+                .filter(
+                  (header) =>
+                    !Object.values(fieldMappings).includes(header) ||
+                    fieldMappings[expectedField.fieldId] === header
+                )
+                .map((header, index) => (
+                  <Option key={`${header}-${index}`} value={header}>
+                    {header}
+                  </Option>
+                ))}
+            </Select>
+          </div>
+        </Col>
+      );
+    })}
+  </Row>
+  {isAnyFieldMapped() && (
+    <Button type="primary" block onClick={handleUpload}>
+      Upload and Validate
+    </Button>
+  )}
+</Card>
+
             )}
           </Card>
 
