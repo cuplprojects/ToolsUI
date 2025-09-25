@@ -2,11 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Progress, Badge, Button, Select, Card, Space, Typography, List, message, Tag } from "antd";
 import { useLocation } from "react-router-dom";
 import axios from "axios";
-import { title } from "framer-motion/client";
-
-const { Title, Text } = Typography;
 const { Option } = Select;
-
 const url = import.meta.env.VITE_API_BASE_URL;
 const url1 = import.meta.env.VITE_API_URL;
 const url3 = import.meta.env.VITE_API_FILE_URL;
@@ -84,8 +80,9 @@ const ProcessingPipeline = () => {
     const names = (enabledModuleNames || []).map(n => String(n).toLowerCase());
     const order = [];
     if (names.some(n => n.includes("duplicate"))) order.push({ key: "duplicate", title: "Duplicate Processing" });
-    if (names.some(n => n.includes("envelope"))) order.push({ key: "envelope", title: "Envelope Breaking" });
-    if(names.some(n=>n.includes("extras")))order.push({key:"extras",title:"Extras"})
+   if (names.some(n => n.includes("envelope"))) order.push({ key: "envelope", title: "Envelope Breaking" });
+   if (names.some(n => n.includes("extras"))) order.push({ key: "extras", title: "Extras" });
+   if (names.some(n => n.includes("boxbreaking"))) order.push({ key: "boxbreaking", title: "Box Breaking" });
     return order;
   };
 
@@ -147,11 +144,21 @@ const ProcessingPipeline = () => {
 
   const runExtras = async(projectId) =>{
     const res = await axios.post(
-      `${url1}/Duplicate/MergeData?ProjectId=${projectId}`,
+      `${url1}/ExtraEnvelopes?ProjectId=${projectId}`,
       null,
       { headers: { Authorization: `Bearer ${token}` } }
     );
      const msg = res?.data?.message || "Extras calculation completed";
+    message.success(msg);
+  }
+
+  const BoxBreaking = async(projectId) =>{
+    const res = await axios.post(
+      `${url1}/EnvelopeBreakages/Replication?ProjectId=${projectId}`,
+      null,
+      { headers: { Authorization: `Bearer ${token}` } } 
+    )
+       const msg = res?.data?.message || "Box breaking has been completed";
     message.success(msg);
   }
 
@@ -192,17 +199,23 @@ const ProcessingPipeline = () => {
         else if(step.key ==="extras"){
           await runExtras(project)
         }
+        else if(step.key === "boxbreaking"){
+          await BoxBreaking(project);
+        }
 
         const durationMs = Date.now() - (stepTimers.get(step.key) || Date.now());
         const mm = String(Math.floor(durationMs / 60000)).padStart(2, "0");
         const ss = String(Math.floor((durationMs % 60000) / 1000)).padStart(2, "0");
         updateStepStatus(step.key, {
-    status: "completed",
-    duration: `${mm}:${ss}`,
-    fileUrl:
-      step.key === "duplicate"
-        ? `${url3}/DuplicateTool_${project}.xlsx`
-        : `${url3}/EnvelopeBreaking_${project}.xlsx`,
+        status: "completed",
+       duration: `${mm}:${ss}`,
+         fileUrl: step.key === "duplicate" 
+      ? `${url3}/DuplicateTool_${project}.xlsx`
+      : step.key === "envelope"
+      ? `${url3}/EnvelopeBreaking_${project}.xlsx`
+      : step.key === "extras"
+      ? `${url3}/Extras_${project}.xlsx`
+      : `${url3}/BoxBreaking_${project}.xlsx`,
   });
       }
 
