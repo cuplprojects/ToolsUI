@@ -12,6 +12,7 @@ import {
 } from "antd";
 import { useLocation } from "react-router-dom";
 import axios from "axios";
+import { motion } from "framer-motion";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -137,48 +138,68 @@ const EnvelopeBreaking = () => {
         </Col>
 
         <Col xs={24} md={12}>
-          <Card title="Select Project">
-            <Space direction="vertical" style={{ width: "100%" }}>
-              <Select
-                placeholder="Choose a project..."
-                value={project}
-                onChange={handleProjectChange}
-                style={{ width: "100%" }}
-              >
-                <Option value="">Choose a Project...</Option>
-                {projects.map((p) => (
-                  <Option key={p.projectId} value={p.projectId}>
-                    {p.name}
-                  </Option>
-                ))}
-              </Select>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{
+              scale: 1.05,
+              boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
+            }}
+            transition={{ duration: 0.3 }}
+          >
+            <Card title="Select Project" style={{ boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
+              <Space direction="vertical" style={{ width: "100%" }}>
+                <Select
+                  placeholder="Choose a project..."
+                  value={project}
+                  onChange={handleProjectChange}
+                  style={{ width: "100%" }}
+                >
+                  <Option value="">Choose a Project...</Option>
+                  {projects.map((p) => (
+                    <Option key={p.projectId} value={p.projectId}>
+                      {p.name}
+                    </Option>
+                  ))}
+                </Select>
 
-              <Button
-                type="primary"
-                onClick={runEnvelopeBreaking}
-                loading={loading}
-                disabled={!project}
-              >
-                Run Envelope Breaking
-              </Button>
-            </Space>
-          </Card>
+                <Button
+                  type="primary"
+                  onClick={runEnvelopeBreaking}
+                  loading={loading}
+                  disabled={!project}
+                >
+                  Run Envelope Breaking
+                </Button>
+              </Space>
+            </Card>
+          </motion.div>
         </Col>
 
         <Col xs={24}>
-          <Card title="NR Data Grid">
-            {nrData.length > 0 ? (
-              <Table
-                dataSource={nrData}
-                columns={columns}
-                rowKey="id"
-                scroll={{ x: "max-content" }}
-                loading={tableLoading}
-              />
-            ) : (
-              <Text>No data to display. Select a project and run breaking.</Text>
-            )}
-          </Card>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{
+              scale: 1.05,
+              boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
+            }}
+            transition={{ duration: 0.3 }}
+          >
+            <Card title="NR Data Grid" style={{ boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
+              {nrData.length > 0 ? (
+                <Table
+                  dataSource={nrData}
+                  columns={columns}
+                  rowKey="id"
+                  scroll={{ x: "max-content" }}
+                  loading={tableLoading}
+                />
+              ) : (
+                <Text>No data to display. Select a project and run breaking.</Text>
+              )}
+            </Card>
+          </motion.div>
         </Col>
       </Row>
     </div>

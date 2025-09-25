@@ -23,7 +23,7 @@ import {
   NumberOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
-import { div, span } from "framer-motion/client";
+import { motion } from "framer-motion";
 import { useToast } from '../hooks/useToast';
 
 const { Title, Text } = Typography;
@@ -197,7 +197,7 @@ const ProjectConfiguration = () => {
 
 
 
-  const cardStyle = { marginBottom: 16 };
+  const cardStyle = { marginBottom: 16, border: '1px solid #d9d9d9', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' };
   const iconStyle = { color: PRIMARY_COLOR, marginRight: 6 };
   const selectedProjectName =
     projects.find((p) => p.projectId === selectedProject)?.name || "None";
@@ -211,446 +211,516 @@ const ProjectConfiguration = () => {
         {/* LEFT SIDE */}
         <Col xs={24} md={16}>
           {/* Project Selection */}
-          <Card
-            style={cardStyle}
-            title={
-              <div>
-                <span>
-                  <AppstoreOutlined style={iconStyle} /> Project Selection
-                </span>
-                <br />
-                <Text type="secondary">
-                  Select a project to configure its modules and settings
-                </Text>
-              </div>
-            }
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{
+              scale: 1.05,
+              boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
+            }}
+            transition={{ duration: 0.3 }}
           >
-            <Form.Item style={{ marginTop: 16 }} required>
-              <Select
-                placeholder="Select Project"
-                onChange={setSelectedProject}
-                value={selectedProject}
-              >
-                {projects.map((p) => (
-                  <Option key={p.projectId} value={p.projectId}>
-                    {p.name}
-                  </Option>
-                ))}
-              </Select>
-            </Form.Item>
-            {!selectedProject && (
-              <Text type="warning">
-                Please select a project to enable configuration options below.
-              </Text>
-            )}
-          </Card>
+            <Card
+              style={cardStyle}
+              title={
+                <div>
+                  <span>
+                    <AppstoreOutlined style={iconStyle} /> Project Selection
+                  </span>
+                  <br />
+                  <Text type="secondary">
+                    Select a project to configure its modules and settings
+                  </Text>
+                </div>
+              }
+            >
+              <Form.Item style={{ marginTop: 16 }} required>
+                <Select
+                  placeholder="Select Project"
+                  onChange={setSelectedProject}
+                  value={selectedProject}
+                >
+                  {projects.map((p) => (
+                    <Option key={p.projectId} value={p.projectId}>
+                      {p.name}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+              {!selectedProject && (
+                <Text type="warning">
+                  Please select a project to enable configuration options below.
+                </Text>
+              )}
+            </Card>
+          </motion.div>
 
           {/* Module Selection */}
-          <Card
-            style={cardStyle}
-            title={
-              <div>
-                <span>
-                  <ToolOutlined style={iconStyle} /> Module Selection
-                </span>
-                <br />
-                <Text type="secondary">
-                  Enable or disable modules based on project requirements
-                </Text>
-              </div>
-
-            }
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{
+              scale: 1.05,
+              boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
+            }}
+            transition={{ duration: 0.3 }}
           >
+            <Card
+              style={cardStyle}
+              title={
+                <div>
+                  <span>
+                    <ToolOutlined style={iconStyle} /> Module Selection
+                  </span>
+                  <br />
+                  <Text type="secondary">
+                    Enable or disable modules based on project requirements
+                  </Text>
+                </div>
 
-            <Checkbox.Group
-              style={{ display: "block", marginTop: 12 }}
-              value={enabledModules}
-              onChange={setEnabledModules}
+              }
             >
+
+              <Checkbox.Group
+                style={{ display: "block", marginTop: 12 }}
+                value={enabledModules}
+                onChange={setEnabledModules}
+              >
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr", // two columns
+                    columnGap: 12,
+                    rowGap: 8,
+                  }}
+                >
+                  {mergedModules.map((tool) => (
+                    <Checkbox key={tool.id} value={tool.name}>
+                      <b>{tool.name}</b>
+                      <br />
+                      <Text type="secondary" style={{ fontSize: 12 }}>
+                        {tool.description}
+                      </Text>
+                    </Checkbox>
+                  ))}
+                </div>
+              </Checkbox.Group>
+            </Card>
+          </motion.div>
+
+          {/* Envelope Setup */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{
+              scale: 1.05,
+              boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
+            }}
+            transition={{ duration: 0.3 }}
+          >
+            <Card
+              style={cardStyle}
+              title={
+                <div>
+                  <span>
+                    <MailOutlined style={iconStyle} /> Envelope Setup
+                  </span>
+                  <br />
+                  <Text type="secondary">
+                    Configure inner and outer envelope types and capacities
+                  </Text>
+                </div>
+
+              }
+              extra={
+                !isEnabled("Envelope Breaking") ? (
+                  <Tag icon={<LockOutlined style={{ color: PRIMARY_COLOR }} />}>Disabled</Tag>
+                ) : null
+              }
+            >
+
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "1fr 1fr", // two columns
+                  gridTemplateColumns: "1fr 1fr",
                   columnGap: 12,
                   rowGap: 8,
+                  marginTop: 12,
                 }}
               >
-                {mergedModules.map((tool) => (
-                  <Checkbox key={tool.id} value={tool.name}>
-                    <b>{tool.name}</b>
-                    <br />
-                    <Text type="secondary" style={{ fontSize: 12 }}>
-                      {tool.description}
-                    </Text>
-                  </Checkbox>
-                ))}
+                <Text strong>Inner Envelopes</Text>
+                <Text strong>Outer Envelopes</Text>
+
+                <Select
+                  mode="multiple"
+                  disabled={!isEnabled("Envelope Breaking")}
+                  value={innerEnvelopes}
+                  onChange={setInnerEnvelopes}
+                >
+                  {envelopeOptions.map((e) => (
+                    <Option key={e.envelopeId} value={e.envelopeName}>
+                      {e.envelopeName} (Cap: {e.capacity})
+                    </Option>
+                  ))}
+                </Select>
+
+                <Select
+                  mode="multiple"
+                  disabled={!isEnabled("Envelope Breaking")}
+                  value={outerEnvelopes}
+                  onChange={setOuterEnvelopes}
+                >
+                  {envelopeOptions.map((e) => (
+                    <Option key={e.envelopeId} value={e.envelopeName}>
+                      {e.envelopeName} (Cap: {e.capacity})
+                    </Option>
+                  ))}
+                </Select>
               </div>
-            </Checkbox.Group>
-          </Card>
-
-          {/* Envelope Setup */}
-          <Card
-            style={cardStyle}
-            title={
-              <div>
-                <span>
-                  <MailOutlined style={iconStyle} /> Envelope Setup
-                </span>
-                <br />
-                <Text type="secondary">
-                  Configure inner and outer envelope types and capacities
-                </Text>
-              </div>
-
-            }
-            extra={
-              !isEnabled("Envelope Breaking") ? (
-                <Tag icon={<LockOutlined style={{ color: PRIMARY_COLOR }} />}>Disabled</Tag>
-              ) : null
-            }
-          >
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                columnGap: 12,
-                rowGap: 8,
-                marginTop: 12,
-              }}
-            >
-              <Text strong>Inner Envelopes</Text>
-              <Text strong>Outer Envelopes</Text>
-
-              <Select
-                mode="multiple"
-                disabled={!isEnabled("Envelope Breaking")}
-                value={innerEnvelopes}
-                onChange={setInnerEnvelopes}
-              >
-                {envelopeOptions.map((e) => (
-                  <Option key={e.envelopeId} value={e.envelopeName}>
-                    {e.envelopeName} (Cap: {e.capacity})
-                  </Option>
-                ))}
-              </Select>
-
-              <Select
-                mode="multiple"
-                disabled={!isEnabled("Envelope Breaking")}
-                value={outerEnvelopes}
-                onChange={setOuterEnvelopes}
-              >
-                {envelopeOptions.map((e) => (
-                  <Option key={e.envelopeId} value={e.envelopeName}>
-                    {e.envelopeName} (Cap: {e.capacity})
-                  </Option>
-                ))}
-              </Select>
-            </div>
-          </Card>
+            </Card>
+          </motion.div>
 
           {/* Box Breaking */}
-          <Card
-            style={cardStyle}
-            title={
-              <div>
-                <span>
-                  <InboxOutlined style={iconStyle} /> Box Breaking Criteria
-                </span>
-                <br />
-                <Text type="secondary">
-                  Define conditions that trigger creation of new boxes
-                </Text>
-              </div>
-
-            }
-            extra={
-              !isEnabled("Box Breaking") ? (
-                <Tag icon={<LockOutlined style={{ color: PRIMARY_COLOR }} />}>Disabled</Tag>
-              ) : null
-            }
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{
+              scale: 1.05,
+              boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
+            }}
+            transition={{ duration: 0.3 }}
           >
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                columnGap: 12,
-                rowGap: 8,
-                marginTop: 12,
-              }}
-            >
-              {[
-                { key: "capacity", label: "Breaking by Capacity", always: true },
-                { key: "route", label: "Route Change" },
-                { key: "nodal", label: "Nodal Change" },
-                { key: "date", label: "Date Change" },
-                { key: "center", label: "Center Change" },
-              ].map((item) => (
-                <div key={item.key}>
-                  <Checkbox
-                    checked={item.always ? true : boxBreakingCriteria.includes(item.key)}
-                    disabled={item.always || !isEnabled("Box Breaking")}
-                    onChange={(e) => {
-                      const checked = e.target.checked;
-                      setBoxBreakingCriteria((prev) => {
-                        if (checked) {
-                          return Array.from(new Set([...(prev || []), item.key]));
-                        }
-                        return (prev || []).filter((k) => k !== item.key);
-                      });
-                    }}
-                  >
-                    {item.label} {item.always && (
-                      <Text type="secondary">(Always enabled)</Text>
-                    )}
-                  </Checkbox>
+            <Card
+              style={cardStyle}
+              title={
+                <div>
+                  <span>
+                    <InboxOutlined style={iconStyle} /> Box Breaking Criteria
+                  </span>
+                  <br />
+                  <Text type="secondary">
+                    Define conditions that trigger creation of new boxes
+                  </Text>
                 </div>
-              ))}
-            </div>
-          </Card>
+
+              }
+              extra={
+                !isEnabled("Box Breaking") ? (
+                  <Tag icon={<LockOutlined style={{ color: PRIMARY_COLOR }} />}>Disabled</Tag>
+                ) : null
+              }
+            >
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  columnGap: 12,
+                  rowGap: 8,
+                  marginTop: 12,
+                }}
+              >
+                {[
+                  { key: "capacity", label: "Breaking by Capacity", always: true },
+                  { key: "route", label: "Route Change" },
+                  { key: "nodal", label: "Nodal Change" },
+                  { key: "date", label: "Date Change" },
+                  { key: "center", label: "Center Change" },
+                ].map((item) => (
+                  <div key={item.key}>
+                    <Checkbox
+                      checked={item.always ? true : boxBreakingCriteria.includes(item.key)}
+                      disabled={item.always || !isEnabled("Box Breaking")}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setBoxBreakingCriteria((prev) => {
+                          if (checked) {
+                            return Array.from(new Set([...(prev || []), item.key]));
+                          }
+                          return (prev || []).filter((k) => k !== item.key);
+                        });
+                      }}
+                    >
+                      {item.label} {item.always && (
+                        <Text type="secondary">(Always enabled)</Text>
+                      )}
+                    </Checkbox>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </motion.div>
         </Col>
 
         {/* RIGHT SIDE */}
         <Col xs={24} md={8}>
           {/* Extra Processing */}
-          <Card
-            style={cardStyle}
-            title={
-              <div>
-                <span>
-                  <ToolOutlined style={iconStyle} /> Extra Processing Configuration
-                </span>
-                <br />
-                <Text type="secondary">Configure extra packet calculations</Text>
-              </div>
-            }
-            extra={
-              !isEnabled(EXTRA_ALIAS_NAME) ? (
-                <Tag icon={<LockOutlined style={{ color: PRIMARY_COLOR }} />}>
-                  Disabled
-                </Tag>
-              ) : null
-            }
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{
+              scale: 1.05,
+              boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
+            }}
+            transition={{ duration: 0.3 }}
           >
-            {extraTypes.map((et, index) => (
-              <div key={et.extraTypeId}>
-                {index > 0 && <Divider />}
-                <Title level={5}>{et.type} Extra</Title>
-
-                {/* 🔼 Envelope Dropdowns above */}
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr",
-                    gap: 12,
-                    marginTop: 12,
-                  }}
-                >
-                  <Col>
-                  
-                  </Col>
-                  <Select
-                    placeholder="Select Inner Envelopes"
-                    value={extraProcessingConfig[et.type]?.envelopeType?.inner || []}
-                    onChange={(vals) =>
-                      setExtraProcessingConfig((prev) => ({
-                        ...prev,
-                        [et.type]: {
-                          ...prev[et.type],
-                          envelopeType: {
-                            ...prev[et.type]?.envelopeType,
-                            inner: vals,
-                          },
-                        },
-                      }))
-                    }
-                  >
-                    {envelopeOptions.map((e) => (
-                      <Option key={e.envelopeId} value={e.envelopeName}>
-                        {e.envelopeName} (Capacity: {e.capacity})
-                      </Option>
-                    ))}
-                  </Select>
-
-                  <Select
-                    placeholder="Select Outer Envelopes"
-                    value={extraProcessingConfig[et.type]?.envelopeType?.outer || []}
-                    onChange={(vals) =>
-                      setExtraProcessingConfig((prev) => ({
-                        ...prev,
-                        [et.type]: {
-                          ...prev[et.type],
-                          envelopeType: {
-                            ...prev[et.type]?.envelopeType,
-                            outer: vals,
-                          },
-                        },
-                      }))
-                    }
-                  >
-                    {envelopeOptions.map((e) => (
-                      <Option key={e.envelopeId} value={e.envelopeName}>
-                        {e.envelopeName} (Capacity: {e.capacity})
-                      </Option>
-                    ))}
-                  </Select>
+            <Card
+              style={cardStyle}
+              title={
+                <div>
+                  <span>
+                    <ToolOutlined style={iconStyle} /> Extra Processing Configuration
+                  </span>
+                  <br />
+                  <Text type="secondary">Configure extra packet calculations</Text>
                 </div>
+              }
+              extra={
+                !isEnabled(EXTRA_ALIAS_NAME) ? (
+                  <Tag icon={<LockOutlined style={{ color: PRIMARY_COLOR }} />}>
+                    Disabled
+                  </Tag>
+                ) : null
+              }
+            >
+              {extraTypes.map((et, index) => (
+                <div key={et.extraTypeId}>
+                  {index > 0 && <Divider />}
+                  <Title level={5}>{et.type} Extra</Title>
 
-                {/* Radio group for mode */}
-                <Radio.Group
-                  value={extraTypeSelection[et.type] || "Fixed"}
-                  onChange={(e) =>
-                    setExtraTypeSelection((prev) => ({
-                      ...prev,
-                      [et.type]: e.target.value,
-                    }))
-                  }
-                  disabled={!isEnabled(EXTRA_ALIAS_NAME)}
-                  style={{ marginTop: 16 }}
-                >
-                  <Radio value="Fixed">Fixed Qty</Radio>
-                  <Radio value="Range">Range (%)</Radio>
-                  <Radio value="Percentage">Percentage</Radio>
-                </Radio.Group>
+                  {/* 🔼 Envelope Dropdowns above */}
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr",
+                      gap: 12,
+                      marginTop: 12,
+                    }}
+                  >
+                    <Col>
 
-                {/* Inputs depending on type selection */}
-                {extraTypeSelection[et.type] === "Fixed" && (
-                  <Form.Item style={{ marginTop: 12 }}>
-                    <InputNumber
-                      placeholder="Enter fixed quantity"
-                      min={0}
-                      value={extraProcessingConfig[et.type]?.fixedQty || 0}
-                      onChange={(v) =>
+                    </Col>
+                    <Select
+                      placeholder="Select Inner Envelopes"
+                      value={extraProcessingConfig[et.type]?.envelopeType?.inner || []}
+                      onChange={(vals) =>
                         setExtraProcessingConfig((prev) => ({
                           ...prev,
-                          [et.type]: { ...prev[et.type], fixedQty: v ?? 0 },
+                          [et.type]: {
+                            ...prev[et.type],
+                            envelopeType: {
+                              ...prev[et.type]?.envelopeType,
+                              inner: vals,
+                            },
+                          },
                         }))
                       }
-                      disabled={!isEnabled(EXTRA_ALIAS_NAME)}
-                    />
-                  </Form.Item>
-                )}
+                    >
+                      {envelopeOptions.map((e) => (
+                        <Option key={e.envelopeId} value={e.envelopeName}>
+                          {e.envelopeName} (Capacity: {e.capacity})
+                        </Option>
+                      ))}
+                    </Select>
 
-                {extraTypeSelection[et.type] === "Range" && (
-                  <Form.Item style={{ marginTop: 12 }}>
-                    <InputNumber
-                      placeholder="Enter range (%)"
-                      min={0}
-                      max={100}
-                      step={0.1}
-                      value={extraProcessingConfig[et.type]?.range || 0}
-                      onChange={(v) =>
+                    <Select
+                      placeholder="Select Outer Envelopes"
+                      value={extraProcessingConfig[et.type]?.envelopeType?.outer || []}
+                      onChange={(vals) =>
                         setExtraProcessingConfig((prev) => ({
                           ...prev,
-                          [et.type]: { ...prev[et.type], range: v ?? 0 },
+                          [et.type]: {
+                            ...prev[et.type],
+                            envelopeType: {
+                              ...prev[et.type]?.envelopeType,
+                              outer: vals,
+                            },
+                          },
                         }))
                       }
-                      disabled={!isEnabled(EXTRA_ALIAS_NAME)}
-                    />
-                  </Form.Item>
-                )}
+                    >
+                      {envelopeOptions.map((e) => (
+                        <Option key={e.envelopeId} value={e.envelopeName}>
+                          {e.envelopeName} (Capacity: {e.capacity})
+                        </Option>
+                      ))}
+                    </Select>
+                  </div>
 
-                {extraTypeSelection[et.type] === "Percentage" && (
-                  <Form.Item style={{ marginTop: 12 }}>
-                    <InputNumber
-                      placeholder="Enter percentage (%)"
-                      min={0}
-                      max={100}
-                      step={0.1}
-                      value={extraProcessingConfig[et.type]?.percentage || 0}
-                      onChange={(v) =>
-                        setExtraProcessingConfig((prev) => ({
-                          ...prev,
-                          [et.type]: { ...prev[et.type], percentage: v ?? 0 },
-                        }))
-                      }
-                      disabled={!isEnabled(EXTRA_ALIAS_NAME)}
-                    />
-                  </Form.Item>
-                )}
-              </div>
-            ))}
-          </Card>
+                  {/* Radio group for mode */}
+                  <Radio.Group
+                    value={extraTypeSelection[et.type] || "Fixed"}
+                    onChange={(e) =>
+                      setExtraTypeSelection((prev) => ({
+                        ...prev,
+                        [et.type]: e.target.value,
+                      }))
+                    }
+                    disabled={!isEnabled(EXTRA_ALIAS_NAME)}
+                    style={{ marginTop: 16 }}
+                  >
+                    <Radio value="Fixed">Fixed Qty</Radio>
+                    <Radio value="Range">Range (%)</Radio>
+                    <Radio value="Percentage">Percentage</Radio>
+                  </Radio.Group>
+
+                  {/* Inputs depending on type selection */}
+                  {extraTypeSelection[et.type] === "Fixed" && (
+                    <Form.Item style={{ marginTop: 12 }}>
+                      <InputNumber
+                        placeholder="Enter fixed quantity"
+                        min={0}
+                        value={extraProcessingConfig[et.type]?.fixedQty || 0}
+                        onChange={(v) =>
+                          setExtraProcessingConfig((prev) => ({
+                            ...prev,
+                            [et.type]: { ...prev[et.type], fixedQty: v ?? 0 },
+                          }))
+                        }
+                        disabled={!isEnabled(EXTRA_ALIAS_NAME)}
+                      />
+                    </Form.Item>
+                  )}
+
+                  {extraTypeSelection[et.type] === "Range" && (
+                    <Form.Item style={{ marginTop: 12 }}>
+                      <InputNumber
+                        placeholder="Enter range (%)"
+                        min={0}
+                        max={100}
+                        step={0.1}
+                        value={extraProcessingConfig[et.type]?.range || 0}
+                        onChange={(v) =>
+                          setExtraProcessingConfig((prev) => ({
+                            ...prev,
+                            [et.type]: { ...prev[et.type], range: v ?? 0 },
+                          }))
+                        }
+                        disabled={!isEnabled(EXTRA_ALIAS_NAME)}
+                      />
+                    </Form.Item>
+                  )}
+
+                  {extraTypeSelection[et.type] === "Percentage" && (
+                    <Form.Item style={{ marginTop: 12 }}>
+                      <InputNumber
+                        placeholder="Enter percentage (%)"
+                        min={0}
+                        max={100}
+                        step={0.1}
+                        value={extraProcessingConfig[et.type]?.percentage || 0}
+                        onChange={(v) =>
+                          setExtraProcessingConfig((prev) => ({
+                            ...prev,
+                            [et.type]: { ...prev[et.type], percentage: v ?? 0 },
+                          }))
+                        }
+                        disabled={!isEnabled(EXTRA_ALIAS_NAME)}
+                      />
+                    </Form.Item>
+                  )}
+                </div>
+              ))}
+            </Card>
+          </motion.div>
 
 
 
 
           {/* Config Summary */}
-          <Card
-            style={cardStyle}
-            title={
-              <div>
-                <span>
-                  <ToolOutlined style={iconStyle} />Configuration Summary
-                </span>
-                <br />
-                <Text type="secondary">Please review the summary before saving configurations</Text>
-              </div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{
+              scale: 1.05,
+              boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
+            }}
+            transition={{ duration: 0.3 }}
+          >
+            <Card
+              style={cardStyle}
+              title={
+                <div>
+                  <span>
+                    <ToolOutlined style={iconStyle} />Configuration Summary
+                  </span>
+                  <br />
+                  <Text type="secondary">Please review the summary before saving configurations</Text>
+                </div>
 
-            }>
-            <List
-              size="small"
-              dataSource={[
-                {
-                  label: "Selected Project",
-                  value: selectedProjectName,
-                  strong: true,
-                },
-                {
-                  label: "Enabled Modules",
-                  value: enabledModules.length,
-                  strong: true,
-                },
-                {
-                  label: "Envelope Setup",
-                  value: envelopeConfigured ? "Configured" : "Not Configured",
-                  danger: !envelopeConfigured,
-                },
-                {
-                  label: "Box Breaking",
-                  value: boxConfigured ? "Configured" : "Not Configured",
-                  danger: !boxConfigured,
-                },
-                {
-                  label: "Extra Processing",
-                  value: extraConfigured ? "Configured" : "Not Configured",
-                  danger: !extraConfigured,
-                },
-              ]}
-              renderItem={(item) => (
-                <List.Item>
-                  <Row style={{ width: "100%" }}>
-                    <Col span={12}>
-                      <Text>{item.label}</Text>
-                    </Col>
-                    <Col span={12} style={{ textAlign: "right" }}>
-                      {item.danger ? (
-                        <Text type="danger">{item.value}</Text>
-                      ) : item.strong ? (
-                        <Text strong>{item.value}</Text>
-                      ) : (
-                        <Text>{item.value}</Text>
-                      )}
-                    </Col>
-                  </Row>
-                </List.Item>
-              )}
-            />
-          </Card>
+              }>
+              <List
+                size="small"
+                dataSource={[
+                  {
+                    label: "Selected Project",
+                    value: selectedProjectName,
+                    strong: true,
+                  },
+                  {
+                    label: "Enabled Modules",
+                    value: enabledModules.length,
+                    strong: true,
+                  },
+                  {
+                    label: "Envelope Setup",
+                    value: envelopeConfigured ? "Configured" : "Not Configured",
+                    danger: !envelopeConfigured,
+                  },
+                  {
+                    label: "Box Breaking",
+                    value: boxConfigured ? "Configured" : "Not Configured",
+                    danger: !boxConfigured,
+                  },
+                  {
+                    label: "Extra Processing",
+                    value: extraConfigured ? "Configured" : "Not Configured",
+                    danger: !extraConfigured,
+                  },
+                ]}
+                renderItem={(item) => (
+                  <List.Item>
+                    <Row style={{ width: "100%" }}>
+                      <Col span={12}>
+                        <Text>{item.label}</Text>
+                      </Col>
+                      <Col span={12} style={{ textAlign: "right" }}>
+                        {item.danger ? (
+                          <Text type="danger">{item.value}</Text>
+                        ) : item.strong ? (
+                          <Text strong>{item.value}</Text>
+                        ) : (
+                          <Text>{item.value}</Text>
+                        )}
+                      </Col>
+                    </Row>
+                  </List.Item>
+                )}
+              />
+            </Card>
+          </motion.div>
 
 
-          <Card>
-            <Button
-              type="primary"
-              block
-              onClick={handleSave}
-              disabled={!selectedProject}
-            >
-              Save Configuration
-            </Button>
-          </Card>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{
+              scale: 1.05,
+              boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
+            }}
+            transition={{ duration: 0.3 }}
+          >
+            <Card style={cardStyle}>
+              <Button
+                type="primary"
+                block
+                onClick={handleSave}
+                disabled={!selectedProject}
+              >
+                Save Configuration
+              </Button>
+            </Card>
+          </motion.div>
         </Col>
       </Row>
     </div>

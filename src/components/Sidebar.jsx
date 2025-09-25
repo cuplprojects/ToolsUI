@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { motion } from "framer-motion";
 import {
   FiHome,
   FiUpload,
@@ -160,9 +161,19 @@ export default function Sidebar({ collapsed }) {
       {/* Logo / Heading */}
       <div className="mb-6">
         {!collapsed && (
-          <h2 className="text-gray-800 text-xl font-bold tracking-wide">
-            ERP Menu
-          </h2>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{
+              scale: 1.05,
+              boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
+            }}
+            transition={{ duration: 0.3 }}
+          >
+            <h2 className="text-gray-800 text-xl font-bold tracking-wide">
+              ERP Menu
+            </h2>
+          </motion.div>
         )}
       </div>
 
