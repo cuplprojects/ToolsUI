@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Row, Col, Card, Select, Button, Typography, Radio, Checkbox, InputNumber, Space, message, Statistic } from 'antd';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -243,52 +244,62 @@ const DuplicateTool = ({ project }) => {
               </Select>
             </div>
 
-            <Card title="Processing Options" bordered={false}>
-              <Row gutter={[16, 16]}>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              whileHover={{
+                scale: 1.05,
+                boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
+              }}
+              transition={{ duration: 0.3 }}
+            >
+              <Card title="Processing Options" bordered={true} style={{ boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
+                <Row gutter={[16, 16]}>
 
-                <Title level={5}>Duplicate Handling Strategy</Title>
-                <Radio.Group
-                  onChange={(e) => setStrategy(e.target.value)}
-                  value={strategy}
-                  style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
-                >
-                  <Radio value="consolidate">Sum quantities</Radio>
-                  <Radio value="first">Keep first occurrence</Radio>
-                  <Radio value="manual">Manual review required</Radio>
-                </Radio.Group>
-
-              </Row>
-              <Row>
-
-                <div className='mt-2'><Title level={5}>Enhancement Options</Title>
-                </div>
-                <Checkbox checked={enhance} onChange={(e) => setEnhance(e.target.checked)}>
-                  Enable Enhancement
-                </Checkbox>
-
-                {enhance && (
+                  <Title level={5}>Duplicate Handling Strategy</Title>
                   <Radio.Group
-                    value={enhanceType}
-                    onChange={(e) => setEnhanceType(e.target.value)}
-                    style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}
+                    onChange={(e) => setStrategy(e.target.value)}
+                    value={strategy}
+                    style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
                   >
-                    <Radio value="percent">Apply enhancement percentage</Radio>
-                    {enhance && enhanceType === 'percent' && (
-                      <InputNumber
-                        value={percent}
-                        onChange={setPercent}
-                        style={{ marginTop: 8, width: '100%' }}
-                        addonAfter="%"
-                      />
-                    )}
-                    <Radio value="round">Round up to envelope size</Radio>
+                    <Radio value="consolidate">Sum quantities</Radio>
+                    <Radio value="first">Keep first occurrence</Radio>
+                    <Radio value="manual">Manual review required</Radio>
                   </Radio.Group>
-                )}
+
+                </Row>
+                <Row>
+
+                  <div className='mt-2'><Title level={5}>Enhancement Options</Title>
+                  </div>
+                  <Checkbox checked={enhance} onChange={(e) => setEnhance(e.target.checked)}>
+                    Enable Enhancement
+                  </Checkbox>
+
+                  {enhance && (
+                    <Radio.Group
+                      value={enhanceType}
+                      onChange={(e) => setEnhanceType(e.target.value)}
+                      style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}
+                    >
+                      <Radio value="percent">Apply enhancement percentage</Radio>
+                      {enhance && enhanceType === 'percent' && (
+                        <InputNumber
+                          value={percent}
+                          onChange={setPercent}
+                          style={{ marginTop: 8, width: '100%' }}
+                          addonAfter="%"
+                        />
+                      )}
+                      <Radio value="round">Round up to envelope size</Radio>
+                    </Radio.Group>
+                  )}
 
 
 
-              </Row>
-            </Card>
+                </Row>
+              </Card>
+            </motion.div>
 
             <Space>
               {/* <Button

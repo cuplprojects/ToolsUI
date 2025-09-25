@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Progress, Badge, Button, Select, Card, Space, Typography, List, message, Tag } from "antd";
 import { useLocation } from "react-router-dom";
 import axios from "axios";
-import { title } from "framer-motion/client";
+import { motion } from "framer-motion";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -264,19 +264,29 @@ const ProcessingPipeline = () => {
         </div>
       </div>
 
-      <Card size="small" title="Enabled Modules for Selected Project" style={{ marginBottom: 12 }}>
-        {loadingModules ? (
-          <Text type="secondary">Loading modules…</Text>
-        ) : enabledModuleNames?.length ? (
-          <Space direction="vertical">
-            {enabledModuleNames.map((name) => (
-              <Tag key={name}>{name}</Tag>
-            ))}
-          </Space>
-        ) : (
-          <Text type="secondary">No modules enabled or not loaded.</Text>
-        )}
-      </Card>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        whileHover={{
+          scale: 1.05,
+          boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
+        }}
+        transition={{ duration: 0.3 }}
+      >
+        <Card size="small" title="Enabled Modules for Selected Project" style={{ marginBottom: 12, border: '1px solid #d9d9d9', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
+          {loadingModules ? (
+            <Text type="secondary">Loading modules…</Text>
+          ) : enabledModuleNames?.length ? (
+            <Space direction="vertical">
+              {enabledModuleNames.map((name) => (
+                <Tag key={name}>{name}</Tag>
+              ))}
+            </Space>
+          ) : (
+            <Text type="secondary">No modules enabled or not loaded.</Text>
+          )}
+        </Card>
+      </motion.div>
 
       <ul className="space-y-4">
         {steps.map((step, index) => (

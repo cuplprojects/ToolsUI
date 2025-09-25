@@ -17,6 +17,7 @@ import { useToast } from '../hooks/useToast';
 import { CheckCircleOutlined, UploadOutlined } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
 import axios from 'axios';
+import { motion } from 'framer-motion';
 import DuplicateTool from './DuplicateTool';
 import { div } from 'framer-motion/client';
 
@@ -339,23 +340,23 @@ const DataImport = () => {
     : [];
 
   const autoMapField = (expectedField, fileHeaders) => {
-  // Check if manually mapped
-  if (fieldMappings[expectedField.fieldId]) return null;
+    // Check if manually mapped
+    if (fieldMappings[expectedField.fieldId]) return null;
 
-  // Normalize both expected field name and file headers
-  const normalizedFieldName = expectedField.name.trim().toLowerCase();
-  
-  // Find the first match from the file headers
-  const match = fileHeaders.find(header => header.trim().toLowerCase() === normalizedFieldName);
-  if (match) {
-    // Automatically update the fieldMappings state if a match is found
-    setFieldMappings((prev) => ({
-      ...prev,
-      [expectedField.fieldId]: match,
-    }));
-  }
-  return match || null;
-};
+    // Normalize both expected field name and file headers
+    const normalizedFieldName = expectedField.name.trim().toLowerCase();
+
+    // Find the first match from the file headers
+    const match = fileHeaders.find(header => header.trim().toLowerCase() === normalizedFieldName);
+    if (match) {
+      // Automatically update the fieldMappings state if a match is found
+      setFieldMappings((prev) => ({
+        ...prev,
+        [expectedField.fieldId]: match,
+      }));
+    }
+    return match || null;
+  };
 
 
 
@@ -373,139 +374,183 @@ const DataImport = () => {
       <Row gutter={[24, 24]}>
         {/* Left Section */}
         <Col xs={24} md={16}>
-          <Card title="Data Import" bordered={false}>
-            <Row gutter={[16, 16]}>
-              <Col xs={24} md={12}>
-                <Text strong>Select Project</Text>
-                <Select
-                  style={{ width: '100%', marginTop: 4 }}
-                  placeholder="Choose a project..."
-                  onChange={setProject}
-                  value={project}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{
+              scale: 1.05,
+              boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
+            }}
+            transition={{ duration: 0.3 }}
+          >
+            <Card title="Data Import" bordered={true} style={{ boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
+              <Row gutter={[16, 16]}>
+                <Col xs={24} md={12}>
+                  <Text strong>Select Project</Text>
+                  <Select
+                    style={{ width: '100%', marginTop: 4 }}
+                    placeholder="Choose a project..."
+                    onChange={setProject}
+                    value={project}
+                  >
+                    <Option value="">Choose a Project...</Option>
+                    {projects.map(p => (
+                      <Option key={p.projectId} value={p.projectId}>{p.name}</Option>
+                    ))}
+                  </Select>
+                </Col>
+                <Col xs={24} md={12}>
+                  <Upload.Dragger
+                    name="file"
+                    accept=".xls,.xlsx,.csv"
+                    beforeUpload={beforeUpload}
+                    maxCount={1}
+                  >
+                    <p className="ant-upload-drag-icon">📤</p>
+                    <p className="ant-upload-text">Upload Excel or CSV file</p>
+                    <Button icon={<UploadOutlined />}>Choose File</Button>
+                  </Upload.Dragger>
+                </Col>
+              </Row>
+
+              <Divider />
+              {existingData.length > 0 ? (
+                <Tabs activeKey={activeTab} onChange={(key) => setActiveTab(key)} style={{ marginTop: 16 }}>
+                  <TabPane tab="Uploaded Data" key="1">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      whileHover={{
+                        scale: 1.05,
+                        boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
+                      }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <Card style={{ border: '1px solid #d9d9d9', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
+
+                        <Table
+                          dataSource={existingData}
+                          columns={columns}
+                          pagination={{ pageSize: 10 }}
+                          rowKey="id"
+                          scroll={{ x: "max-content" }}
+                          loading={loading}
+                        />
+
+                      </Card>
+                    </motion.div>
+                  </TabPane>
+                  <TabPane tab="Conflict Report" key="2">
+                    {renderConflicts()}
+                  </TabPane>
+                </Tabs>
+
+              ) : (
+                //FieldMappingSection
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  whileHover={{
+                    scale: 1.05,
+                    boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
+                  }}
+                  transition={{ duration: 0.3 }}
                 >
-                  <Option value="">Choose a Project...</Option>
-                  {projects.map(p => (
-                    <Option key={p.projectId} value={p.projectId}>{p.name}</Option>
-                  ))}
-                </Select>
-              </Col>
-              <Col xs={24} md={12}>
-                <Upload.Dragger
-                  name="file"
-                  accept=".xls,.xlsx,.csv"
-                  beforeUpload={beforeUpload}
-                  maxCount={1}
-                >
-                  <p className="ant-upload-drag-icon">📤</p>
-                  <p className="ant-upload-text">Upload Excel or CSV file</p>
-                  <Button icon={<UploadOutlined />}>Choose File</Button>
-                </Upload.Dragger>
-              </Col>
-            </Row>
+                  <Card title="Field Mapping" style={{ marginTop: 24, border: '1px solid #d9d9d9', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
+                    <Row gutter={[16, 16]}>
+                      {expectedFields.map((expectedField) => {
+                        // Check for auto-mapping and update fieldMappings
+                        const autoMappedValue = autoMapField(expectedField, fileHeaders);
 
-            <Divider />
-            {existingData.length > 0 ? (
-              <Tabs activeKey={activeTab} onChange={(key) => setActiveTab(key)} style={{ marginTop: 16 }}>
-                <TabPane tab="Uploaded Data" key="1">
-                  <Card>
-
-                    <Table
-                      dataSource={existingData}
-                      columns={columns}
-                      pagination={{ pageSize: 10 }}
-                      rowKey="id"
-                      scroll={{ x: "max-content" }}
-                      loading={loading}
-                    />
-
-                  </Card> </TabPane>
-                <TabPane tab="Conflict Report" key="2">
-                  {renderConflicts()}
-                </TabPane>
-              </Tabs>
-
-            ) : (
-              //FieldMappingSection
-              <Card title="Field Mapping" style={{ marginTop: 24 }}>
-  <Row gutter={[16, 16]}>
-    {expectedFields.map((expectedField) => {
-      // Check for auto-mapping and update fieldMappings
-      const autoMappedValue = autoMapField(expectedField, fileHeaders);
-
-      return (
-        <Col key={expectedField.fieldId} xs={24} md={8}>
-          <div style={{ marginBottom: 12 }}>
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              <Text
-                style={{
-                  display: 'block',
-                  marginBottom: 8,
-                  marginRight: 8,
-                  color: fieldMappings[expectedField.fieldId] ? '#006400' : 'inherit', // Dark green for mapped fields
-                }}
-              >
-                {expectedField.name}
-              </Text>
-              {fieldMappings[expectedField.fieldId] && (
-                <CheckCircleOutlined style={{ color: '#006400', fontSize: '16px' }} />
+                        return (
+                          <Col key={expectedField.fieldId} xs={24} md={8}>
+                            <div style={{ marginBottom: 12 }}>
+                              <div style={{ display: 'flex', alignItems: 'center' }}>
+                                <Text
+                                  style={{
+                                    display: 'block',
+                                    marginBottom: 8,
+                                    marginRight: 8,
+                                    color: fieldMappings[expectedField.fieldId] ? '#006400' : 'inherit', // Dark green for mapped fields
+                                  }}
+                                >
+                                  {expectedField.name}
+                                </Text>
+                                {fieldMappings[expectedField.fieldId] && (
+                                  <CheckCircleOutlined style={{ color: '#006400', fontSize: '16px' }} />
+                                )}
+                              </div>
+                              <Select
+                                style={{
+                                  width: '100%',
+                                  borderColor: fieldMappings[expectedField.fieldId] ? '#006400' : undefined, // Dark green border
+                                  boxShadow: fieldMappings[expectedField.fieldId] ? '0 0 5px #006400' : undefined, // Optional: dark green shadow
+                                }}
+                                placeholder="Select matching column from file"
+                                value={fieldMappings[expectedField.fieldId] || autoMappedValue} // Automatically select if a match is found
+                                onChange={(value) => {
+                                  setFieldMappings((prev) => ({
+                                    ...prev,
+                                    [expectedField.fieldId]: value,
+                                  }));
+                                }}
+                              >
+                                {fileHeaders
+                                  .filter(
+                                    (header) =>
+                                      !Object.values(fieldMappings).includes(header) ||
+                                      fieldMappings[expectedField.fieldId] === header
+                                  )
+                                  .map((header, index) => (
+                                    <Option key={`${header}-${index}`} value={header}>
+                                      {header}
+                                    </Option>
+                                  ))}
+                              </Select>
+                            </div>
+                          </Col>
+                        );
+                      })}
+                    </Row>
+                    {isAnyFieldMapped() && (
+                      <Button type="primary" block onClick={handleUpload}>
+                        Upload and Validate
+                      </Button>
+                    )}
+                  </Card>
+                </motion.div>
               )}
-            </div>
-            <Select
-              style={{
-                width: '100%',
-                borderColor: fieldMappings[expectedField.fieldId] ? '#006400' : undefined, // Dark green border
-                boxShadow: fieldMappings[expectedField.fieldId] ? '0 0 5px #006400' : undefined, // Optional: dark green shadow
-              }}
-              placeholder="Select matching column from file"
-              value={fieldMappings[expectedField.fieldId] || autoMappedValue} // Automatically select if a match is found
-              onChange={(value) => {
-                setFieldMappings((prev) => ({
-                  ...prev,
-                  [expectedField.fieldId]: value,
-                }));
-              }}
-            >
-              {fileHeaders
-                .filter(
-                  (header) =>
-                    !Object.values(fieldMappings).includes(header) ||
-                    fieldMappings[expectedField.fieldId] === header
-                )
-                .map((header, index) => (
-                  <Option key={`${header}-${index}`} value={header}>
-                    {header}
-                  </Option>
-                ))}
-            </Select>
-          </div>
-        </Col>
-      );
-    })}
-  </Row>
-  {isAnyFieldMapped() && (
-    <Button type="primary" block onClick={handleUpload}>
-      Upload and Validate
-    </Button>
-  )}
-</Card>
-
-            )}
-          </Card>
-
+            </Card> </motion.div>
         </Col>
 
         {/* Right Section */}
         <Col xs={24} md={8}>
-          <Card title="Actions" bordered={false} style={{ marginTop: '10px' }}>
-            <Button block onClick={fetchConflictReport}>
-              Load Conflict
-            </Button>
-          </Card>
-          <Card title="Duplicate Tool" bordered={false} style={{ marginTop: '10px' }}>
-            <DuplicateTool project={project} />
-          </Card>
-
-
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{
+              scale: 1.05,
+              boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
+            }}
+            transition={{ duration: 0.3 }}
+          >
+            <Card title="Actions" bordered={true} style={{ marginTop: '10px', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
+              <Button block onClick={fetchConflictReport}>
+                Load Conflict
+              </Button>
+            </Card></motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{
+              scale: 1.05,
+              boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
+            }}
+            transition={{ duration: 0.3 }}
+          >
+            <Card title="Duplicate Tool" bordered={true} style={{ marginTop: '10px', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
+              <DuplicateTool project={project} />
+            </Card></motion.div>
         </Col>
       </Row>
     </div >
