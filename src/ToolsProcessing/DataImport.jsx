@@ -19,7 +19,6 @@ import * as XLSX from 'xlsx';
 import axios from 'axios';
 import { motion } from 'framer-motion';
 import DuplicateTool from './DuplicateTool';
-import { div } from 'framer-motion/client';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -58,9 +57,7 @@ const DataImport = () => {
   // Fetch fields + existing data when project changes
   useEffect(() => {
     if (!project) return;
-
     fetchExistingData(project);
-
     axios.get(`${url1}/Fields`, {
       headers: { Authorization: `Bearer ${token}` },
     })
@@ -290,6 +287,7 @@ const DataImport = () => {
         console.log('Validation result:', res.data);
         showToast("Validation successful", "success");
         resetForm();
+        fetchExistingData();
       })
       .catch(err => {
         console.error("Validation failed", err);
@@ -524,34 +522,36 @@ const DataImport = () => {
         </Col>
 
         {/* Right Section */}
-        <Col xs={24} md={8}>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            whileHover={{
-              scale: 1.05,
-              boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
-            }}
-            transition={{ duration: 0.3 }}
-          >
-            <Card title="Actions" bordered={true} style={{ marginTop: '10px', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
-              <Button block onClick={fetchConflictReport}>
-                Load Conflict
-              </Button>
-            </Card></motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            whileHover={{
-              scale: 1.05,
-              boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
-            }}
-            transition={{ duration: 0.3 }}
-          >
-            <Card title="Duplicate Tool" bordered={true} style={{ marginTop: '10px', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
-              <DuplicateTool project={project} />
-            </Card></motion.div>
-        </Col>
+        {existingData.length > 0 && (
+          <Col xs={24} md={8}>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              whileHover={{
+                scale: 1.05,
+                boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
+              }}
+              transition={{ duration: 0.3 }}
+            >
+              <Card title="Actions" bordered={true} style={{ marginTop: '10px', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
+                <Button block onClick={fetchConflictReport}>
+                  Load Conflict
+                </Button>
+              </Card></motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              whileHover={{
+                scale: 1.05,
+                boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
+              }}
+              transition={{ duration: 0.3 }}
+            >
+              <Card title="Duplicate Tool" bordered={true} style={{ marginTop: '10px', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
+                <DuplicateTool project={project} />
+              </Card></motion.div>
+          </Col>
+        )}
       </Row>
     </div >
   );

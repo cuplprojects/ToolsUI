@@ -50,6 +50,9 @@ const ProjectConfiguration = () => {
   const [extraTypes, setExtraTypes] = useState([]);
   const [extraTypeSelection, setExtraTypeSelection] = useState({});
   const [extraProcessingConfig, setExtraProcessingConfig] = useState({});
+  const [fields, setFields] = useState([]);
+  const [selectedEnvelopeFields, setSelectedEnvelopeFields] = useState([]);
+  const [selectedBoxFields, setSelectedBoxFields] = useState([]);
 
   const token = localStorage.getItem("token");
 
@@ -123,6 +126,14 @@ const ProjectConfiguration = () => {
       .catch((err) => console.error("Failed to fetch envelope types", err));
   }, []);
 
+  // Fetch Fields
+  useEffect(() => {
+    axios
+      .get(`${url1}/Fields`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((res) => setFields(res.data))
+      .catch((err) => console.error("Failed to fetch fields", err));
+  }, []);
+
   const isEnabled = (toolName) => enabledModules.includes(toolName);
 
   const handleSave = async () => {
@@ -131,7 +142,6 @@ const ProjectConfiguration = () => {
     try {
       // 1️⃣ Save ProjectConfigs
       const projectConfigPayload = {
-        id: 0,
         projectId: selectedProject,
         modules: enabledModules.map(
           (m) => toolModules.find((tm) => tm.name === m)?.id
@@ -140,7 +150,8 @@ const ProjectConfiguration = () => {
           Inner: innerEnvelopes.join(","),
           Outer: outerEnvelopes.join(","),
         }),
-        boxBreaking: [0],
+        BoxBreakingCriteria: selectedBoxFields,
+        EnvelopeMakingCriteria:selectedEnvelopeFields,
       };
 
       await axios.post(`${url1}/ProjectConfigs`, projectConfigPayload, {
@@ -156,10 +167,10 @@ const ProjectConfiguration = () => {
           const config = extraProcessingConfig[typeName] || {};
 
           // normalize envelope
-    const normalizedEnvelope = {
-      Inner: String(config.envelopeType?.inner || ""),
-      Outer: String(config.envelopeType?.outer || ""),
-    };
+          const normalizedEnvelope = {
+            Inner: String(config.envelopeType?.inner || ""),
+            Outer: String(config.envelopeType?.outer || ""),
+          };
           return {
             id: 0,
             projectId: selectedProject,
@@ -187,14 +198,26 @@ const ProjectConfiguration = () => {
       }
 
       showToast("Configuration saved successfully!", "success");
+      resetForm();
       console.log("Saved:", { projectConfigPayload, extrasPayloads });
     } catch (err) {
       console.error("Failed to save configuration", err);
-      showToast("Failed to save configuration", "error");
+      showToast("Failed to save configuration", err);
+      resetForm();
     }
   };
 
+const resetForm = () => {
+  setSelectedProject(null);
+  setEnabledModules([]);  // Reset modules to empty array
+  setInnerEnvelopes([]);   // Reset inner envelopes
+  setOuterEnvelopes([]);   // Reset outer envelopes
+  setSelectedBoxFields([]); // Reset box fields
+  setSelectedEnvelopeFields([]); // Reset envelope fields
+  setExtraTypeSelection({}); // Reset extra type selection
 
+  // Add any other state variables you might have
+};
 
 
   const cardStyle = { marginBottom: 16, border: '1px solid #d9d9d9', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' };
@@ -379,7 +402,71 @@ const ProjectConfiguration = () => {
               </div>
             </Card>
           </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{
+              scale: 1.05,
+              boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
+            }}
+            transition={{ duration: 0.3 }}
+          >
+            <Card
+              style={cardStyle}
+              title={
+                <div>
+                  <span>
+                    <InboxOutlined style={iconStyle} /> Envelope Making Criteria
+                  </span>
+                  <br />
+                  <Text type="secondary">
+                    Define conditions that numbers Envelope
+                  </Text>
+                </div>
 
+              }
+              extra={
+                !isEnabled("Envelope Breaking") ? (
+                  <Tag icon={<LockOutlined style={{ color: PRIMARY_COLOR }} />}>Disabled</Tag>
+                ) : null
+              }
+            >
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  columnGap: 12,
+                  rowGap: 8,
+                  marginTop: 12,
+                }}
+              >
+                <div>
+                  <Text strong>Select fields to concatenate</Text>
+                  <Select
+                    mode="multiple"
+                    disabled={!isEnabled("Envelope Breaking")}
+                    allowClear
+                    style={{ width: '100%', marginTop: 4 }}
+                    placeholder="Select one or more fields"
+                    value={selectedEnvelopeFields}
+                    onChange={setSelectedEnvelopeFields}
+                  >
+                    {fields.map((f) => (
+                      <Option key={f.fieldId} value={f.fieldId}>
+                        {f.name}
+                      </Option>
+                    ))}
+                    extra={
+                      !isEnabled("Envelope Breaking") ? (
+                        <Tag icon={<LockOutlined style={{ color: PRIMARY_COLOR }} />}>Disabled</Tag>
+                      ) : null
+                    }
+                  </Select>
+                </div>
+              </div>
+            </Card>
+          </motion.div>
           {/* Box Breaking */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -402,7 +489,6 @@ const ProjectConfiguration = () => {
                     Define conditions that trigger creation of new boxes
                   </Text>
                 </div>
-
               }
               extra={
                 !isEnabled("Box Breaking") ? (
@@ -410,7 +496,6 @@ const ProjectConfiguration = () => {
                 ) : null
               }
             >
-
               <div
                 style={{
                   display: "grid",
@@ -421,34 +506,60 @@ const ProjectConfiguration = () => {
                 }}
               >
                 {[
-                  { key: "capacity", label: "Breaking by Capacity", always: true },
-                  { key: "route", label: "Route Change" },
-                  { key: "nodal", label: "Nodal Change" },
-                  { key: "date", label: "Date Change" },
-                  { key: "center", label: "Center Change" },
+                  {
+                    key: "capacity",
+                    label: "Breaking by Capacity",
+                    always: true
+                  },
+                  {
+                    key: "selectFields",
+                    label: (
+                      <>
+                        <Text strong>Select fields to concatenate</Text>
+                        <Select
+                          mode="multiple"
+                          disabled={!isEnabled("Box Breaking")}
+                          allowClear
+                          style={{ width: "100%", marginTop: 4 }}
+                          placeholder="Select one or more fields"
+                          value={selectedBoxFields}
+                          onChange={setSelectedBoxFields}
+                        >
+                          {fields.map((f) => (
+                            <Option key={f.fieldId} value={f.fieldId}>
+                              {f.name}
+                            </Option>
+                          ))}
+                        </Select>
+                      </>
+                    ),
+                    always: false,
+                  },
                 ].map((item) => (
                   <div key={item.key}>
-                    <Checkbox
-                      checked={item.always ? true : boxBreakingCriteria.includes(item.key)}
-                      disabled={item.always || !isEnabled("Box Breaking")}
-                      onChange={(e) => {
-                        const checked = e.target.checked;
-                        setBoxBreakingCriteria((prev) => {
-                          if (checked) {
-                            return Array.from(new Set([...(prev || []), item.key]));
-                          }
-                          return (prev || []).filter((k) => k !== item.key);
-                        });
-                      }}
-                    >
-                      {item.label} {item.always && (
-                        <Text type="secondary">(Always enabled)</Text>
-                      )}
-                    </Checkbox>
+                    {item.key !== "selectFields" && (
+                      <Checkbox
+                        checked={item.always ? true : boxBreakingCriteria.includes(item.key)}
+                        disabled={item.always || !isEnabled("Box Breaking")}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setBoxBreakingCriteria((prev) => {
+                            if (checked) {
+                              return Array.from(new Set([...(prev || []), item.key]));
+                            }
+                            return (prev || []).filter((k) => k !== item.key);
+                          });
+                        }}
+                      >
+                        {item.label} {item.always && <Text type="secondary">(Always enabled)</Text>}
+                      </Checkbox>
+                    )}
+                    {item.key === "selectFields" && item.label}
                   </div>
                 ))}
               </div>
             </Card>
+
           </motion.div>
         </Col>
 
