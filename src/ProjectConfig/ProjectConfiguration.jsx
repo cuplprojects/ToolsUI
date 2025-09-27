@@ -58,10 +58,8 @@ const ProjectConfiguration = () => {
 
   // Fetch ExtraTypes
   useEffect(() => {
-    axios
-      .get(`${url1}/ExtraTypes`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+    API
+      .get(`/ExtraTypes`)
       .then((res) => {
         setExtraTypes(res.data);
 
@@ -85,8 +83,8 @@ const ProjectConfiguration = () => {
 
   // Fetch Modules
   useEffect(() => {
-    axios
-      .get(`${url1}/Modules`, { headers: { Authorization: `Bearer ${token}` } })
+    API
+      .get(`/Modules`, { headers: { Authorization: `Bearer ${token}` } })
       .then((res) => setToolModules(res.data))
       .catch((err) => console.error("Failed to fetch modules", err));
   }, []);
@@ -118,18 +116,16 @@ const ProjectConfiguration = () => {
 
   // Fetch Envelope Types
   useEffect(() => {
-    axios
-      .get(`${url1}/EnvelopeTypes`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+    API
+      .get(`/EnvelopeTypes`)
       .then((res) => setEnvelopeOptions(res.data))
       .catch((err) => console.error("Failed to fetch envelope types", err));
   }, []);
 
   // Fetch Fields
   useEffect(() => {
-    axios
-      .get(`${url1}/Fields`, { headers: { Authorization: `Bearer ${token}` } })
+    API
+      .get(`/Fields`, { headers: { Authorization: `Bearer ${token}` } })
       .then((res) => setFields(res.data))
       .catch((err) => console.error("Failed to fetch fields", err));
   }, []);
@@ -154,9 +150,7 @@ const ProjectConfiguration = () => {
         EnvelopeMakingCriteria:selectedEnvelopeFields,
       };
 
-      await axios.post(`${url1}/ProjectConfigs`, projectConfigPayload, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await API.post(`/ProjectConfigs`, projectConfigPayload);
 
       // 2️⃣ Save ExtrasConfigurations
       const extrasPayloads = Object.entries(extraTypeSelection)
@@ -190,9 +184,7 @@ const ProjectConfiguration = () => {
       if (extrasPayloads.length > 0) {
         await Promise.all(
           extrasPayloads.map((payload) =>
-            axios.post(`${url1}/ExtrasConfigurations`, payload, {
-              headers: { Authorization: `Bearer ${token}` },
-            })
+            API.post(`/ExtrasConfigurations`, payload)
           )
         );
       }

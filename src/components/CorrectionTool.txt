@@ -22,7 +22,7 @@ const [editableRows, setEditableRows] = useState([]);
   const url1 = import.meta.env.VITE_API_BASE_URL;
 
   useEffect(() => {
-    axios.get(`${url1}/Groups`, {
+    axios.get(`/Groups`, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => setGroups(res.data))
@@ -46,7 +46,7 @@ const [editableRows, setEditableRows] = useState([]);
 
   const handleSaveChanges = async () => {
   try {
-    await axios.post(`${url}/Correction/updateRows`, editableRows, {
+    await API.post(`${url}/Correction/updateRows`, editableRows, {
       headers: { Authorization: `Bearer ${token}` }
     });
     showToast("Data updated successfully", "success");
@@ -103,7 +103,7 @@ const [editableRows, setEditableRows] = useState([]);
     };
 
     try {
-       const res = await axios.post(`${url}/Correction/correct`, payload, {
+       const res = await API.post(`${url}/Correction/correct`, payload, {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json"

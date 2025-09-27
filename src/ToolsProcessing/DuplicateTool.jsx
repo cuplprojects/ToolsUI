@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Row, Col, Card, Select, Button, Typography, Radio, Checkbox, InputNumber, Space, message, Statistic } from 'antd';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import API from '../hooks/api';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -22,8 +22,8 @@ const DuplicateTool = ({ project }) => {
 
   useEffect(() => {
     if (!project) return;
-    axios
-      .get(`${url1}/Fields`, { headers: { Authorization: `Bearer ${token}` } })
+    API
+      .get(`/Fields`)
       .then((res) => setFields(res.data || []))
       .catch((err) => console.error('Failed to fetch fields', err));
   }, [project]);

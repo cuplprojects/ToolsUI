@@ -2,17 +2,16 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { FiHome, FiUpload, FiTool, FiBarChart2, FiSettings, FiBookmark, FiBook, FiChevronDown, FiChevronRight, FiLogOut } from "react-icons/fi";
+import { FiHome, FiTool, FiBarChart2, FiSettings, FiBookmark, FiBook, FiChevronDown, FiChevronRight, FiLogOut } from "react-icons/fi";
 import useStore from "../stores/ProjectData";
 
 export default function Sidebar({ collapsed }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [openGroups, setOpenGroups] = useState({});
-  
+
   // Subscribe to Zustand store for projectName (optimizing re-renders)
   const projectName = useStore((state) => state.projectName);
-  const setProject = useStore((state) => state.setProject);
   const resetProject = useStore((state) => state.resetProject);
   // Handle collapse toggle
   const toggleGroup = (groupKey) => {
@@ -33,14 +32,18 @@ export default function Sidebar({ collapsed }) {
       icon: <FiBook />,
       path: "/masters",
     },
-    {
-      label: "Tools",
-      icon: <FiTool />,
-      children: [
-        { label: "Project Configuration", path: "/projectconfiguration" },
-        { label: "Data Import", path: "/dataimport" },
-      ],
-    },
+     ...(projectName
+    ? [
+        {
+          label: "Tools",
+          icon: <FiTool />,
+          children: [
+            { label: "Project Configuration", path: "/projectconfiguration" },
+            { label: "Data Import", path: "/dataimport" },
+          ],
+        },
+      ]
+    : []),
     {
       label: "Correction Tool",
       icon: <FiTool />,
@@ -145,10 +148,12 @@ export default function Sidebar({ collapsed }) {
       </ul>
 
       {/* Logout Button */}
-      <div onClick={handleLogout} className={`mt-auto flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer text-gray-800 hover:bg-gray-100 transition-all duration-150 ${collapsed ? "justify-center" : ""}`}>
-        <FiLogOut className={collapsed ? "text-2xl" : "text-base"} />
-        {!collapsed && <span>Logout</span>}
-      </div>
+      {projectName &&
+        <div onClick={handleLogout} className={`mt-auto flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer text-gray-800 hover:bg-gray-100 transition-all duration-150 ${collapsed ? "justify-center" : ""}`}>
+          <FiLogOut className={collapsed ? "text-2xl" : "text-base"} />
+          {!collapsed && <span>Logout</span>}
+        </div>
+      }
     </aside>
   );
 }

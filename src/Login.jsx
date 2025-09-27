@@ -4,6 +4,7 @@ import axios from "axios";
 import { useToast } from './hooks/useToast';
 import BG from './assets/bg/bg.svg'
 import { FiEye, FiEyeOff } from "react-icons/fi";
+import API from "./hooks/api";
 
 export default function Login({ setToken }) {
   const [userName, setUserName] = useState("");
@@ -19,14 +20,12 @@ export default function Login({ setToken }) {
     }
   }, [navigate]);
 
-  const url = import.meta.env.VITE_API_URL;
-  const url1 = import.meta.env.VITE_API_BASE_URL;
 
 
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(`${url}/UserLogs/login`, {
+      const response = await API.post(`/UserLogs/login`, {
         userName,
         password,
       });

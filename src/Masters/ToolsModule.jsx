@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Table, Button, Modal, Input, Space, message } from 'antd';
 import { EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
-import axios from 'axios';
+import API from '../hooks/api';
 
 const ToolModule = () => {
     const [modules, setModules] = useState([]);
@@ -13,7 +13,7 @@ const ToolModule = () => {
     const fetchModules = async () => {
         setLoading(true);
         try {
-            const res = await axios.get('https://localhost:7276/api/Modules');
+            const res = await API.get('/Modules');
             setModules(res.data);
         } catch (err) {
             message.error('Failed to fetch modules');
@@ -40,7 +40,7 @@ const ToolModule = () => {
 
     const handleDelete = async (id) => {
         try {
-            await axios.delete(`https://localhost:7276/api/Modules/${id}`);
+            await API.delete(`https://localhost:7276/api/Modules/${id}`);
             message.success('Deleted successfully');
             fetchModules();
         } catch {
@@ -67,13 +67,13 @@ const ToolModule = () => {
 
         try {
             if (editingItem) {
-                await axios.put(`https://localhost:7276/api/Modules/${editingItem.id}`, {
+                await API.put(`https://localhost:7276/api/Modules/${editingItem.id}`, {
                     id: editingItem.id,
                     name,
                 });
                 message.success('Updated successfully');
             } else {
-                await axios.post('https://localhost:7276/api/Modules', {
+                await API.post('https://localhost:7276/api/Modules', {
                     id: 0, // or omit if backend auto-generates it
                     name,
                 });

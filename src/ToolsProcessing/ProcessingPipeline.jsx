@@ -3,6 +3,7 @@ import { Progress, Badge, Button, Select, Card, Space, Typography, List, message
 import { useLocation } from "react-router-dom";
 import axios from "axios";
 import { motion } from "framer-motion";
+import API from "../hooks/api";
 
 const { Title, Text } = Typography;
 
@@ -50,18 +51,14 @@ const ProcessingPipeline = () => {
       try {
         setLoadingModules(true);
         // 1) Try to get project configuration (enabled modules as IDs or names)
-        const cfgRes = await axios.get(`${url1}/ProjectConfigs?ProjectId=${project}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const cfgRes = await API.get(`/ProjectConfigs?ProjectId=${project}`);
 
         const cfg = Array.isArray(cfgRes.data) ? cfgRes.data[0] : cfgRes.data;
         let moduleEntries = cfg?.modules || [];
 
         // 2) Map IDs to names if needed
         if (moduleEntries.length && typeof moduleEntries[0] === "number") {
-          const modsRes = await axios.get(`${url1}/Modules`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          const modsRes = await API.get(`/Modules`);
           const allMods = modsRes.data || [];
           const idToName = new Map(allMods.map(m => [m.id, m.name]));
           moduleEntries = moduleEntries.map(id => idToName.get(id)).filter(Boolean);
@@ -124,9 +121,7 @@ const ProcessingPipeline = () => {
 
     const query = new URLSearchParams(queryParams).toString();
 
-    const res = await axios.post(`${url1}/Duplicate?${query}`, null, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const res = await API.post(`/Duplicate?${query}`);
 
     const data = res?.data || {};
     const duplicatesRemoved = data.duplicatesRemoved ?? data.removedCount ?? data.duplicates ?? 0;
@@ -137,8 +132,8 @@ const ProcessingPipeline = () => {
   // Envelope Breaking
   const runEnvelope = async (project) => {
     console.log("Audit clicked - calling envelope API");
-    const res = await axios.post(
-      `${url1}/EnvelopeBreakages/EnvelopeConfiguration?ProjectId=${project}`,
+    const res = await API.post(
+      `/EnvelopeBreakages/EnvelopeConfiguration?ProjectId=${project}`,
       null,
       { headers: { Authorization: `Bearer ${token}` } }
     );
@@ -147,8 +142,8 @@ const ProcessingPipeline = () => {
   };
 
   const runExtras = async(projectId) =>{
-    const res = await axios.post(
-      `${url1}/ExtraEnvelopes?ProjectId=${projectId}`,
+    const res = await API.post(
+      `/ExtraEnvelopes?ProjectId=${projectId}`,
       null,
       { headers: { Authorization: `Bearer ${token}` } }
     );
@@ -157,8 +152,8 @@ const ProcessingPipeline = () => {
   }
 
   const BoxBreaking = async(projectId) =>{
-    const res = await axios.post(
-      `${url1}/EnvelopeBreakages/Replication?ProjectId=${projectId}`,
+    const res = await API.post(
+      `/EnvelopeBreakages/Replication?ProjectId=${projectId}`,
       null,
       { headers: { Authorization: `Bearer ${token}` } } 
     )

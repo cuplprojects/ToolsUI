@@ -1,22 +1,19 @@
 import React, { useState, useEffect } from "react";
+import API from "./hooks/api";
+import useStore from "./stores/ProjectData";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";  // If you're using React Router
-import  useStore  from  "./stores/ProjectData";
 
 const url = import.meta.env.VITE_API_BASE_URL; // Assuming this is the correct URL for fetching project names
-const url1 = import.meta.env.VITE_API_URL; // Assuming this is the correct URL for fetching ProjectConfigs
 
 export default function Dashboard() {
   const [projects, setProjects] = useState([]);
   const [projectDetails, setProjectDetails] = useState([]);
   const token = localStorage.getItem("token");
-  const navigate = useNavigate(); // If you're using React Router to navigate
- const setProject = useStore((state) => state.setProject);
+  const setProject = useStore((state) => state.setProject);
+
   const getProjects = async () => {
     try {
-      const response = await axios.get(`${url1}/ProjectConfigs`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await API.get('/Projects/UserId');
       const projectIds = response.data.map((config) => config.projectId);
       setProjects(projectIds);
 
@@ -44,7 +41,7 @@ export default function Dashboard() {
     // Save selected projectId and projectName in localStorage
     localStorage.setItem("selectedProjectId", projectId);
     localStorage.setItem("selectedProjectName", projectName);
-     setProject(projectName);
+    setProject(projectName);
   };
 
   return (

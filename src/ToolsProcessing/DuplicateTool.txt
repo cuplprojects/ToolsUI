@@ -28,7 +28,7 @@ const DuplicateTool = ({ project }) => {
   useEffect(() => {
     if (!project) return;
     axios
-      .get(`${url1}/Fields`, { headers: { Authorization: `Bearer ${token}` } })
+      .get(`/Fields`, { headers: { Authorization: `Bearer ${token}` } })
       .then((res) => setFields(res.data || []))
       .catch((err) => console.error('Failed to fetch fields', err));
   }, [project]);
@@ -78,7 +78,7 @@ const DuplicateTool = ({ project }) => {
 
       const query = new URLSearchParams(queryParams).toString();
 
-      const res = await axios.post(`${url1}/Duplicate?${query}`, null, {
+      const res = await API.post(`/Duplicate?${query}`, null, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

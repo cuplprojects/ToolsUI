@@ -18,7 +18,6 @@ const { Title, Text } = Typography;
 const { Option } = Select;
 
 const url = import.meta.env.VITE_API_BASE_URL;
-const url1 = import.meta.env.VITE_API_URL;
 
 const EnvelopeBreaking = () => {
   const location = useLocation();
@@ -53,13 +52,8 @@ const EnvelopeBreaking = () => {
     try {
       setLoading(true);
 
-      const res = await axios.post(
-        `${url1}/EnvelopeBreakages/EnvelopeConfiguration?ProjectId=${project}`,
-        null,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const res = await API.post(
+        `/EnvelopeBreakages/EnvelopeConfiguration?ProjectId=${project}`);
 
       const msg = res?.data?.message || "Envelope breaking completed";
       message.success(msg);
@@ -79,11 +73,8 @@ const EnvelopeBreaking = () => {
     try {
       setTableLoading(true);
 
-      const response = await axios.get(
-        `${url1}/EnvelopeBreakages?ProjectId=${projectId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+      const response = await API.get(
+        `/EnvelopeBreakages?ProjectId=${projectId}`
       );
 
       const rawData = response.data || [];

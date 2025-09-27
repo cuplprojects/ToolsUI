@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Table, Button, Modal, Form, Input, InputNumber, Space, Popconfirm, message } from "antd";
-import axios from "axios";
+import API from "../hooks/api";
 
 const NodalUnivExtra = () => {
   const [extras, setExtras] = useState([]);
@@ -9,13 +9,12 @@ const NodalUnivExtra = () => {
   const [form] = Form.useForm();
   const [editingExtra, setEditingExtra] = useState(null);
 
-  const API_URL = "https://localhost:7276/api/ExtraTypes";
 
   // Fetch all extras
   const fetchExtras = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(API_URL);
+      const res = await API.get('/ExtraTypes');
       setExtras(res.data);
     } catch (error) {
       message.error("Failed to fetch extras.");
@@ -45,14 +44,14 @@ const NodalUnivExtra = () => {
       const values = await form.validateFields();
       if (editingExtra) {
         // Update
-        await axios.put(`${API_URL}/${editingExtra.extraTypeId}`, {
+        await API.put(`/ExtraTypes/${editingExtra.extraTypeId}`, {
           ...editingExtra,
           ...values,
         });
         message.success("Extra updated successfully.");
       } else {
         // Create
-        await axios.post(API_URL, values);
+        await API.post(API_URL, values);
         message.success("Extra added successfully.");
       }
       fetchExtras();
@@ -65,7 +64,7 @@ const NodalUnivExtra = () => {
   // Delete
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`${API_URL}/${id}`);
+      await API.delete(`/ExtraTypes/${id}`);
       message.success("Extra deleted successfully.");
       fetchExtras();
     } catch (error) {

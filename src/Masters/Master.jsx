@@ -5,31 +5,37 @@ import Field from './Field';
 import ToolsModule from './ToolsModule';
 import { Tabs } from 'antd';
 import NodalUnivExtra from './NodalUnivExtra';
+import Project from './Project';
 
 const Master = () => {
   const tabItems = [
     {
       key: '1',
+      label: 'Project',
+      children: <Project />,
+    },
+    {
+      key: '2',
       label: 'Box Capacity',
       children: <BoxCapacity />,
     },
     {
-      key: '2',
+      key: '3',
       label: 'Envelope Type',
       children: <EnvelopeType />,
     },
     {
-      key: '3',
+      key: '4',
       label: 'Field',
       children: <Field />,
     },
     {
-      key: '4',
+      key: '5',
       label: 'Tools Module',
       children: <ToolsModule />,
     },
     {
-      key: '5',
+      key: '6',
       label: 'Nodal Univ Extra',
       children: <NodalUnivExtra/>
     }

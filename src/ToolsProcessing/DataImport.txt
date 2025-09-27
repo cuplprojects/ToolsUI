@@ -118,7 +118,7 @@ const DataImport = () => {
   useEffect(() => {
     if (!project) return;
 
-    axios.get(`${url1}/Fields`, {
+    axios.get(`/Fields`, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => setExpectedFields(res.data))
@@ -174,7 +174,7 @@ const DataImport = () => {
       data: mappedData
     };
 
-    axios.post(`${url1}/NRDatas`, payload, {
+    API.post(`/NRDatas`, payload, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => {
@@ -214,7 +214,7 @@ const DataImport = () => {
     }
 
     try {
-      const res = await axios.get(`${url1}/NRDatas/ErrorReport?ProjectId=${project}`, {
+      const res = await axios.get(`/NRDatas/ErrorReport?ProjectId=${project}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setConflicts(res.data);
@@ -250,7 +250,7 @@ const DataImport = () => {
     };
 
     try {
-      await axios.put(`${url1}/NRDatas?ProjectId=${project}`, payload, {
+      await API.put(`/NRDatas?ProjectId=${project}`, payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
       message.success(`Resolved conflict for ${record.catchNo}`);

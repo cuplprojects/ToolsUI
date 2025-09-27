@@ -19,6 +19,7 @@ import * as XLSX from 'xlsx';
 import axios from 'axios';
 import { motion } from 'framer-motion';
 import DuplicateTool from './DuplicateTool';
+import API from '../hooks/api';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -58,9 +59,7 @@ const DataImport = () => {
   useEffect(() => {
     if (!project) return;
     fetchExistingData(project);
-    axios.get(`${url1}/Fields`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    API.get(`/Fields`)
       .then(res => setExpectedFields(res.data))
       .catch(err => console.error("Failed to fetch fields", err));
   }, [project]);
@@ -69,9 +68,7 @@ const DataImport = () => {
     if (!projectId) return;
     setLoading(true);
     try {
-      const res = await axios.get(`${url1}/NRDatas/GetByProjectId/${projectId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await API.get(`/NRDatas/GetByProjectId/${projectId}`);
       setExistingData(res.data || []);
       setShowData(res.data && res.data.length > 0);
     } catch (err) {
@@ -91,9 +88,7 @@ const DataImport = () => {
     }
     setLoading(true);
     try {
-      const res = await axios.get(`${url1}/NRDatas/ErrorReport?ProjectId=${project}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await API.get(`/NRDatas/ErrorReport?ProjectId=${project}`);
       if (res.data?.duplicatesFound) {
         setConflicts(res.data);
         showToast("Conflict report loaded", "success");
@@ -124,7 +119,7 @@ const DataImport = () => {
     };
 
     try {
-      await axios.put(`${url1}/NRDatas?ProjectId=${project}`, payload, {
+      await API.put(`/NRDatas?ProjectId=${project}`, payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
       showToast(`Resolved conflict for ${record.catchNo}`, "success");
@@ -280,7 +275,7 @@ const DataImport = () => {
       data: mappedData
     };
 
-    axios.post(`${url1}/NRDatas`, payload, {
+    API.post(`/NRDatas`, payload, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => {
