@@ -7,7 +7,6 @@ const url = import.meta.env.VITE_API_BASE_URL; // Assuming this is the correct U
 
 export default function Dashboard() {
   const [projects, setProjects] = useState([]);
-  const [projectDetails, setProjectDetails] = useState([]);
   const token = localStorage.getItem("token");
   const setProject = useStore((state) => state.setProject);
 
@@ -15,23 +14,27 @@ export default function Dashboard() {
     try {
       const response = await API.get('/Projects/UserId');
       const projectIds = response.data.map((config) => config.projectId);
-      setProjects(projectIds);
 
-      // Fetching project names for each projectid
-      const projectNameRequests = projectIds.map((projectid) =>
-        axios.get(`${url}/Project/${projectid}`, {
+      const projectNameRequests = projectIds.map((projectId) =>
+        axios.get(`${url}/Project/${projectId}`, {
           headers: { Authorization: `Bearer ${token}` },
         })
       );
 
-      // Once all requests are complete, set the project names
       const projectNameResponses = await Promise.all(projectNameRequests);
-      const projectNames = projectNameResponses.map((res) => res.data.name);
-      setProjectDetails(projectNames);
+
+      // Combine ID and name in one object
+      const combinedProjects = projectIds.map((id, index) => ({
+        id,
+        name: projectNameResponses[index].data.name,
+      }));
+
+      setProjects(combinedProjects);  // Store array of { id, name }
     } catch (err) {
       console.error("Failed to fetch projects", err);
     }
   };
+
 
   useEffect(() => {
     getProjects();
@@ -41,7 +44,7 @@ export default function Dashboard() {
     // Save selected projectId and projectName in localStorage
     localStorage.setItem("selectedProjectId", projectId);
     localStorage.setItem("selectedProjectName", projectName);
-    setProject(projectName);
+    setProject(projectName,projectId);
   };
 
   return (
@@ -70,13 +73,13 @@ export default function Dashboard() {
 
       {/* Project Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
-        {projectDetails.map((projectname, index) => (
+        {projects.map((project) => (
           <div
-            key={index}
+            key={project.id}
             className="bg-white p-6 rounded-lg shadow-md border-l-4 border-gray-400 hover:shadow-xl hover:bg-gray-50 transition-all duration-300"
-            onClick={() => handleCardClick(projects[index], projectname)}  // Pass projectId and projectName on click
+            onClick={() => handleCardClick(project.id, project.name)} // Now guaranteed to be in sync
           >
-            <h3 className="text-gray-600 text-lg font-semibold mb-3">{projectname}</h3>
+            <h3 className="text-gray-600 text-lg font-semibold mb-3">{project.name}</h3>
             <p className="text-sm text-gray-500">
               Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur sit amet justo ut dui ultrices malesuada.
             </p>

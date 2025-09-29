@@ -3,13 +3,11 @@ import { Row, Col, Card, Select, Button, Typography, Radio, Checkbox, InputNumbe
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import API from '../hooks/api';
-
+import useStore from '../stores/ProjectData';
 const { Title, Text } = Typography;
 const { Option } = Select;
-const url = import.meta.env.VITE_API_BASE_URL;
-const url1 = import.meta.env.VITE_API_URL;
 
-const DuplicateTool = ({ project }) => {
+const DuplicateTool = () => {
   const navigate = useNavigate();
   const [fields, setFields] = useState([]);
   const [selectedFieldIds, setSelectedFieldIds] = useState([]);
@@ -17,24 +15,17 @@ const DuplicateTool = ({ project }) => {
   const [enhance, setEnhance] = useState(false);
   const [enhanceType, setEnhanceType] = useState('round'); // 'percent' | 'round'
   const [percent, setPercent] = useState(0);
-
-  const token = localStorage.getItem('token');
+  const projectId = useStore((state) => state.projectId);
 
   useEffect(() => {
-    if (!project) return;
     API
       .get(`/Fields`)
       .then((res) => setFields(res.data || []))
       .catch((err) => console.error('Failed to fetch fields', err));
-  }, [project]);
+  }, [projectId]);
 
- 
+
   const handleSave = () => {
-    if (!project) {
-      message.warning('Please select a project');
-      return;
-    }
-
     if (selectedFieldIds.length === 0) {
       message.warning('Select at least one field');
       return;
@@ -53,7 +44,7 @@ const DuplicateTool = ({ project }) => {
 
     // Save the selected settings in localStorage
     const settings = {
-      projectId: project,
+      projectId: projectId,
       selectedFieldIds,
       strategy,
       enhance,
@@ -64,7 +55,7 @@ const DuplicateTool = ({ project }) => {
 
     localStorage.setItem('duplicateToolSettings', JSON.stringify(settings));
     message.success('Settings saved successfully!');
-    navigate('/processingpipeline', { state: { projectId: project } });
+    navigate('/processingpipeline', { state: { projectId: projectId } });
   };
 
 
@@ -151,10 +142,7 @@ const DuplicateTool = ({ project }) => {
               </Button>
             </Space>
           </Space>
-
         </Col>
-
-
       </Row>
     </div>
   );

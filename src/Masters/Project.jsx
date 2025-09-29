@@ -49,7 +49,7 @@ const Project = () => {
             const res = await axios.get(`${url}/User`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            const response = res.data.filter(r => r.roleId === 3); // Filter by roleId 3
+            const response = res.data.filter(r => r.roleId <= 3); // Filter by roleId 3
             setUsers(response || []); // Ensure the data is an empty array if undefined
         } catch (err) {
             console.error("Failed to fetch users", err);

@@ -52,7 +52,7 @@ export default function Sidebar({ collapsed }) {
         { label: "Correction Tool", path: "/correctiontool" },
       ],
     },
-    { label: "Reports", icon: <FiBarChart2 />, path: "/reports", disabled: true },
+    { label: "Reports", icon: <FiBarChart2 />, path: "/reports" },
     { label: "Settings", icon: <FiSettings />, path: "/settings", disabled: true },
   ];
 

@@ -22,16 +22,12 @@ import {
   LockOutlined,
   NumberOutlined,
 } from "@ant-design/icons";
-import axios from "axios";
 import { motion } from "framer-motion";
 import { useToast } from '../hooks/useToast';
-
+import API from "../hooks/api";
+import useStore from "../stores/ProjectData";
 const { Title, Text } = Typography;
 const { Option } = Select;
-
-const url = import.meta.env.VITE_API_BASE_URL;
-const url1 = import.meta.env.VITE_API_URL;
-
 const PRIMARY_COLOR = "#1677ff"; // Ant Design default primary color
 const EXTRA_ALIAS_NAME = "Extra Configuration";
 const NODAL_MODULE = "Nodal Extra Calculation";
@@ -39,10 +35,8 @@ const UNIVERSITY_MODULE = "University Extra Calculation";
 
 const ProjectConfiguration = () => {
   const { showToast } = useToast();
-  const [selectedProject, setSelectedProject] = useState(null);
   const [enabledModules, setEnabledModules] = useState([]);
   const [boxBreakingCriteria, setBoxBreakingCriteria] = useState(["capacity"]);
-  const [projects, setProjects] = useState([]);
   const [toolModules, setToolModules] = useState([]);
   const [innerEnvelopes, setInnerEnvelopes] = useState([]);
   const [outerEnvelopes, setOuterEnvelopes] = useState([]);
@@ -53,9 +47,8 @@ const ProjectConfiguration = () => {
   const [fields, setFields] = useState([]);
   const [selectedEnvelopeFields, setSelectedEnvelopeFields] = useState([]);
   const [selectedBoxFields, setSelectedBoxFields] = useState([]);
-
   const token = localStorage.getItem("token");
-
+  const projectId = useStore((state) => state.projectId);
   // Fetch ExtraTypes
   useEffect(() => {
     API
@@ -72,15 +65,6 @@ const ProjectConfiguration = () => {
       })
       .catch((err) => console.error("Failed to fetch extra types", err));
   }, []);
-
-  // Fetch Projects
-  useEffect(() => {
-    axios
-      .get(`${url}/Project`, { headers: { Authorization: `Bearer ${token}` } })
-      .then((res) => setProjects(res.data))
-      .catch((err) => console.error("Failed to fetch projects", err));
-  }, []);
-
   // Fetch Modules
   useEffect(() => {
     API
@@ -133,12 +117,11 @@ const ProjectConfiguration = () => {
   const isEnabled = (toolName) => enabledModules.includes(toolName);
 
   const handleSave = async () => {
-    if (!selectedProject) return;
 
     try {
       // 1️⃣ Save ProjectConfigs
       const projectConfigPayload = {
-        projectId: selectedProject,
+        projectId: projectId,
         modules: enabledModules.map(
           (m) => toolModules.find((tm) => tm.name === m)?.id
         ),
@@ -147,7 +130,7 @@ const ProjectConfiguration = () => {
           Outer: outerEnvelopes.join(","),
         }),
         BoxBreakingCriteria: selectedBoxFields,
-        EnvelopeMakingCriteria:selectedEnvelopeFields,
+        EnvelopeMakingCriteria: selectedEnvelopeFields,
       };
 
       await API.post(`/ProjectConfigs`, projectConfigPayload);
@@ -167,7 +150,7 @@ const ProjectConfiguration = () => {
           };
           return {
             id: 0,
-            projectId: selectedProject,
+            projectId: projectId,
             extraType: et.extraTypeId,
             mode,
             value:
@@ -199,23 +182,20 @@ const ProjectConfiguration = () => {
     }
   };
 
-const resetForm = () => {
-  setSelectedProject(null);
-  setEnabledModules([]);  // Reset modules to empty array
-  setInnerEnvelopes([]);   // Reset inner envelopes
-  setOuterEnvelopes([]);   // Reset outer envelopes
-  setSelectedBoxFields([]); // Reset box fields
-  setSelectedEnvelopeFields([]); // Reset envelope fields
-  setExtraTypeSelection({}); // Reset extra type selection
+  const resetForm = () => {
+    setEnabledModules([]);  // Reset modules to empty array
+    setInnerEnvelopes([]);   // Reset inner envelopes
+    setOuterEnvelopes([]);   // Reset outer envelopes
+    setSelectedBoxFields([]); // Reset box fields
+    setSelectedEnvelopeFields([]); // Reset envelope fields
+    setExtraTypeSelection({}); // Reset extra type selection
 
-  // Add any other state variables you might have
-};
+    // Add any other state variables you might have
+  };
 
 
   const cardStyle = { marginBottom: 16, border: '1px solid #d9d9d9', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' };
   const iconStyle = { color: PRIMARY_COLOR, marginRight: 6 };
-  const selectedProjectName =
-    projects.find((p) => p.projectId === selectedProject)?.name || "None";
   const envelopeConfigured = isEnabled("Envelope Breaking");
   const boxConfigured = isEnabled("Box Breaking");
   const extraConfigured = isEnabled(EXTRA_ALIAS_NAME);
@@ -226,50 +206,6 @@ const resetForm = () => {
         {/* LEFT SIDE */}
         <Col xs={24} md={16}>
           {/* Project Selection */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            whileHover={{
-              scale: 1.05,
-              boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
-            }}
-            transition={{ duration: 0.3 }}
-          >
-            <Card
-              style={cardStyle}
-              title={
-                <div>
-                  <span>
-                    <AppstoreOutlined style={iconStyle} /> Project Selection
-                  </span>
-                  <br />
-                  <Text type="secondary">
-                    Select a project to configure its modules and settings
-                  </Text>
-                </div>
-              }
-            >
-              <Form.Item style={{ marginTop: 16 }} required>
-                <Select
-                  placeholder="Select Project"
-                  onChange={setSelectedProject}
-                  value={selectedProject}
-                >
-                  {projects.map((p) => (
-                    <Option key={p.projectId} value={p.projectId}>
-                      {p.name}
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-              {!selectedProject && (
-                <Text type="warning">
-                  Please select a project to enable configuration options below.
-                </Text>
-              )}
-            </Card>
-          </motion.div>
-
           {/* Module Selection */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -756,11 +692,6 @@ const resetForm = () => {
                 size="small"
                 dataSource={[
                   {
-                    label: "Selected Project",
-                    value: selectedProjectName,
-                    strong: true,
-                  },
-                  {
                     label: "Enabled Modules",
                     value: enabledModules.length,
                     strong: true,
@@ -818,7 +749,7 @@ const resetForm = () => {
                 type="primary"
                 block
                 onClick={handleSave}
-                disabled={!selectedProject}
+                disabled={!projectId}
               >
                 Save Configuration
               </Button>
