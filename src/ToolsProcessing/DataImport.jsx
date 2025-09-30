@@ -10,7 +10,6 @@ import {
   Space,
   Table,
   Tabs,
-  Modal,
   Divider,
   Checkbox,
   Input,
@@ -37,8 +36,6 @@ const DataImport = () => {
   const [conflictSelections, setConflictSelections] = useState({});
   const [showData, setShowData] = useState(false);
   const [existingData, setExistingData] = useState([]); // ✅ default to []
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [pendingFile, setPendingFile] = useState(null);
   const [loading, setLoading] = useState(false); // ✅ added
   const [activeTab, setActiveTab] = useState("1");
   const token = localStorage.getItem('token');
@@ -46,6 +43,7 @@ const DataImport = () => {
   const [keepZeroQuantity, setKeepZeroQuantity] = useState(false);
   const [skipItems, setSkipItems] = useState(false);
   const [quantity, setQuantity] = useState(0);
+  const [fileList, setFileList] = useState([]);
   // Load projects
   useEffect(() => {
     if (!projectId) return;
@@ -69,6 +67,18 @@ const DataImport = () => {
       setShowData(false);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleFileChange = (info) => {
+    const { status, file } = info;
+
+    if (status === 'done') {
+      message.success(`${file.name} file uploaded successfully.`);
+      // Clear the file list after successful upload
+      setFileList([]);
+    } else if (status === 'error') {
+      message.error(`${file.name} file upload failed.`);
     }
   };
 
@@ -214,32 +224,10 @@ const DataImport = () => {
     reader.readAsArrayBuffer(file);
   };
 
-  const readExcel = (file) => {
-    if (existingData.length > 0) {   // ✅ fixed
-      setPendingFile(file);
-      setIsModalVisible(true);
-    } else {
-      proceedWithReading(file);
-    }
-  };
-
   // Upload file logic
   const beforeUpload = (file) => {
-    readExcel(file);
+    proceedWithReading(file);
     return false; // prevent auto upload
-  };
-
-  const handleOk = () => {
-    if (pendingFile) {
-      proceedWithReading(pendingFile);
-      setPendingFile(null);
-    }
-    setIsModalVisible(false);
-  };
-
-  const handleCancel = () => {
-    setPendingFile(null);
-    setIsModalVisible(false);
   };
 
   const isAnyFieldMapped = () => {
@@ -247,10 +235,10 @@ const DataImport = () => {
   };
   const resetForm = () => {
     setFileHeaders([]);
+    setFileList([]);
     setFieldMappings({});
     setExcelData([]);
     setExpectedFields([]);
-    setViewConflicts(false);
     setConflicts(null);
     setSkipItems(false)
     setQuantity(0);
@@ -258,21 +246,25 @@ const DataImport = () => {
   };
 
   const handleUpload = () => {
+    setLoading(true)
     let mappedData = getMappedData();
     if (keepZeroQuantity) {
       mappedData = mappedData.map((row) => {
-        if (row.quantity === 0) {
-          row.quantity = quantity; // Replace with the updated quantity
+        if (row.Quantity === 0) {
+          row.Quantity = quantity; // Replace with the updated quantity
         }
         return row;
       });
     }
     if (skipItems) {
-      mappedData = mappedData.filter((row) => row.quantity !== 0);
+      mappedData = mappedData.filter((row) => row.Quantity !== 0);
     }
     const payload = {
-      projectId: projectId,
-      data: mappedData
+      projectId: Number(projectId),
+      data: mappedData.map(row => ({
+        ...row,
+        ExamDate: String(row.ExamDate), // Ensure quantity is a number,
+      }))
     };
 
     API.post(`/NRDatas`, payload, {
@@ -288,6 +280,10 @@ const DataImport = () => {
         console.error("Validation failed", err);
         showToast("Validation failed", "error");
         resetForm();
+      })
+      .finally(() => {
+        setLoading(false); // Stop loading after the process is finished
+        setFileList([]);
       });
   };
 
@@ -364,15 +360,6 @@ const DataImport = () => {
 
   return (
     <div style={{ padding: 24 }}>
-      <Modal
-        title="Existing Data Found"
-        open={isModalVisible} // ✅ `open` instead of `visible` in AntD v5
-        onOk={handleOk}
-        onCancel={handleCancel}
-      >
-        <p>Data already exists for this project. Do you want to overwrite it?</p>
-      </Modal>
-
       <Row gutter={[24, 24]}>
         {/* Left Section */}
         <Col xs={24} md={16}>
@@ -391,6 +378,7 @@ const DataImport = () => {
                   <Upload.Dragger
                     name="file"
                     accept=".xls,.xlsx,.csv"
+                    fileList={fileList}
                     beforeUpload={beforeUpload}
                     maxCount={1}
                   >
@@ -429,6 +417,78 @@ const DataImport = () => {
               </Row>
 
               <Divider />
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                whileHover={{
+                  scale: 1.05,
+                  boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
+                }}
+                transition={{ duration: 0.3 }}
+              >
+                <Card title="Field Mapping" style={{ marginTop: 24, border: '1px solid #d9d9d9', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
+                  <Row gutter={[16, 16]}>
+                    {expectedFields.map((expectedField) => {
+                      // Check for auto-mapping and update fieldMappings
+                      const autoMappedValue = autoMapField(expectedField, fileHeaders);
+
+                      return (
+                        <Col key={expectedField.fieldId} xs={24} md={8}>
+                          <div style={{ marginBottom: 12 }}>
+                            <div style={{ display: 'flex', alignItems: 'center' }}>
+                              <Text
+                                style={{
+                                  display: 'block',
+                                  marginBottom: 8,
+                                  marginRight: 8,
+                                  color: fieldMappings[expectedField.fieldId] ? '#006400' : 'inherit', // Dark green for mapped fields
+                                }}
+                              >
+                                {expectedField.name}
+                              </Text>
+                              {fieldMappings[expectedField.fieldId] && (
+                                <CheckCircleOutlined style={{ color: '#006400', fontSize: '16px' }} />
+                              )}
+                            </div>
+                            <Select
+                              style={{
+                                width: '100%',
+                                borderColor: fieldMappings[expectedField.fieldId] ? '#006400' : undefined, // Dark green border
+                                boxShadow: fieldMappings[expectedField.fieldId] ? '0 0 5px #006400' : undefined, // Optional: dark green shadow
+                              }}
+                              placeholder="Select matching column from file"
+                              value={fieldMappings[expectedField.fieldId] || autoMappedValue} // Automatically select if a match is found
+                              onChange={(value) => {
+                                setFieldMappings((prev) => ({
+                                  ...prev,
+                                  [expectedField.fieldId]: value,
+                                }));
+                              }}
+                            >
+                              {fileHeaders
+                                .filter(
+                                  (header) =>
+                                    !Object.values(fieldMappings).includes(header) ||
+                                    fieldMappings[expectedField.fieldId] === header
+                                )
+                                .map((header, index) => (
+                                  <Option key={`${header}-${index}`} value={header}>
+                                    {header}
+                                  </Option>
+                                ))}
+                            </Select>
+                          </div>
+                        </Col>
+                      );
+                    })}
+                  </Row>
+                  {isAnyFieldMapped() && (
+                    <Button type="primary" onClick={handleUpload} loading={loading}>
+                      Upload and Validate
+                    </Button>
+                  )}
+                </Card>
+              </motion.div>
               {existingData.length > 0 ? (
                 <Tabs activeKey={activeTab} onChange={(key) => setActiveTab(key)} style={{ marginTop: 16 }}>
                   <TabPane tab="Uploaded Data" key="1">
@@ -459,81 +519,8 @@ const DataImport = () => {
                     {renderConflicts()}
                   </TabPane>
                 </Tabs>
-
               ) : (
-                //FieldMappingSection
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  whileHover={{
-                    scale: 1.05,
-                    boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
-                  }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <Card title="Field Mapping" style={{ marginTop: 24, border: '1px solid #d9d9d9', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
-                    <Row gutter={[16, 16]}>
-                      {expectedFields.map((expectedField) => {
-                        // Check for auto-mapping and update fieldMappings
-                        const autoMappedValue = autoMapField(expectedField, fileHeaders);
-
-                        return (
-                          <Col key={expectedField.fieldId} xs={24} md={8}>
-                            <div style={{ marginBottom: 12 }}>
-                              <div style={{ display: 'flex', alignItems: 'center' }}>
-                                <Text
-                                  style={{
-                                    display: 'block',
-                                    marginBottom: 8,
-                                    marginRight: 8,
-                                    color: fieldMappings[expectedField.fieldId] ? '#006400' : 'inherit', // Dark green for mapped fields
-                                  }}
-                                >
-                                  {expectedField.name}
-                                </Text>
-                                {fieldMappings[expectedField.fieldId] && (
-                                  <CheckCircleOutlined style={{ color: '#006400', fontSize: '16px' }} />
-                                )}
-                              </div>
-                              <Select
-                                style={{
-                                  width: '100%',
-                                  borderColor: fieldMappings[expectedField.fieldId] ? '#006400' : undefined, // Dark green border
-                                  boxShadow: fieldMappings[expectedField.fieldId] ? '0 0 5px #006400' : undefined, // Optional: dark green shadow
-                                }}
-                                placeholder="Select matching column from file"
-                                value={fieldMappings[expectedField.fieldId] || autoMappedValue} // Automatically select if a match is found
-                                onChange={(value) => {
-                                  setFieldMappings((prev) => ({
-                                    ...prev,
-                                    [expectedField.fieldId]: value,
-                                  }));
-                                }}
-                              >
-                                {fileHeaders
-                                  .filter(
-                                    (header) =>
-                                      !Object.values(fieldMappings).includes(header) ||
-                                      fieldMappings[expectedField.fieldId] === header
-                                  )
-                                  .map((header, index) => (
-                                    <Option key={`${header}-${index}`} value={header}>
-                                      {header}
-                                    </Option>
-                                  ))}
-                              </Select>
-                            </div>
-                          </Col>
-                        );
-                      })}
-                    </Row>
-                    {isAnyFieldMapped() && (
-                      <Button type="primary" block onClick={handleUpload}>
-                        Upload and Validate
-                      </Button>
-                    )}
-                  </Card>
-                </motion.div>
+                <div />
               )}
             </Card> </motion.div>
         </Col>

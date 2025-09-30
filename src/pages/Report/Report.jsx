@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { List, Typography, Select, Spin, message } from "antd";
 import axios from "axios";
-import useStore from "../../stores/ProjectData";
 import API from "../../hooks/api";
 
 const { Text, Title } = Typography;
@@ -20,7 +19,6 @@ const Report = () => {
     const [selectedProjectId, setSelectedProjectId] = useState(null);
     const [selectedProjectName, setSelectedProjectName] = useState("");
     const [loading, setLoading] = useState(false);
-    const [reportsLoading, setReportsLoading] = useState(false);
 
     useEffect(() => {
         getProjects();
@@ -72,7 +70,6 @@ const Report = () => {
         return (
             <List
                 dataSource={possibleReports}
-                loading={reportsLoading}
                 renderItem={(report) => {
                     const fileUrl = `${url3}/${selectedProjectId}/${report.fileName}`;
                     return (
