@@ -16,7 +16,7 @@ import {
   Input,
 } from 'antd';
 import { useToast } from '../hooks/useToast';
-import { CheckCircleOutlined, UploadOutlined } from '@ant-design/icons';
+import { CheckCircleOutlined, UploadOutlined, ToolOutlined } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
 import { motion } from 'framer-motion';
 import DuplicateTool from './DuplicateTool';
@@ -26,6 +26,7 @@ import useStore from '../stores/ProjectData';
 const { Text } = Typography;
 const { Option } = Select;
 const { TabPane } = Tabs;
+const PRIMARY_COLOR = "#1677ff"; 
 
 const DataImport = () => {
   const { showToast } = useToast();
@@ -177,6 +178,7 @@ const DataImport = () => {
 
     return (
       <div>
+        <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>Resolve any conflicts found in the data</Text>
         <Text className='mb-3' type="secondary">Please resolve all conflicts before further processing</Text>
 
         <Table
@@ -361,6 +363,7 @@ const DataImport = () => {
       setKeepZeroQuantity(false);  // Deselect keepZeroQuantity if skipItems is selected
     }
   };
+  const iconStyle = { color: PRIMARY_COLOR, marginRight: 6 };
 
   return (
     <div style={{ padding: 24 }}>
@@ -385,8 +388,18 @@ const DataImport = () => {
             }}
             transition={{ duration: 0.3 }}
           >
-            <Card title="Data Import" bordered={true} style={{ boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
-              <Row gutter={[16, 16]}>
+            <Card title={<div>
+              <span>
+              <ToolOutlined style={iconStyle}/> Data Import</span><br/>
+ <Text type="secondary" >
+      Upload and map your data files here
+    </Text>
+            </div>}
+            bordered={true} 
+            style={{ boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
+<div>
+   
+  </div>              <Row gutter={[16, 16]}>
                 <Col xs={24} md={12}>
                   <Upload.Dragger
                     name="file"
@@ -442,7 +455,6 @@ const DataImport = () => {
                       transition={{ duration: 0.3 }}
                     >
                       <Card style={{ border: '1px solid #d9d9d9', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
-
                         <Table
                           dataSource={existingData}
                           columns={columns}
@@ -472,6 +484,7 @@ const DataImport = () => {
                   transition={{ duration: 0.3 }}
                 >
                   <Card title="Field Mapping" style={{ marginTop: 24, border: '1px solid #d9d9d9', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
+                    <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>Map fields from your file to expected fields</Text>
                     <Row gutter={[16, 16]}>
                       {expectedFields.map((expectedField) => {
                         // Check for auto-mapping and update fieldMappings
@@ -550,10 +563,28 @@ const DataImport = () => {
               }}
               transition={{ duration: 0.3 }}
             >
-              <Card title="Actions" bordered={true} style={{ marginTop: '10px', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
-                <Button block onClick={fetchConflictReport}>
-                  Load Conflict
-                </Button>
+              <Card title={
+                <div>
+                  <span>
+                    <ToolOutlined style={iconStyle} /> Action                    
+                     </span>
+                     <br/>
+                     <Text type="secondary" >Perform additional actions on your data</Text>
+                   </div>
+              }
+              bordered={true} 
+              style={{ marginTop: '10px', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
+                <Button
+  block
+  onClick={fetchConflictReport}
+  style={{
+    backgroundColor: '#f0dc24ff',  // Light yellow color
+    borderColor: '#FFEB3B',      // Ensure the border matches the background
+    color: '#000',               // Set text color to black or adjust as needed
+  }}
+>
+  🎉 Load Conflict
+</Button>
               </Card></motion.div>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -564,7 +595,18 @@ const DataImport = () => {
               }}
               transition={{ duration: 0.3 }}
             >
-              <Card title="Duplicate Tool" bordered={true} style={{ marginTop: '10px', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
+              <Card title={
+                <div>
+                  <span>
+                    <ToolOutlined style={iconStyle}/>Duplicate Tool
+                  </span>
+                  <br/>
+                <Text type="secondary">Manage duplicates in your data</Text>
+
+                </div>
+              } 
+              bordered={true} 
+              style={{ marginTop: '10px', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
                 <DuplicateTool />
               </Card></motion.div>
           </Col>

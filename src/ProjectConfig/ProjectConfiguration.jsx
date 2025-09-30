@@ -395,104 +395,7 @@ const ProjectConfiguration = () => {
               </div>
             </Card>
           </motion.div>
-          {/* Box Breaking */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            whileHover={{
-              scale: 1.05,
-              boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
-            }}
-            transition={{ duration: 0.3 }}
-          >
-            <Card
-              style={cardStyle}
-              title={
-                <div>
-                  <span>
-                    <InboxOutlined style={iconStyle} /> Box Breaking Criteria
-                  </span>
-                  <br />
-                  <Text type="secondary">
-                    Define conditions that trigger creation of new boxes
-                  </Text>
-                </div>
-              }
-              extra={
-                !isEnabled("Box Breaking") ? (
-                  <Tag icon={<LockOutlined style={{ color: PRIMARY_COLOR }} />}>Disabled</Tag>
-                ) : null
-              }
-            >
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  columnGap: 12,
-                  rowGap: 8,
-                  marginTop: 12,
-                }}
-              >
-                {[
-                  {
-                    key: "capacity",
-                    label: "Breaking by Capacity",
-                    always: true
-                  },
-                  {
-                    key: "selectFields",
-                    label: (
-                      <>
-                        <Text strong>Select fields to concatenate</Text>
-                        <Select
-                          mode="multiple"
-                          disabled={!isEnabled("Box Breaking")}
-                          allowClear
-                          style={{ width: "100%", marginTop: 4 }}
-                          placeholder="Select one or more fields"
-                          value={selectedBoxFields}
-                          onChange={setSelectedBoxFields}
-                        >
-                          {fields.map((f) => (
-                            <Option key={f.fieldId} value={f.fieldId}>
-                              {f.name}
-                            </Option>
-                          ))}
-                        </Select>
-                      </>
-                    ),
-                    always: false,
-                  },
-                ].map((item) => (
-                  <div key={item.key}>
-                    {item.key !== "selectFields" && (
-                      <Checkbox
-                        checked={item.always ? true : boxBreakingCriteria.includes(item.key)}
-                        disabled={item.always || !isEnabled("Box Breaking")}
-                        onChange={(e) => {
-                          const checked = e.target.checked;
-                          setBoxBreakingCriteria((prev) => {
-                            if (checked) {
-                              return Array.from(new Set([...(prev || []), item.key]));
-                            }
-                            return (prev || []).filter((k) => k !== item.key);
-                          });
-                        }}
-                      >
-                        {item.label} {item.always && <Text type="secondary">(Always enabled)</Text>}
-                      </Checkbox>
-                    )}
-                    {item.key === "selectFields" && item.label}
-                  </div>
-                ))}
-              </div>
-            </Card>
 
-          </motion.div>
-        </Col>
-
-        {/* RIGHT SIDE */}
-        <Col xs={24} md={8}>
           {/* Extra Processing */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -536,10 +439,10 @@ const ProjectConfiguration = () => {
                       marginTop: 12,
                     }}
                   >
-                    <Col>
-
-                    </Col>
-                    <Select
+                    <Row>
+                        
+                         <Col className="mr-2">
+<Select
                       placeholder="Select Inner Envelopes"
                       value={extraProcessingConfig[et.type]?.envelopeType?.inner || []}
                       onChange={(vals) =>
@@ -561,8 +464,11 @@ const ProjectConfiguration = () => {
                         </Option>
                       ))}
                     </Select>
-
-                    <Select
+                    </Col> 
+                       
+                         
+                          <Col className="ml-2">
+                       <Select
                       placeholder="Select Outer Envelopes"
                       value={extraProcessingConfig[et.type]?.envelopeType?.outer || []}
                       onChange={(vals) =>
@@ -584,6 +490,10 @@ const ProjectConfiguration = () => {
                         </Option>
                       ))}
                     </Select>
+                      </Col>
+                    </Row>
+                    
+                   
                   </div>
 
                   {/* Radio group for mode */}
@@ -664,7 +574,107 @@ const ProjectConfiguration = () => {
           </motion.div>
 
 
+        </Col>
 
+        {/* RIGHT SIDE */}
+        <Col xs={24} md={8}>
+
+
+
+          {/* Box Breaking */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{
+              scale: 1.05,
+              boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
+            }}
+            transition={{ duration: 0.3 }}
+          >
+            <Card
+              style={cardStyle}
+              title={
+                <div>
+                  <span>
+                    <InboxOutlined style={iconStyle} /> Box Breaking Criteria
+                  </span>
+                  <br />
+                  <Text type="secondary">
+                    Define conditions that trigger creation of new boxes
+                  </Text>
+                </div>
+              }
+              extra={
+                !isEnabled("Box Breaking") ? (
+                  <Tag icon={<LockOutlined style={{ color: PRIMARY_COLOR }} />}>Disabled</Tag>
+                ) : null
+              }
+            >
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr",
+                  columnGap: 12,
+                  rowGap: 8,
+                  marginTop: 12,
+                }}
+              >
+                {[
+                  {
+                    key: "capacity",
+                    label: "Breaking by Capacity",
+                    always: true
+                  },
+                  {
+                    key: "selectFields",
+                    label: (
+                      <>
+                        <Text strong>Select fields to concatenate</Text>
+                        <Select
+                          mode="multiple"
+                          disabled={!isEnabled("Box Breaking")}
+                          allowClear
+                          style={{ width: "100%", marginTop: 4 }}
+                          placeholder="Select one or more fields"
+                          value={selectedBoxFields}
+                          onChange={setSelectedBoxFields}
+                        >
+                          {fields.map((f) => (
+                            <Option key={f.fieldId} value={f.fieldId}>
+                              {f.name}
+                            </Option>
+                          ))}
+                        </Select>
+                      </>
+                    ),
+                    always: false,
+                  },
+                ].map((item) => (
+                  <div key={item.key}>
+                    {item.key !== "selectFields" && (
+                      <Checkbox
+                        checked={item.always ? true : boxBreakingCriteria.includes(item.key)}
+                        disabled={item.always || !isEnabled("Box Breaking")}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setBoxBreakingCriteria((prev) => {
+                            if (checked) {
+                              return Array.from(new Set([...(prev || []), item.key]));
+                            }
+                            return (prev || []).filter((k) => k !== item.key);
+                          });
+                        }}
+                      >
+                        {item.label} {item.always && <Text type="secondary">(Always enabled)</Text>}
+                      </Checkbox>
+                    )}
+                    {item.key === "selectFields" && item.label}
+                  </div>
+                ))}
+              </div>
+            </Card>
+
+          </motion.div>
 
           {/* Config Summary */}
           <motion.div
@@ -731,30 +741,21 @@ const ProjectConfiguration = () => {
                   </List.Item>
                 )}
               />
-            </Card>
-          </motion.div>
-
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            whileHover={{
-              scale: 1.05,
-              boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
-            }}
-            transition={{ duration: 0.3 }}
-          >
-            <Card style={cardStyle}>
-              <Button
+<Button
                 type="primary"
                 block
                 onClick={handleSave}
                 disabled={!projectId}
+                className="mt-4"
               >
                 Save Configuration
               </Button>
+
             </Card>
           </motion.div>
+          
+              
+        
         </Col>
       </Row>
     </div>
