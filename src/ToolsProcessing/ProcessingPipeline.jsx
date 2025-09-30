@@ -1,48 +1,24 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Progress, Badge, Button, Select, Card, Space, Typography, List, message, Tag } from "antd";
-import { useLocation } from "react-router-dom";
-import axios from "axios";
+import { Progress, Badge, Button, Card, Space, Typography, message, Tag } from "antd";
 import { motion } from "framer-motion";
+import API from "../hooks/api";
+import useStore from "../stores/ProjectData";
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
-const { Option } = Select;
-const url = import.meta.env.VITE_API_BASE_URL;
-const url1 = import.meta.env.VITE_API_URL;
 const url3 = import.meta.env.VITE_API_FILE_URL;
 
 const ProcessingPipeline = () => {
-  const location = useLocation();
-  const initialProjectId = location?.state?.projectId ?? null;
-
-  const token = localStorage.getItem("token");
-
-  // Project + configuration state
-  const [project, setProject] = useState(initialProjectId);
-  const [projects, setProjects] = useState([]);
   const [enabledModuleNames, setEnabledModuleNames] = useState([]); // names like "Duplicate Tool", "Envelope Breaking"
   const [loadingModules, setLoadingModules] = useState(false);
-
-  // Audit/processing state
   const [isProcessing, setIsProcessing] = useState(false);
   const [steps, setSteps] = useState([]); // [{key,title,status:(pending|in-progress|completed|failed),duration}]
-
-  // Overall progress
   const currentStep = useMemo(() => steps.findIndex(s => s.status === "in-progress") + 1 || steps.filter(s => s.status === "completed").length, [steps]);
   const percent = useMemo(() => (steps.length ? (steps.filter(s => s.status === "completed").length / steps.length) * 100 : 0), [steps]);
-
-
-  // Fetch projects on mount
-  useEffect(() => {
-    axios
-      .get(`${url}/Project`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(res => setProjects(res.data || []))
-      .catch(err => console.error("Failed to fetch projects", err));
-  }, []);
-
+  const projectId = useStore((state) => state.projectId);
   // Load enabled modules whenever project changes
   useEffect(() => {
-    if (!project) {
+    if (!projectId) {
       setEnabledModuleNames([]);
       return;
     }
@@ -50,18 +26,14 @@ const ProcessingPipeline = () => {
       try {
         setLoadingModules(true);
         // 1) Try to get project configuration (enabled modules as IDs or names)
-        const cfgRes = await axios.get(`${url1}/ProjectConfigs?ProjectId=${project}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const cfgRes = await API.get(`/ProjectConfigs?ProjectId=${projectId}`);
 
         const cfg = Array.isArray(cfgRes.data) ? cfgRes.data[0] : cfgRes.data;
         let moduleEntries = cfg?.modules || [];
 
         // 2) Map IDs to names if needed
         if (moduleEntries.length && typeof moduleEntries[0] === "number") {
-          const modsRes = await axios.get(`${url1}/Modules`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          const modsRes = await API.get(`/Modules`);
           const allMods = modsRes.data || [];
           const idToName = new Map(allMods.map(m => [m.id, m.name]));
           moduleEntries = moduleEntries.map(id => idToName.get(id)).filter(Boolean);
@@ -77,16 +49,16 @@ const ProcessingPipeline = () => {
     };
 
     loadEnabled();
-  }, [project]);
+  }, [projectId]);
 
   // Helpers to detect which steps to run in what order
   const computeRunOrder = () => {
     const names = (enabledModuleNames || []).map(n => String(n).toLowerCase());
     const order = [];
     if (names.some(n => n.includes("duplicate"))) order.push({ key: "duplicate", title: "Duplicate Processing" });
-   if (names.some(n => n.includes("envelope"))) order.push({ key: "envelope", title: "Envelope Breaking" });
-   if (names.some(n => n.includes("extras"))) order.push({ key: "extras", title: "Extras" });
-   if (names.some(n => n.includes("boxbreaking"))) order.push({ key: "boxbreaking", title: "Box Breaking" });
+    if (names.some(n => n.includes("envelope"))) order.push({ key: "envelope", title: "Envelope Breaking" });
+    if (names.some(n => n.includes("extra"))) order.push({ key: "extra", title: "Extra Configuration" });
+    if (names.some(n => n.includes("box"))) order.push({ key: "box", title: "Box Breaking" });
     return order;
   };
 
@@ -124,45 +96,37 @@ const ProcessingPipeline = () => {
 
     const query = new URLSearchParams(queryParams).toString();
 
-    const res = await axios.post(`${url1}/Duplicate?${query}`, null, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const res = await API.post(`/Duplicate?${query}`);
 
     const data = res?.data || {};
     const duplicatesRemoved = data.duplicatesRemoved ?? data.removedCount ?? data.duplicates ?? 0;
     message.success(`Duplicate processing completed. Duplicates removed: ${duplicatesRemoved}`);
   };
 
-  
+
   // Envelope Breaking
-  const runEnvelope = async (project) => {
+  const runEnvelope = async (projectId) => {
     console.log("Audit clicked - calling envelope API");
-    const res = await axios.post(
-      `${url1}/EnvelopeBreakages/EnvelopeConfiguration?ProjectId=${project}`,
-      null,
-      { headers: { Authorization: `Bearer ${token}` } }
+    const res = await API.post(
+      `/EnvelopeBreakages/EnvelopeConfiguration?ProjectId=${projectId}`
     );
     const msg = res?.data?.message || "Envelope breaking completed";
     message.success(msg);
   };
 
-  const runExtras = async(projectId) =>{
-    const res = await axios.post(
-      `${url1}/ExtraEnvelopes?ProjectId=${projectId}`,
-      null,
-      { headers: { Authorization: `Bearer ${token}` } }
+  const runExtras = async (projectId) => {
+    const res = await API.post(
+      `/ExtraEnvelopes?ProjectId=${projectId}`
     );
-     const msg = res?.data?.message || "Extras calculation completed";
+    const msg = res?.data?.message || "Extras calculation completed";
     message.success(msg);
   }
 
-  const BoxBreaking = async(projectId) =>{
-    const res = await axios.post(
-      `${url1}/EnvelopeBreakages/Replication?ProjectId=${projectId}`,
-      null,
-      { headers: { Authorization: `Bearer ${token}` } } 
+  const BoxBreaking = async (projectId) => {
+    const res = await API.get(
+      `/EnvelopeBreakages/Replication?ProjectId=${projectId}`
     )
-       const msg = res?.data?.message || "Box breaking has been completed";
+    const msg = res?.data?.message || "Box breaking has been completed";
     message.success(msg);
   }
 
@@ -171,7 +135,7 @@ const ProcessingPipeline = () => {
   };
 
   const handleAudit = async () => {
-    if (!project) {
+    if (!projectId) {
       message.warning("Please select a project");
       return;
     }
@@ -181,7 +145,6 @@ const ProcessingPipeline = () => {
       message.info("No enabled modules to process for this project.");
       return;
     }
-
     // Initialize steps view
     const initialSteps = order.map(o => ({ key: o.key, title: o.title, status: "pending", duration: null, fileUrl: null, }));
     setSteps(initialSteps);
@@ -196,31 +159,31 @@ const ProcessingPipeline = () => {
         stepTimers.set(step.key, Date.now());
 
         if (step.key === "duplicate") {
-          await runDuplicate(project);
+          await runDuplicate(projectId);
         } else if (step.key === "envelope") {
-          await runEnvelope(project);
+          await runEnvelope(projectId);
         }
-        else if(step.key ==="extras"){
-          await runExtras(project)
+        else if (step.key === "extra") {
+          await runExtras(projectId)
         }
-        else if(step.key === "boxbreaking"){
-          await BoxBreaking(project);
+        else if (step.key === "box") {
+          await BoxBreaking(projectId);
         }
 
         const durationMs = Date.now() - (stepTimers.get(step.key) || Date.now());
         const mm = String(Math.floor(durationMs / 60000)).padStart(2, "0");
         const ss = String(Math.floor((durationMs % 60000) / 1000)).padStart(2, "0");
         updateStepStatus(step.key, {
-        status: "completed",
-       duration: `${mm}:${ss}`,
-         fileUrl: step.key === "duplicate" 
-      ? `${url3}/DuplicateTool_${project}.xlsx`
-      : step.key === "envelope"
-      ? `${url3}/EnvelopeBreaking_${project}.xlsx`
-      : step.key === "extras"
-      ? `${url3}/Extras_${project}.xlsx`
-      : `${url3}/BoxBreaking_${project}.xlsx`,
-  });
+          status: "completed",
+          duration: `${mm}:${ss}`,
+          fileUrl: step.key === "duplicate"
+            ? `${url3}/${projectId}/DuplicateTool.xlsx`
+            : step.key === "envelope"
+              ? `${url3}/${projectId}/EnvelopeBreaking.xlsx`
+              : step.key === "extras"
+                ? `${url3}/${projectId}/ExtrasCalculation.xlsx`
+                : `${url3}/${projectId}/BoxBreaking.xlsx`,
+        });
       }
 
       message.success("Audit processing completed");
@@ -235,31 +198,11 @@ const ProcessingPipeline = () => {
     }
   };
 
-  const handleProjectChange = (value) => {
-    setProject(value);
-  };
-
   return (
     <div className="bg-white shadow-md rounded-lg p-4">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-semibold">Processing Pipeline</h2>
         <div className="text-sm flex items-center gap-2">
-          <span>Project:</span>
-          <Select
-            size="small"
-            style={{ minWidth: 220 }}
-            placeholder="Select Project"
-            value={project}
-            onChange={handleProjectChange}
-          >
-            <Option value="">Choose a Project...</Option>
-            {projects.map((p) => (
-              <Option key={p.projectId} value={p.projectId}>
-                {p.name} (ID: {p.projectId})
-              </Option>
-            ))}
-          </Select>
-
           <span>Status:</span>
           {isProcessing ? (
             <Badge status="processing" text="Processing" />
@@ -267,7 +210,7 @@ const ProcessingPipeline = () => {
             <Badge status="default" text="Idle" />
           )}
 
-          <Button type="primary" onClick={handleAudit} disabled={!project || isProcessing}>
+          <Button type="primary" onClick={handleAudit} disabled={!projectId || isProcessing}>
             Audit
           </Button>
         </div>
@@ -290,7 +233,7 @@ const ProcessingPipeline = () => {
         }}
         transition={{ duration: 0.3 }}
       >
-        <Card size="small" title="Enabled Modules for Selected Project" style={{ marginBottom: 12, border: '1px solid #d9d9d9', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
+        <Card size="small" title="Enabled Modules for Project" style={{ marginBottom: 12, border: '1px solid #d9d9d9', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
           {loadingModules ? (
             <Text type="secondary">Loading modules…</Text>
           ) : enabledModuleNames?.length ? (

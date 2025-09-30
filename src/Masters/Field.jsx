@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Table, Button, Modal, Input, Space, Switch, message } from 'antd';
 import { EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
-import axios from 'axios';
+import API from '../hooks/api';
 
 const Field = () => {
     const [fields, setFields] = useState([]);
@@ -14,7 +14,7 @@ const Field = () => {
     const fetchFields = async () => {
         setLoading(true);
         try {
-            const res = await axios.get('https://localhost:7276/api/Fields');
+            const res = await API.get('/Fields');
             setFields(res.data);
         } catch (err) {
             message.error('Failed to fetch fields');
@@ -43,7 +43,7 @@ const Field = () => {
 
     const handleDelete = async (id) => {
         try {
-            await axios.delete(`https://localhost:7276/api/Fields/${id}`);
+            await API.delete(`https://localhost:7276/api/Fields/${id}`);
             message.success('Deleted successfully');
             fetchFields();
         } catch {
@@ -70,14 +70,14 @@ const Field = () => {
 
         try {
             if (editingItem) {
-                await axios.put(`https://localhost:7276/api/Fields/${editingItem.fieldId}`, {
+                await API.put(`https://localhost:7276/api/Fields/${editingItem.fieldId}`, {
                     fieldId: editingItem.fieldId,
                     name,
                     isUnique,
                 });
                 message.success('Updated successfully');
             } else {
-                await axios.post('https://localhost:7276/api/Fields', {
+                await API.post('https://localhost:7276/api/Fields', {
                     fieldId: 0, // or omit if backend generates it
                     name,
                     isUnique,

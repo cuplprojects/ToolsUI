@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import * as XLSX from "xlsx";
 import axios from "axios";
 import { useToast } from "../hooks/useToast";
+import API from "../hooks/api";
 
 const fieldOptions = ["Type", "Language", "Subject", "Course", "ExamType", "Catch", "PaperNumber"];
 
@@ -19,7 +20,6 @@ export default function ExcelUpload() {
 
   //notificaiton
   const { showToast } = useToast();
-  const url = import.meta.env.VITE_API_URL;
   const url1 = import.meta.env.VITE_API_BASE_URL;
 
   useEffect(() => {
@@ -36,7 +36,7 @@ export default function ExcelUpload() {
 
   const checkGroupData = async (groupId) => {
     try {
-      const res = await axios.get(`${url}/ExcelUpload/group/${groupId}`, {
+      const res = await API.get(`/ExcelUpload/group/${groupId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.data && res.data.length > 0) {
@@ -100,8 +100,8 @@ export default function ExcelUpload() {
     });
 
     try {
-      await axios.post(
-        `${url}/ExcelUpload/upload-mapped?groupId=${selectedGroupId}`,
+      await API.post(
+        `/ExcelUpload/upload-mapped?groupId=${selectedGroupId}`,
         filteredData,
         {
           headers: {

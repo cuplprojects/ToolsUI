@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Table, Button, Modal, Input, Space, message } from 'antd';
 import { EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
-import axios from 'axios';
+import API from '../hooks/api';
 
 const BoxCapacity = () => {
     const [boxCapacities, setBoxCapacities] = useState([]);
@@ -9,12 +9,11 @@ const BoxCapacity = () => {
     const [modalVisible, setModalVisible] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
     const [capacity, setCapacity] = useState('');
-    const [searchText, setSearchText] = useState('');
 
     const fetchBoxCapacities = async () => {
         setLoading(true);
         try {
-            const res = await axios.get('https://localhost:7276/api/BoxCapacities');
+            const res = await API.get('/BoxCapacities');
             setBoxCapacities(res.data);
         } catch (err) {
             message.error('Failed to fetch box capacities');
@@ -41,7 +40,7 @@ const BoxCapacity = () => {
 
     const handleDelete = async (id) => {
         try {
-            await axios.delete(`https://localhost:7276/api/BoxCapacities/${id}`);
+            await API.delete(`/BoxCapacities/${id}`);
             message.success('Deleted successfully');
             fetchBoxCapacities();
         } catch {
@@ -68,13 +67,13 @@ const BoxCapacity = () => {
 
         try {
             if (editingItem) {
-                await axios.put(`https://localhost:7276/api/BoxCapacities/${editingItem.boxCapacityId}`, {
+                await API.put(`/BoxCapacities/${editingItem.boxCapacityId}`, {
                     boxCapacityId: editingItem.boxCapacityId,
                     capacity
                 });
                 message.success('Updated successfully');
             } else {
-                await axios.post('https://localhost:7276/api/BoxCapacities', {
+                await API.post('/api/BoxCapacities', {
                     capacity
                 });
                 message.success('Added successfully');

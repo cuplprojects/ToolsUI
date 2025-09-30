@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Table, Button, Modal, Input, InputNumber, Space, message } from 'antd';
 import { EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
-import axios from 'axios';
+import API from '../hooks/api';
 
 const EnvelopeType = () => {
   const [envelopes, setEnvelopes] = useState([]);
@@ -14,7 +14,7 @@ const EnvelopeType = () => {
   const fetchEnvelopes = async () => {
     setLoading(true);
     try {
-      const res = await axios.get('https://localhost:7276/api/EnvelopeTypes');
+      const res = await API.get('/EnvelopeTypes');
       setEnvelopes(res.data);
     } catch {
       message.error('Failed to fetch envelope types');
@@ -43,7 +43,7 @@ const EnvelopeType = () => {
 
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`https://localhost:7276/api/EnvelopeTypes/${id}`);
+      await API.delete(`https://localhost:7276/api/EnvelopeTypes/${id}`);
       message.success('Deleted successfully');
       fetchEnvelopes();
     } catch {
@@ -76,13 +76,13 @@ const EnvelopeType = () => {
 
     try {
       if (editingItem) {
-        await axios.put(
+        await API.put(
           `https://localhost:7276/api/EnvelopeTypes/${editingItem.envelopeId}`,
           payload
         );
         message.success('Updated successfully');
       } else {
-        await axios.post('https://localhost:7276/api/EnvelopeTypes', payload);
+        await API.post('https://localhost:7276/api/EnvelopeTypes', payload);
         message.success('Added successfully');
       }
 

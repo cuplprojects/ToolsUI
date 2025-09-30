@@ -22,16 +22,12 @@ import {
   LockOutlined,
   NumberOutlined,
 } from "@ant-design/icons";
-import axios from "axios";
 import { motion } from "framer-motion";
 import { useToast } from '../hooks/useToast';
-
+import API from "../hooks/api";
+import useStore from "../stores/ProjectData";
 const { Title, Text } = Typography;
 const { Option } = Select;
-
-const url = import.meta.env.VITE_API_BASE_URL;
-const url1 = import.meta.env.VITE_API_URL;
-
 const PRIMARY_COLOR = "#1677ff"; // Ant Design default primary color
 const EXTRA_ALIAS_NAME = "Extra Configuration";
 const NODAL_MODULE = "Nodal Extra Calculation";
@@ -39,10 +35,8 @@ const UNIVERSITY_MODULE = "University Extra Calculation";
 
 const ProjectConfiguration = () => {
   const { showToast } = useToast();
-  const [selectedProject, setSelectedProject] = useState(null);
   const [enabledModules, setEnabledModules] = useState([]);
   const [boxBreakingCriteria, setBoxBreakingCriteria] = useState(["capacity"]);
-  const [projects, setProjects] = useState([]);
   const [toolModules, setToolModules] = useState([]);
   const [innerEnvelopes, setInnerEnvelopes] = useState([]);
   const [outerEnvelopes, setOuterEnvelopes] = useState([]);
@@ -50,15 +44,15 @@ const ProjectConfiguration = () => {
   const [extraTypes, setExtraTypes] = useState([]);
   const [extraTypeSelection, setExtraTypeSelection] = useState({});
   const [extraProcessingConfig, setExtraProcessingConfig] = useState({});
-
+  const [fields, setFields] = useState([]);
+  const [selectedEnvelopeFields, setSelectedEnvelopeFields] = useState([]);
+  const [selectedBoxFields, setSelectedBoxFields] = useState([]);
   const token = localStorage.getItem("token");
-
+  const projectId = useStore((state) => state.projectId);
   // Fetch ExtraTypes
   useEffect(() => {
-    axios
-      .get(`${url1}/ExtraTypes`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+    API
+      .get(`/ExtraTypes`)
       .then((res) => {
         setExtraTypes(res.data);
 
@@ -71,19 +65,10 @@ const ProjectConfiguration = () => {
       })
       .catch((err) => console.error("Failed to fetch extra types", err));
   }, []);
-
-  // Fetch Projects
-  useEffect(() => {
-    axios
-      .get(`${url}/Project`, { headers: { Authorization: `Bearer ${token}` } })
-      .then((res) => setProjects(res.data))
-      .catch((err) => console.error("Failed to fetch projects", err));
-  }, []);
-
   // Fetch Modules
   useEffect(() => {
-    axios
-      .get(`${url1}/Modules`, { headers: { Authorization: `Bearer ${token}` } })
+    API
+      .get(`/Modules`, { headers: { Authorization: `Bearer ${token}` } })
       .then((res) => setToolModules(res.data))
       .catch((err) => console.error("Failed to fetch modules", err));
   }, []);
@@ -115,24 +100,28 @@ const ProjectConfiguration = () => {
 
   // Fetch Envelope Types
   useEffect(() => {
-    axios
-      .get(`${url1}/EnvelopeTypes`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+    API
+      .get(`/EnvelopeTypes`)
       .then((res) => setEnvelopeOptions(res.data))
       .catch((err) => console.error("Failed to fetch envelope types", err));
+  }, []);
+
+  // Fetch Fields
+  useEffect(() => {
+    API
+      .get(`/Fields`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((res) => setFields(res.data))
+      .catch((err) => console.error("Failed to fetch fields", err));
   }, []);
 
   const isEnabled = (toolName) => enabledModules.includes(toolName);
 
   const handleSave = async () => {
-    if (!selectedProject) return;
 
     try {
       // 1️⃣ Save ProjectConfigs
       const projectConfigPayload = {
-        id: 0,
-        projectId: selectedProject,
+        projectId: projectId,
         modules: enabledModules.map(
           (m) => toolModules.find((tm) => tm.name === m)?.id
         ),
@@ -140,12 +129,11 @@ const ProjectConfiguration = () => {
           Inner: innerEnvelopes.join(","),
           Outer: outerEnvelopes.join(","),
         }),
-        boxBreaking: [0],
+        BoxBreakingCriteria: selectedBoxFields,
+        EnvelopeMakingCriteria: selectedEnvelopeFields,
       };
 
-      await axios.post(`${url1}/ProjectConfigs`, projectConfigPayload, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await API.post(`/ProjectConfigs`, projectConfigPayload);
 
       // 2️⃣ Save ExtrasConfigurations
       const extrasPayloads = Object.entries(extraTypeSelection)
@@ -156,13 +144,13 @@ const ProjectConfiguration = () => {
           const config = extraProcessingConfig[typeName] || {};
 
           // normalize envelope
-    const normalizedEnvelope = {
-      Inner: String(config.envelopeType?.inner || ""),
-      Outer: String(config.envelopeType?.outer || ""),
-    };
+          const normalizedEnvelope = {
+            Inner: String(config.envelopeType?.inner || ""),
+            Outer: String(config.envelopeType?.outer || ""),
+          };
           return {
             id: 0,
-            projectId: selectedProject,
+            projectId: projectId,
             extraType: et.extraTypeId,
             mode,
             value:
@@ -179,28 +167,35 @@ const ProjectConfiguration = () => {
       if (extrasPayloads.length > 0) {
         await Promise.all(
           extrasPayloads.map((payload) =>
-            axios.post(`${url1}/ExtrasConfigurations`, payload, {
-              headers: { Authorization: `Bearer ${token}` },
-            })
+            API.post(`/ExtrasConfigurations`, payload)
           )
         );
       }
 
       showToast("Configuration saved successfully!", "success");
+      resetForm();
       console.log("Saved:", { projectConfigPayload, extrasPayloads });
     } catch (err) {
       console.error("Failed to save configuration", err);
-      showToast("Failed to save configuration", "error");
+      showToast("Failed to save configuration", err);
+      resetForm();
     }
   };
 
+  const resetForm = () => {
+    setEnabledModules([]);  // Reset modules to empty array
+    setInnerEnvelopes([]);   // Reset inner envelopes
+    setOuterEnvelopes([]);   // Reset outer envelopes
+    setSelectedBoxFields([]); // Reset box fields
+    setSelectedEnvelopeFields([]); // Reset envelope fields
+    setExtraTypeSelection({}); // Reset extra type selection
 
+    // Add any other state variables you might have
+  };
 
 
   const cardStyle = { marginBottom: 16, border: '1px solid #d9d9d9', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' };
   const iconStyle = { color: PRIMARY_COLOR, marginRight: 6 };
-  const selectedProjectName =
-    projects.find((p) => p.projectId === selectedProject)?.name || "None";
   const envelopeConfigured = isEnabled("Envelope Breaking");
   const boxConfigured = isEnabled("Box Breaking");
   const extraConfigured = isEnabled(EXTRA_ALIAS_NAME);
@@ -211,50 +206,6 @@ const ProjectConfiguration = () => {
         {/* LEFT SIDE */}
         <Col xs={24} md={16}>
           {/* Project Selection */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            whileHover={{
-              scale: 1.05,
-              boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
-            }}
-            transition={{ duration: 0.3 }}
-          >
-            <Card
-              style={cardStyle}
-              title={
-                <div>
-                  <span>
-                    <AppstoreOutlined style={iconStyle} /> Project Selection
-                  </span>
-                  <br />
-                  <Text type="secondary">
-                    Select a project to configure its modules and settings
-                  </Text>
-                </div>
-              }
-            >
-              <Form.Item style={{ marginTop: 16 }} required>
-                <Select
-                  placeholder="Select Project"
-                  onChange={setSelectedProject}
-                  value={selectedProject}
-                >
-                  {projects.map((p) => (
-                    <Option key={p.projectId} value={p.projectId}>
-                      {p.name}
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-              {!selectedProject && (
-                <Text type="warning">
-                  Please select a project to enable configuration options below.
-                </Text>
-              )}
-            </Card>
-          </motion.div>
-
           {/* Module Selection */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -379,7 +330,71 @@ const ProjectConfiguration = () => {
               </div>
             </Card>
           </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{
+              scale: 1.05,
+              boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
+            }}
+            transition={{ duration: 0.3 }}
+          >
+            <Card
+              style={cardStyle}
+              title={
+                <div>
+                  <span>
+                    <InboxOutlined style={iconStyle} /> Envelope Making Criteria
+                  </span>
+                  <br />
+                  <Text type="secondary">
+                    Define conditions that numbers Envelope
+                  </Text>
+                </div>
 
+              }
+              extra={
+                !isEnabled("Envelope Breaking") ? (
+                  <Tag icon={<LockOutlined style={{ color: PRIMARY_COLOR }} />}>Disabled</Tag>
+                ) : null
+              }
+            >
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  columnGap: 12,
+                  rowGap: 8,
+                  marginTop: 12,
+                }}
+              >
+                <div>
+                  <Text strong>Select fields to concatenate</Text>
+                  <Select
+                    mode="multiple"
+                    disabled={!isEnabled("Envelope Breaking")}
+                    allowClear
+                    style={{ width: '100%', marginTop: 4 }}
+                    placeholder="Select one or more fields"
+                    value={selectedEnvelopeFields}
+                    onChange={setSelectedEnvelopeFields}
+                  >
+                    {fields.map((f) => (
+                      <Option key={f.fieldId} value={f.fieldId}>
+                        {f.name}
+                      </Option>
+                    ))}
+                    extra={
+                      !isEnabled("Envelope Breaking") ? (
+                        <Tag icon={<LockOutlined style={{ color: PRIMARY_COLOR }} />}>Disabled</Tag>
+                      ) : null
+                    }
+                  </Select>
+                </div>
+              </div>
+            </Card>
+          </motion.div>
           {/* Box Breaking */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -402,7 +417,6 @@ const ProjectConfiguration = () => {
                     Define conditions that trigger creation of new boxes
                   </Text>
                 </div>
-
               }
               extra={
                 !isEnabled("Box Breaking") ? (
@@ -410,7 +424,6 @@ const ProjectConfiguration = () => {
                 ) : null
               }
             >
-
               <div
                 style={{
                   display: "grid",
@@ -421,34 +434,60 @@ const ProjectConfiguration = () => {
                 }}
               >
                 {[
-                  { key: "capacity", label: "Breaking by Capacity", always: true },
-                  { key: "route", label: "Route Change" },
-                  { key: "nodal", label: "Nodal Change" },
-                  { key: "date", label: "Date Change" },
-                  { key: "center", label: "Center Change" },
+                  {
+                    key: "capacity",
+                    label: "Breaking by Capacity",
+                    always: true
+                  },
+                  {
+                    key: "selectFields",
+                    label: (
+                      <>
+                        <Text strong>Select fields to concatenate</Text>
+                        <Select
+                          mode="multiple"
+                          disabled={!isEnabled("Box Breaking")}
+                          allowClear
+                          style={{ width: "100%", marginTop: 4 }}
+                          placeholder="Select one or more fields"
+                          value={selectedBoxFields}
+                          onChange={setSelectedBoxFields}
+                        >
+                          {fields.map((f) => (
+                            <Option key={f.fieldId} value={f.fieldId}>
+                              {f.name}
+                            </Option>
+                          ))}
+                        </Select>
+                      </>
+                    ),
+                    always: false,
+                  },
                 ].map((item) => (
                   <div key={item.key}>
-                    <Checkbox
-                      checked={item.always ? true : boxBreakingCriteria.includes(item.key)}
-                      disabled={item.always || !isEnabled("Box Breaking")}
-                      onChange={(e) => {
-                        const checked = e.target.checked;
-                        setBoxBreakingCriteria((prev) => {
-                          if (checked) {
-                            return Array.from(new Set([...(prev || []), item.key]));
-                          }
-                          return (prev || []).filter((k) => k !== item.key);
-                        });
-                      }}
-                    >
-                      {item.label} {item.always && (
-                        <Text type="secondary">(Always enabled)</Text>
-                      )}
-                    </Checkbox>
+                    {item.key !== "selectFields" && (
+                      <Checkbox
+                        checked={item.always ? true : boxBreakingCriteria.includes(item.key)}
+                        disabled={item.always || !isEnabled("Box Breaking")}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setBoxBreakingCriteria((prev) => {
+                            if (checked) {
+                              return Array.from(new Set([...(prev || []), item.key]));
+                            }
+                            return (prev || []).filter((k) => k !== item.key);
+                          });
+                        }}
+                      >
+                        {item.label} {item.always && <Text type="secondary">(Always enabled)</Text>}
+                      </Checkbox>
+                    )}
+                    {item.key === "selectFields" && item.label}
                   </div>
                 ))}
               </div>
             </Card>
+
           </motion.div>
         </Col>
 
@@ -653,11 +692,6 @@ const ProjectConfiguration = () => {
                 size="small"
                 dataSource={[
                   {
-                    label: "Selected Project",
-                    value: selectedProjectName,
-                    strong: true,
-                  },
-                  {
                     label: "Enabled Modules",
                     value: enabledModules.length,
                     strong: true,
@@ -715,7 +749,7 @@ const ProjectConfiguration = () => {
                 type="primary"
                 block
                 onClick={handleSave}
-                disabled={!selectedProject}
+                disabled={!projectId}
               >
                 Save Configuration
               </Button>

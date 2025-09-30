@@ -24,13 +24,6 @@ export default function CorrectionTool() {
   const [replacedCount, setReplacedCount] = useState(0);
   const [highlightMatches, setHighlightMatches] = useState([]); // array of {rowId, field}
 
-
-
-
-
-
-
-  const url = import.meta.env.VITE_API_URL;
   const url1 = import.meta.env.VITE_API_BASE_URL;
 
   useEffect(() => {
@@ -44,7 +37,7 @@ export default function CorrectionTool() {
   const fetchGroupData = async (groupId) => {
     setLoading(true);
     try {
-      const res = await axios.get(`${url}/ExcelUpload/group/${groupId}`, {
+      const res = await API.get(`/ExcelUpload/group/${groupId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setGroupData(res.data);
@@ -58,7 +51,7 @@ export default function CorrectionTool() {
 
   const handleSaveChanges = async () => {
     try {
-      await axios.post(`${url}/Correction/updateRows`, editableRows, {
+      await API.post(`/Correction/updateRows`, editableRows, {
 
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -78,7 +71,7 @@ export default function CorrectionTool() {
       return;
     }
     try {
-      const res = await axios.get(`${url}/Correction/audit?groupId=${selectedGroupId}`, {
+      const res = await API.get(`/Correction/audit?groupId=${selectedGroupId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setAuditData(res.data.mismatchedRows || []);
@@ -118,7 +111,7 @@ export default function CorrectionTool() {
     };
 
     try {
-      const res = await axios.post(`${url}/Correction/correct`, payload, {
+      const res = await API.post(`/Correction/correct`, payload, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json"

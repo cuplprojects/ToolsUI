@@ -12,26 +12,23 @@ import {
   Tabs,
   Modal,
   Divider,
+  Checkbox,
+  Input,
 } from 'antd';
 import { useToast } from '../hooks/useToast';
 import { CheckCircleOutlined, UploadOutlined } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
-import axios from 'axios';
 import { motion } from 'framer-motion';
 import DuplicateTool from './DuplicateTool';
-import { div } from 'framer-motion/client';
+import API from '../hooks/api';
+import useStore from '../stores/ProjectData';
 
 const { Text } = Typography;
 const { Option } = Select;
 const { TabPane } = Tabs;
 
-const url = import.meta.env.VITE_API_BASE_URL;
-const url1 = import.meta.env.VITE_API_URL;
-
 const DataImport = () => {
   const { showToast } = useToast();
-  const [project, setProject] = useState(null);
-  const [projects, setProjects] = useState([]);
   const [fileHeaders, setFileHeaders] = useState([]);
   const [expectedFields, setExpectedFields] = useState([]);
   const [fieldMappings, setFieldMappings] = useState({});
@@ -45,36 +42,25 @@ const DataImport = () => {
   const [loading, setLoading] = useState(false); // ✅ added
   const [activeTab, setActiveTab] = useState("1");
   const token = localStorage.getItem('token');
-
+  const projectId = useStore((state) => state.projectId);
+  const [keepZeroQuantity, setKeepZeroQuantity] = useState(false);
+  const [skipItems, setSkipItems] = useState(false);
+  const [quantity, setQuantity] = useState(0);
   // Load projects
   useEffect(() => {
-    axios.get(`${url}/Project`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(res => setProjects(res.data))
-      .catch(err => console.error("Failed to fetch projects", err));
-  }, []);
-
-  // Fetch fields + existing data when project changes
-  useEffect(() => {
-    if (!project) return;
-
-    fetchExistingData(project);
-
-    axios.get(`${url1}/Fields`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    if (!projectId) return;
+    fetchExistingData(projectId);
+    API.get(`/Fields`)
       .then(res => setExpectedFields(res.data))
       .catch(err => console.error("Failed to fetch fields", err));
-  }, [project]);
+  }, [projectId]);
 
   const fetchExistingData = async (projectId) => {
     if (!projectId) return;
+
     setLoading(true);
     try {
-      const res = await axios.get(`${url1}/NRDatas/GetByProjectId/${projectId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await API.get(`/NRDatas/GetByProjectId/${projectId}`);
       setExistingData(res.data || []);
       setShowData(res.data && res.data.length > 0);
     } catch (err) {
@@ -88,15 +74,9 @@ const DataImport = () => {
 
   const fetchConflictReport = async () => {
     setActiveTab("2");
-    if (!project) {
-      showToast("Please select a project first.", "warning");
-      return;
-    }
     setLoading(true);
     try {
-      const res = await axios.get(`${url1}/NRDatas/ErrorReport?ProjectId=${project}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await API.get(`/NRDatas/ErrorReport?ProjectId=${projectId}`);
       if (res.data?.duplicatesFound) {
         setConflicts(res.data);
         showToast("Conflict report loaded", "success");
@@ -127,7 +107,7 @@ const DataImport = () => {
     };
 
     try {
-      await axios.put(`${url1}/NRDatas?ProjectId=${project}`, payload, {
+      await API.put(`/NRDatas?ProjectId=${projectId}`, payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
       showToast(`Resolved conflict for ${record.catchNo}`, "success");
@@ -266,30 +246,43 @@ const DataImport = () => {
     return expectedFields.some(field => fieldMappings[field.fieldId]);
   };
   const resetForm = () => {
-    setProject(null);
     setFileHeaders([]);
     setFieldMappings({});
     setExcelData([]);
-    setProcessingStarted(false);
     setExpectedFields([]);
     setViewConflicts(false);
     setConflicts(null);
+    setSkipItems(false)
+    setQuantity(0);
+    setKeepZeroQuantity(false);
   };
 
   const handleUpload = () => {
-    const mappedData = getMappedData();
+    let mappedData = getMappedData();
+    if (keepZeroQuantity) {
+      mappedData = mappedData.map((row) => {
+        if (row.quantity === 0) {
+          row.quantity = quantity; // Replace with the updated quantity
+        }
+        return row;
+      });
+    }
+    if (skipItems) {
+      mappedData = mappedData.filter((row) => row.quantity !== 0);
+    }
     const payload = {
-      projectId: project,
+      projectId: projectId,
       data: mappedData
     };
 
-    axios.post(`${url1}/NRDatas`, payload, {
+    API.post(`/NRDatas`, payload, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => {
         console.log('Validation result:', res.data);
         showToast("Validation successful", "success");
         resetForm();
+        fetchExistingData();
       })
       .catch(err => {
         console.error("Validation failed", err);
@@ -315,9 +308,6 @@ const DataImport = () => {
 
   // Render uploaded Excel preview
   const renderUploadedData = () => {
-    if (!project) {
-      return <Text type="warning">Please select a project to view data.</Text>;
-    }
     if (!showData) return null;
 
     const columns = fileHeaders.map(header => ({
@@ -358,7 +348,19 @@ const DataImport = () => {
     return match || null;
   };
 
+  const handleKeepZeroQuantityChange = (e) => {
+    setKeepZeroQuantity(e.target.checked);
+    if (e.target.checked) {
+      setSkipItems(false);  // Deselect skipItems if keepZeroQuantity is selected
+    }
+  };
 
+  const handleSkipItemsChange = (e) => {
+    setSkipItems(e.target.checked);
+    if (e.target.checked) {
+      setKeepZeroQuantity(false);  // Deselect keepZeroQuantity if skipItems is selected
+    }
+  };
 
   return (
     <div style={{ padding: 24 }}>
@@ -386,20 +388,6 @@ const DataImport = () => {
             <Card title="Data Import" bordered={true} style={{ boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
               <Row gutter={[16, 16]}>
                 <Col xs={24} md={12}>
-                  <Text strong>Select Project</Text>
-                  <Select
-                    style={{ width: '100%', marginTop: 4 }}
-                    placeholder="Choose a project..."
-                    onChange={setProject}
-                    value={project}
-                  >
-                    <Option value="">Choose a Project...</Option>
-                    {projects.map(p => (
-                      <Option key={p.projectId} value={p.projectId}>{p.name}</Option>
-                    ))}
-                  </Select>
-                </Col>
-                <Col xs={24} md={12}>
                   <Upload.Dragger
                     name="file"
                     accept=".xls,.xlsx,.csv"
@@ -410,6 +398,33 @@ const DataImport = () => {
                     <p className="ant-upload-text">Upload Excel or CSV file</p>
                     <Button icon={<UploadOutlined />}>Choose File</Button>
                   </Upload.Dragger>
+                </Col>
+                <Col xs={24} md={12}>
+                  <Space direction="vertical" style={{ width: '100%' }}>
+                    <Checkbox
+                      checked={keepZeroQuantity}
+                      onChange={handleKeepZeroQuantityChange}
+                    >
+                      Keep items with 0 quantity and change their quantity
+                    </Checkbox>
+
+                    {keepZeroQuantity && (
+                      <Input
+                        type="number"
+                        value={quantity}
+                        onChange={(e) => setQuantity(e.target.value)}
+                        placeholder="Enter quantity to replace 0"
+                        disabled={!keepZeroQuantity}
+                      />
+                    )}
+
+                    <Checkbox
+                      checked={skipItems}
+                      onChange={handleSkipItemsChange}
+                    >
+                      Skip items with 0 quantity
+                    </Checkbox>
+                  </Space>
                 </Col>
               </Row>
 
@@ -524,34 +539,36 @@ const DataImport = () => {
         </Col>
 
         {/* Right Section */}
-        <Col xs={24} md={8}>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            whileHover={{
-              scale: 1.05,
-              boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
-            }}
-            transition={{ duration: 0.3 }}
-          >
-            <Card title="Actions" bordered={true} style={{ marginTop: '10px', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
-              <Button block onClick={fetchConflictReport}>
-                Load Conflict
-              </Button>
-            </Card></motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            whileHover={{
-              scale: 1.05,
-              boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
-            }}
-            transition={{ duration: 0.3 }}
-          >
-            <Card title="Duplicate Tool" bordered={true} style={{ marginTop: '10px', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
-              <DuplicateTool project={project} />
-            </Card></motion.div>
-        </Col>
+        {existingData.length > 0 && (
+          <Col xs={24} md={8}>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              whileHover={{
+                scale: 1.05,
+                boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
+              }}
+              transition={{ duration: 0.3 }}
+            >
+              <Card title="Actions" bordered={true} style={{ marginTop: '10px', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
+                <Button block onClick={fetchConflictReport}>
+                  Load Conflict
+                </Button>
+              </Card></motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              whileHover={{
+                scale: 1.05,
+                boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
+              }}
+              transition={{ duration: 0.3 }}
+            >
+              <Card title="Duplicate Tool" bordered={true} style={{ marginTop: '10px', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
+                <DuplicateTool />
+              </Card></motion.div>
+          </Col>
+        )}
       </Row>
     </div >
   );
