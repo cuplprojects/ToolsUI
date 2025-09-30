@@ -121,7 +121,7 @@ const ProjectConfiguration = () => {
     try {
       // 1️⃣ Save ProjectConfigs
       const projectConfigPayload = {
-        projectId: projectId,
+        projectId: Number(projectId),
         modules: enabledModules.map(
           (m) => toolModules.find((tm) => tm.name === m)?.id
         ),
@@ -150,7 +150,7 @@ const ProjectConfiguration = () => {
           };
           return {
             id: 0,
-            projectId: projectId,
+            projectId: Number(projectId),
             extraType: et.extraTypeId,
             mode,
             value:
