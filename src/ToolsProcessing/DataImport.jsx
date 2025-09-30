@@ -15,7 +15,7 @@ import {
   Input,
 } from 'antd';
 import { useToast } from '../hooks/useToast';
-import { CheckCircleOutlined, UploadOutlined } from '@ant-design/icons';
+import { CheckCircleOutlined, UploadOutlined, ToolOutlined } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
 import { motion } from 'framer-motion';
 import DuplicateTool from './DuplicateTool';
@@ -25,6 +25,7 @@ import useStore from '../stores/ProjectData';
 const { Text } = Typography;
 const { Option } = Select;
 const { TabPane } = Tabs;
+const PRIMARY_COLOR = "#1677ff"; 
 
 const DataImport = () => {
   const { showToast } = useToast();
@@ -187,6 +188,7 @@ const DataImport = () => {
 
     return (
       <div>
+        <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>Resolve any conflicts found in the data</Text>
         <Text className='mb-3' type="secondary">Please resolve all conflicts before further processing</Text>
 
         <Table
@@ -357,6 +359,7 @@ const DataImport = () => {
       setKeepZeroQuantity(false);  // Deselect keepZeroQuantity if skipItems is selected
     }
   };
+  const iconStyle = { color: PRIMARY_COLOR, marginRight: 6 };
 
   return (
     <div style={{ padding: 24 }}>
@@ -372,8 +375,18 @@ const DataImport = () => {
             }}
             transition={{ duration: 0.3 }}
           >
-            <Card title="Data Import" bordered={true} style={{ boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
-              <Row gutter={[16, 16]}>
+            <Card title={<div>
+              <span>
+              <ToolOutlined style={iconStyle}/> Data Import</span><br/>
+ <Text type="secondary" >
+      Upload and map your data files here
+    </Text>
+            </div>}
+            bordered={true} 
+            style={{ boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
+<div>
+   
+  </div>              <Row gutter={[16, 16]}>
                 <Col xs={24} md={12}>
                   <Upload.Dragger
                     name="file"
@@ -502,7 +515,6 @@ const DataImport = () => {
                       transition={{ duration: 0.3 }}
                     >
                       <Card style={{ border: '1px solid #d9d9d9', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
-
                         <Table
                           dataSource={existingData}
                           columns={columns}
@@ -520,7 +532,84 @@ const DataImport = () => {
                   </TabPane>
                 </Tabs>
               ) : (
-                <div />
+<div />
+                //FieldMappingSection
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  whileHover={{
+                    scale: 1.05,
+                    boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
+                  }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <Card title="Field Mapping" style={{ marginTop: 24, border: '1px solid #d9d9d9', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
+                    <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>Map fields from your file to expected fields</Text>
+                    <Row gutter={[16, 16]}>
+                      {expectedFields.map((expectedField) => {
+                        // Check for auto-mapping and update fieldMappings
+                        const autoMappedValue = autoMapField(expectedField, fileHeaders);
+
+                        return (
+                          <Col key={expectedField.fieldId} xs={24} md={8}>
+                            <div style={{ marginBottom: 12 }}>
+                              <div style={{ display: 'flex', alignItems: 'center' }}>
+                                <Text
+                                  style={{
+                                    display: 'block',
+                                    marginBottom: 8,
+                                    marginRight: 8,
+                                    color: fieldMappings[expectedField.fieldId] ? '#006400' : 'inherit', // Dark green for mapped fields
+                                  }}
+                                >
+                                  {expectedField.name}
+                                </Text>
+                                {fieldMappings[expectedField.fieldId] && (
+                                  <CheckCircleOutlined style={{ color: '#006400', fontSize: '16px' }} />
+                                )}
+                              </div>
+                              <Select
+                                style={{
+                                  width: '100%',
+                                  borderColor: fieldMappings[expectedField.fieldId] ? '#006400' : undefined, // Dark green border
+                                  boxShadow: fieldMappings[expectedField.fieldId] ? '0 0 5px #006400' : undefined, // Optional: dark green shadow
+                                }}
+                                placeholder="Select matching column from file"
+                                value={fieldMappings[expectedField.fieldId] || autoMappedValue} // Automatically select if a match is found
+                                onChange={(value) => {
+                                  setFieldMappings((prev) => ({
+                                    ...prev,
+                                    [expectedField.fieldId]: value,
+                                  }));
+                                }}
+                              >
+                                {fileHeaders
+                                  .filter(
+                                    (header) =>
+                                      !Object.values(fieldMappings).includes(header) ||
+                                      fieldMappings[expectedField.fieldId] === header
+                                  )
+                                  .map((header, index) => (
+                                    <Option key={`${header}-${index}`} value={header}>
+                                      {header}
+                                    </Option>
+                                  ))}
+                              </Select>
+                            </div>
+                          </Col>
+                        );
+                      })}
+                    </Row>
+                    {isAnyFieldMapped() && (
+                      <Button type="primary" block onClick={handleUpload}>
+                        Upload and Validate
+                      </Button>
+                    )}
+                  </Card>
+                </motion.div>
+
+                
+
               )}
             </Card> </motion.div>
         </Col>
@@ -537,10 +626,28 @@ const DataImport = () => {
               }}
               transition={{ duration: 0.3 }}
             >
-              <Card title="Actions" bordered={true} style={{ marginTop: '10px', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
-                <Button block onClick={fetchConflictReport}>
-                  Load Conflict
-                </Button>
+              <Card title={
+                <div>
+                  <span>
+                    <ToolOutlined style={iconStyle} /> Action                    
+                     </span>
+                     <br/>
+                     <Text type="secondary" >Perform additional actions on your data</Text>
+                   </div>
+              }
+              bordered={true} 
+              style={{ marginTop: '10px', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
+                <Button
+  block
+  onClick={fetchConflictReport}
+  style={{
+    backgroundColor: '#f0dc24ff',  // Light yellow color
+    borderColor: '#FFEB3B',      // Ensure the border matches the background
+    color: '#000',               // Set text color to black or adjust as needed
+  }}
+>
+  🎉 Load Conflict
+</Button>
               </Card></motion.div>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -551,7 +658,18 @@ const DataImport = () => {
               }}
               transition={{ duration: 0.3 }}
             >
-              <Card title="Duplicate Tool" bordered={true} style={{ marginTop: '10px', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
+              <Card title={
+                <div>
+                  <span>
+                    <ToolOutlined style={iconStyle}/>Duplicate Tool
+                  </span>
+                  <br/>
+                <Text type="secondary">Manage duplicates in your data</Text>
+
+                </div>
+              } 
+              bordered={true} 
+              style={{ marginTop: '10px', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
                 <DuplicateTool />
               </Card></motion.div>
           </Col>

@@ -60,91 +60,91 @@ const DuplicateTool = () => {
 
 
   return (
-    <div >
-      <Row gutter={[24, 24]}>
-        <Col xs={24} md={24}>
+    <div>
+  <Row gutter={[24, 24]}>
+    <Col xs={24} md={24}>
+      <Space direction="vertical" style={{ width: '100%' }} size="large">
+        <div>
+          <Text strong>Select fields to concatenate</Text>
+          <Select
+            mode="multiple"
+            allowClear
+            style={{ width: '100%', marginTop: 4 }}
+            placeholder="Select one or more fields"
+            value={selectedFieldIds}
+            onChange={setSelectedFieldIds}
+          >
+            {fields.map((f) => (
+              <Option key={f.fieldId} value={f.fieldId}>
+                {f.name}
+              </Option>
+            ))}
+          </Select>
+        </div>
 
-          <Space direction="vertical" style={{ width: '100%' }} size="large">
-            <div>
-              <Text strong>Select fields to concatenate</Text>
-              <Select
-                mode="multiple"
-                allowClear
-                style={{ width: '100%', marginTop: 4 }}
-                placeholder="Select one or more fields"
-                value={selectedFieldIds}
-                onChange={setSelectedFieldIds}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          whileHover={{
+            scale: 1.05,
+            boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
+          }}
+          transition={{ duration: 0.3 }}
+        >
+          <Card title="Processing Options" bordered={true} style={{ boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
+            <Row gutter={[16, 16]}>
+              <Title level={5}>Duplicate Handling Strategy</Title>
+              <Radio.Group
+                onChange={(e) => setStrategy(e.target.value)}
+                value={strategy}
+                style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
               >
-                {fields.map((f) => (
-                  <Option key={f.fieldId} value={f.fieldId}>
-                    {f.name}
-                  </Option>
-                ))}
-              </Select>
-            </div>
+                <Radio value="consolidate">Sum quantities</Radio>
+                <Radio value="first">Keep first occurrence</Radio>
+                <Radio value="manual">Manual review required</Radio>
+              </Radio.Group>
+            </Row>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              whileHover={{
-                scale: 1.05,
-                boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
-              }}
-              transition={{ duration: 0.3 }}
-            >
-              <Card title="Processing Options" bordered={true} style={{ boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
-                <Row gutter={[16, 16]}>
+            <Row>
+              <div className="mt-2">
+                <Title level={5}>Enhancement Options</Title>
+              </div>
+              <Checkbox checked={enhance} onChange={(e) => setEnhance(e.target.checked)}>
+                Enable Enhancement
+              </Checkbox>
 
-                  <Title level={5}>Duplicate Handling Strategy</Title>
-                  <Radio.Group
-                    onChange={(e) => setStrategy(e.target.value)}
-                    value={strategy}
-                    style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
-                  >
-                    <Radio value="consolidate">Sum quantities</Radio>
-                    <Radio value="first">Keep first occurrence</Radio>
-                    <Radio value="manual">Manual review required</Radio>
-                  </Radio.Group>
-
-                </Row>
-                <Row>
-
-                  <div className='mt-2'><Title level={5}>Enhancement Options</Title>
-                  </div>
-                  <Checkbox checked={enhance} onChange={(e) => setEnhance(e.target.checked)}>
-                    Enable Enhancement
-                  </Checkbox>
-
-                  {enhance && (
-                    <Radio.Group
-                      value={enhanceType}
-                      onChange={(e) => setEnhanceType(e.target.value)}
-                      style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}
-                    >
-                      <Radio value="percent">Apply enhancement percentage</Radio>
-                      {enhance && enhanceType === 'percent' && (
-                        <InputNumber
-                          value={percent}
-                          onChange={setPercent}
-                          style={{ marginTop: 8, width: '100%' }}
-                          addonAfter="%"
-                        />
-                      )}
-                      <Radio value="round">Round up to envelope size</Radio>
-                    </Radio.Group>
+              {enhance && (
+                <Radio.Group
+                  value={enhanceType}
+                  onChange={(e) => setEnhanceType(e.target.value)}
+                  style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}
+                >
+                  <Radio value="percent">Apply enhancement percentage</Radio>
+                  {enhance && enhanceType === 'percent' && (
+                    <InputNumber
+                      value={percent}
+                      onChange={setPercent}
+                      style={{ marginTop: 8, width: '100%' }}
+                      addonAfter="%"
+                    />
                   )}
-                </Row>
-              </Card>
-            </motion.div>
-            <Space>
-              <Button onClick={handleSave}>
-                Save Settings
-              </Button>
-            </Space>
-          </Space>
-        </Col>
-      </Row>
-    </div>
+                  <Radio value="round">Round up to envelope size</Radio>
+                </Radio.Group>
+              )}
+            </Row>
+          </Card>
+        </motion.div>
+
+        <Space style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+          <Button type="primary" onClick={handleSave}>
+            Save Settings
+          </Button>
+        </Space>
+      </Space>
+    </Col>
+  </Row>
+</div>
+
   );
 };
 
