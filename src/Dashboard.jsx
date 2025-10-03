@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import API from "./hooks/api";
 import useStore from "./stores/ProjectData";
 import axios from "axios";
+import { useNavigate} from 'react-router-dom';
+
 
 const url = import.meta.env.VITE_API_BASE_URL; // Assuming this is the correct URL for fetching project names
 
@@ -9,6 +11,8 @@ export default function Dashboard() {
   const [projects, setProjects] = useState([]);
   const token = localStorage.getItem("token");
   const setProject = useStore((state) => state.setProject);
+  const navigate = useNavigate();
+
 
   const getProjects = async () => {
     try {
@@ -45,6 +49,7 @@ export default function Dashboard() {
     localStorage.setItem("selectedProjectId", projectId);
     localStorage.setItem("selectedProjectName", projectName);
     setProject(projectName,projectId);
+    navigate("/projectdashboard");
   };
 
   return (
