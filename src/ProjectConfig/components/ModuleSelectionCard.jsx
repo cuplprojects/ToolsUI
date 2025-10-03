@@ -7,6 +7,9 @@ import { cardStyle, iconStyle } from "./constants";
 const { Text } = Typography;
 
 const ModuleSelectionCard = ({ mergedModules, enabledModules, setEnabledModules }) => {
+  console.log(mergedModules);
+  console.log(enabledModules);
+  console.log(setEnabledModules);
   return (
     <AnimatedCard>
       <Card
