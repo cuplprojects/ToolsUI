@@ -43,7 +43,7 @@ const EnvelopeType = () => {
 
   const handleDelete = async (id) => {
     try {
-      await API.delete(`https://localhost:7276/api/EnvelopeTypes/${id}`);
+      await API.delete(`/EnvelopeTypes/${id}`);
       message.success('Deleted successfully');
       fetchEnvelopes();
     } catch {
@@ -77,12 +77,12 @@ const EnvelopeType = () => {
     try {
       if (editingItem) {
         await API.put(
-          `https://localhost:7276/api/EnvelopeTypes/${editingItem.envelopeId}`,
+          `/EnvelopeTypes/${editingItem.envelopeId}`,
           payload
         );
         message.success('Updated successfully');
       } else {
-        await API.post('https://localhost:7276/api/EnvelopeTypes', payload);
+        await API.post('/EnvelopeTypes', payload);
         message.success('Added successfully');
       }
 

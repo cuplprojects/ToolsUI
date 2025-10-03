@@ -43,7 +43,7 @@ const Field = () => {
 
     const handleDelete = async (id) => {
         try {
-            await API.delete(`https://localhost:7276/api/Fields/${id}`);
+            await API.delete(`/Fields/${id}`);
             message.success('Deleted successfully');
             fetchFields();
         } catch {
@@ -70,14 +70,14 @@ const Field = () => {
 
         try {
             if (editingItem) {
-                await API.put(`https://localhost:7276/api/Fields/${editingItem.fieldId}`, {
+                await API.put(`/Fields/${editingItem.fieldId}`, {
                     fieldId: editingItem.fieldId,
                     name,
                     isUnique,
                 });
                 message.success('Updated successfully');
             } else {
-                await API.post('https://localhost:7276/api/Fields', {
+                await API.post('/Fields', {
                     fieldId: 0, // or omit if backend generates it
                     name,
                     isUnique,
