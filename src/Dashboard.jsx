@@ -55,7 +55,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-blue-600 hover:shadow-xl hover:bg-blue-50 transition-all duration-300">
           <h3 className="text-gray-600 text-sm">Total Projects</h3>
-          <p className="text-2xl font-bold text-blue-800">12</p>
+          <p className="text-2xl font-bold text-blue-800">{projects.length}</p>
         </div>
         <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-green-600 hover:shadow-xl hover:bg-green-50 transition-all duration-300">
           <h3 className="text-gray-600 text-sm">Active Users</h3>
@@ -80,14 +80,7 @@ export default function Dashboard() {
             onClick={() => handleCardClick(project.id, project.name)} // Now guaranteed to be in sync
           >
             <h3 className="text-gray-600 text-lg font-semibold mb-3">{project.name}</h3>
-            <p className="text-sm text-gray-500">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur sit amet justo ut dui ultrices malesuada.
-            </p>
-            <div className="mt-4 text-right">
-              <button className="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-300">
-                View Details
-              </button>
-            </div>
+            
           </div>
         ))}
       </div>
