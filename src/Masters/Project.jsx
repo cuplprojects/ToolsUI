@@ -205,7 +205,7 @@ const Project = () => {
             />
 
             <Modal
-                title={editingItem ? 'Edit Project' : 'Add Project'}
+                title={editingItem ? 'Edit Field' : 'Add Field'}
                 open={modalVisible}
                 onOk={handleSave}
                 onCancel={() => setModalVisible(false)}
