@@ -248,6 +248,7 @@ const DataImport = () => {
       .then(res => {
         console.log('Validation result:', res.data);
         showToast("Validation successful", "success");
+        setExistingData(payload.data); // Set existing data immediately to show other parts of the screen
         resetForm();
         fetchExistingData();
       })
