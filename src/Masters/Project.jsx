@@ -220,6 +220,11 @@ const Project = () => {
                     placeholder="Choose a project..."
                     onChange={setSelectedProjectId}
                     value={selectedProjectId}
+                    showSearch
+                    optionFilterProp="children"
+                    filterOption={(input, option) =>
+                        option?.children?.toLowerCase().includes(input.toLowerCase())
+                    }
                 >
                     {projectNames
                         // filter out projects already added unless editing that same project

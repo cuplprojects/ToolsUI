@@ -23,9 +23,9 @@ export default function Sidebar({ collapsed }) {
 
   const menuItems = [
     {
-      label: "Dashboard",
+      label: projectName? "Project Dashboard" : "Dashboard",
       icon: <FiHome />,
-      path: "/dashboard",
+      path: projectName? "/projectdashboard" : "/dashboard",
     },
     {
       label: "Masters",
