@@ -98,74 +98,141 @@ const Project = () => {
         userAssigned: selectedUserIds, // Send the list of user IDs
       };
 
-      if (editingItem) {
-        await API.put(`/Projects/${editingItem.fieldId}`, payload);
-        message.success("Updated successfully");
-      } else {
-        await API.post("/Projects", payload);
-        message.success("Added successfully");
-      }
+    const getColumnSearchProps = (dataIndex) => ({
+        filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+            <div style={{ padding: 8 }}>
+                <Input
+                    placeholder={`Search ${dataIndex}`}
+                    value={selectedKeys[0]}
+                    onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+                    onPressEnter={() => confirm()}
+                    style={{ marginBottom: 8, display: 'block' }}
+                />
+                <Space>
+                    <Button
+                        type="primary"
+                        onClick={() => confirm()}
+                        icon={<SearchOutlined />}
+                        size="small"
+                        style={{ width: 90 }}
+                    >
+                        Search
+                    </Button>
+                    <Button onClick={() => clearFilters()} size="small" style={{ width: 90 }}>
+                        Reset
+                    </Button>
+                </Space>
+            </div>
+        ),
+        filterIcon: (filtered) => (
+            <SearchOutlined style={{ color: filtered ? '#1890ff' : undefined }} />
+        ),
+        onFilter: (value, record) =>
+            record[dataIndex] ? record[dataIndex].toString().toLowerCase().includes(value.toLowerCase()) : '',
+    });
 
-      setModalVisible(false);
-      fetchProjects(); // Refresh project data
-    } catch {
-      message.error("Save failed");
-    }
-  };
+    // Merge projects, project names, and user names
+    const mergedProjects = projects.map((proj) => {
+        const projectName = projectNames.find(p => p.projectId === proj.projectId);
+        const userNames = Array.isArray(proj.userAssigned) // Ensure userAssigned is an array
+            ? proj.userAssigned
+                .map(userId => {
+                    const user = users.find(u => u.userId === userId);
+                    return user ? user.firstName : 'Unknown User';
+                })
+                .join(', ') // Combine user names into a single string
+            : 'No Users Assigned'; // Fallback if userAssigned is not an array or empty
 
-  const getColumnSearchProps = (dataIndex) => ({
-    filterDropdown: ({
-      setSelectedKeys,
-      selectedKeys,
-      confirm,
-      clearFilters,
-    }) => (
-      <div style={{ padding: 8 }}>
-        <Input
-          placeholder={`Search ${dataIndex}`}
-          value={selectedKeys[0]}
-          onChange={(e) =>
-            setSelectedKeys(e.target.value ? [e.target.value] : [])
-          }
-          onPressEnter={() => confirm()}
-          style={{ marginBottom: 8, display: "block" }}
-        />
-        <Space>
-          <Button
-            type="primary"
-            onClick={() => confirm()}
-            icon={<SearchOutlined />}
-            size="small"
-            style={{ width: 90 }}
-          >
-            Search
-          </Button>
-          <Button
-            onClick={() => clearFilters()}
-            size="small"
-            style={{ width: 90 }}
-          >
-            Reset
-          </Button>
-        </Space>
-      </div>
-    ),
-    filterIcon: (filtered) => (
-      <SearchOutlined style={{ color: filtered ? "#1890ff" : undefined }} />
-    ),
-    onFilter: (value, record) =>
-      record[dataIndex]
-        ? record[dataIndex]
-            .toString()
-            .toLowerCase()
-            .includes(value.toLowerCase())
-        : "",
-  });
+        return {
+            ...proj,
+            projectName: projectName ? projectName.name : 'Unknown Project', // If no project found, use 'Unknown Project'
+            userNames, // Join user names as a string
+        };
+    });
 
-  // Merge projects, project names, and user names
-  const mergedProjects = projects.map((proj) => {
-    const projectName = projectNames.find(
-      (p) => p.projectId === proj.projectId
+    // Define columns for the table
+    const columns = [
+        {
+            title: 'Project Name',
+            dataIndex: 'projectName', // This column will now display the project name
+            key: 'projectName',
+            sorter: (a, b) => a.projectName.localeCompare(b.projectName),
+            ...getColumnSearchProps('projectName'),
+        },
+        {
+            title: 'User Assigned',
+            dataIndex: 'userNames', // This column will now display the user names
+            key: 'userNames',
+            render: (value) => value || 'No Users Assigned', // If no users, display "No Users Assigned"
+            sorter: (a, b) => a.userNames.localeCompare(b.userNames),
+            ...getColumnSearchProps('userNames'),
+        },
+        {
+            title: 'Actions',
+            key: 'actions',
+            render: (_, record) => (
+                <Space>
+                    <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)} />
+                    <Button type="link" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.fieldId)} />
+                </Space>
+            ),
+        },
+    ];
+
+    return (
+        <div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+                <Button type="primary" onClick={handleAdd}>
+                    Add
+                </Button>
+            </div>
+            <Table
+                dataSource={mergedProjects} // Use the merged project data
+                columns={columns}
+                rowKey="projectId"
+                loading={loading}
+            />
+
+            <Modal
+                title={editingItem ? 'Edit Project' : 'Add Project'}
+                open={modalVisible}
+                onOk={handleSave}
+                onCancel={() => setModalVisible(false)}
+                okText="Save"
+            >
+                <Select
+          style={{ width: "100%", marginTop: 4 }}
+          placeholder="Choose a project..."
+          onChange={setSelectedProjectId}
+          value={selectedProjectId}
+        >
+          {projectNames
+            // filter out projects already added unless editing that same project
+            .filter(
+              (p) =>
+                !projects.some((pr) => pr.projectId === p.projectId) ||
+                (editingItem && editingItem.projectId === p.projectId)
+            )
+            .map((p) => (
+              <Select.Option key={p.projectId} value={p.projectId}>
+                {p.name}
+              </Select.Option>
+            ))}
+        </Select>
+                <Select
+                    style={{ width: '100%', marginTop: 4 }}
+                    placeholder="Select Users..."
+                    onChange={setSelectedUserIds}
+                    value={selectedUserIds}
+                    mode="multiple" // Allow multiple selections
+                >
+                    <Option value="">Select Users...</Option>
+                    {users.map(u => (
+                        <Option key={u.userId} value={u.userId}>{u.firstName}</Option>
+                    ))}
+                </Select>
+            </Modal>
+        </div>
     );
     const userNames = Array.isArray(proj.userAssigned) // Ensure userAssigned is an array
       ? proj.userAssigned
