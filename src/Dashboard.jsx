@@ -80,14 +80,7 @@ export default function Dashboard() {
             onClick={() => handleCardClick(project.id, project.name)} // Now guaranteed to be in sync
           >
             <h3 className="text-gray-600 text-lg font-semibold mb-3">{project.name}</h3>
-            <p className="text-sm text-gray-500">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur sit amet justo ut dui ultrices malesuada.
-            </p>
-            <div className="mt-4 text-right">
-              <button className="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-300">
-                View Details
-              </button>
-            </div>
+           
           </div>
         ))}
       </div>

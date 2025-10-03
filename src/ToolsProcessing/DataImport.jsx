@@ -403,7 +403,7 @@ const DataImport = () => {
               </Row>
 
               <Divider />
-              {fileHeaders.length > 0 && (
+              {/* {fileHeaders.length > 0 && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -476,7 +476,7 @@ const DataImport = () => {
                     )}
                   </Card>
                 </motion.div>
-              )}
+              )} */}
               {existingData.length > 0 ? (
                 <Tabs activeKey={activeTab} onChange={(key) => setActiveTab(key)} style={{ marginTop: 16 }}>
                   <TabPane tab="Uploaded Data" key="1">
