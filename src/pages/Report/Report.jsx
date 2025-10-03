@@ -71,13 +71,9 @@ const Report = () => {
     if (selectedProject) {
       setSelectedProjectId(projectId);
       setSelectedProjectName(selectedProject.name);
-      localStorage.setItem("selectedProjectId", projectId);
-      localStorage.setItem("selectedProjectName", selectedProject.name);
     } else {
       setSelectedProjectId(null);
       setSelectedProjectName("");
-      localStorage.removeItem("selectedProjectId");
-      localStorage.removeItem("selectedProjectName");
     }
   };
 
@@ -119,7 +115,7 @@ const Report = () => {
 
   return (
     <div style={{ padding: 20 }}>
-      {!selectedProjectName ? (
+      {
         <>
           <Title level={3}>Select a Project</Title>
           <Select
@@ -134,12 +130,11 @@ const Report = () => {
               </Select.Option>
             ))}
           </Select>
+          {selectedProjectName && (
+            <Title level={4}>Reports for Project: {selectedProjectName}</Title>
+          )}
         </>
-      ) : (
-        <>
-          <Title level={4}>Reports for Project: {selectedProjectName}</Title>
-        </>
-      )}
+      }
 
       {renderReports()}
     </div>
