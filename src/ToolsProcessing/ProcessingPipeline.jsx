@@ -56,8 +56,8 @@ const ProcessingPipeline = () => {
     const names = (enabledModuleNames || []).map(n => String(n).toLowerCase());
     const order = [];
     if (names.some(n => n.includes("duplicate"))) order.push({ key: "duplicate", title: "Duplicate Processing" });
-    if (names.some(n => n.includes("envelope"))) order.push({ key: "envelope", title: "Envelope Breaking" });
     if (names.some(n => n.includes("extra"))) order.push({ key: "extra", title: "Extra Configuration" });
+    if (names.some(n => n.includes("envelope"))) order.push({ key: "envelope", title: "Envelope Breaking" });
     if (names.some(n => n.includes("box"))) order.push({ key: "box", title: "Box Breaking" });
     return order;
   };
@@ -160,11 +160,12 @@ const ProcessingPipeline = () => {
 
         if (step.key === "duplicate") {
           await runDuplicate(projectId);
-        } else if (step.key === "envelope") {
-          await runEnvelope(projectId);
         }
         else if (step.key === "extra") {
           await runExtras(projectId)
+        }
+        else if (step.key === "envelope") {
+          await runEnvelope(projectId);
         }
         else if (step.key === "box") {
           await BoxBreaking(projectId);
@@ -178,10 +179,10 @@ const ProcessingPipeline = () => {
           duration: `${mm}:${ss}`,
           fileUrl: step.key === "duplicate"
             ? `${url3}/${projectId}/DuplicateTool.xlsx`
-            : step.key === "envelope"
-              ? `${url3}/${projectId}/EnvelopeBreaking.xlsx`
-              : step.key === "extras"
-                ? `${url3}/${projectId}/ExtrasCalculation.xlsx`
+            : step.key === "extras"
+              ? `${url3}/${projectId}/ExtrasCalculation.xlsx`
+              : step.key === "envelope"
+                ? `${url3}/${projectId}/EnvelopeBreaking.xlsx`
                 : `${url3}/${projectId}/BoxBreaking.xlsx`,
         });
       }

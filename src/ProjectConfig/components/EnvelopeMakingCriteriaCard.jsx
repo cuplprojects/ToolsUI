@@ -1,0 +1,72 @@
+import React from "react";
+import { Card, Select, Typography, Tag } from "antd";
+import { InboxOutlined, LockOutlined } from "@ant-design/icons";
+import AnimatedCard from "./AnimatedCard";
+import { cardStyle, iconStyle, PRIMARY_COLOR } from "./constants";
+
+const { Text } = Typography;
+const { Option } = Select;
+
+const EnvelopeMakingCriteriaCard = ({
+  isEnabled,
+  fields,
+  selectedEnvelopeFields,
+  setSelectedEnvelopeFields,
+}) => {
+  return (
+    <AnimatedCard>
+      <Card
+        style={cardStyle}
+        title={
+          <div>
+            <span>
+              <InboxOutlined style={iconStyle} /> Envelope Making Criteria (Serial Numbering)
+            </span>
+            <br />
+            <Text type="secondary">
+              Define conditions that numbers Envelope
+            </Text>
+          </div>
+        }
+        extra={
+          !isEnabled("Envelope Breaking") ? (
+            <Tag icon={<LockOutlined style={{ color: PRIMARY_COLOR }} />}>
+              Disabled
+            </Tag>
+          ) : null
+        }
+      >
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            columnGap: 12,
+            rowGap: 8,
+            marginTop: 12,
+          }}
+        >
+          <div>
+            <Text strong>Select fields to concatenate</Text>
+            <Select
+              mode="multiple"
+              disabled={!isEnabled("Envelope Breaking")}
+              allowClear
+              style={{ width: "100%", marginTop: 4 }}
+              placeholder="Select one or more fields"
+              value={selectedEnvelopeFields}
+              onChange={setSelectedEnvelopeFields}
+            >
+              {fields.map((f) => (
+                <Option key={f.fieldId} value={f.fieldId}>
+                  {f.name}
+                </Option>
+              ))}
+            </Select>
+          </div>
+        </div>
+      </Card>
+    </AnimatedCard>
+  );
+};
+
+export default EnvelopeMakingCriteriaCard;
