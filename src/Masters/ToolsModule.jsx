@@ -40,7 +40,7 @@ const ToolModule = () => {
 
     const handleDelete = async (id) => {
         try {
-            await API.delete(`https://localhost:7276/api/Modules/${id}`);
+            await API.delete(`/Modules/${id}`);
             message.success('Deleted successfully');
             fetchModules();
         } catch {
@@ -67,13 +67,13 @@ const ToolModule = () => {
 
         try {
             if (editingItem) {
-                await API.put(`https://localhost:7276/api/Modules/${editingItem.id}`, {
+                await API.put(`/Modules/${editingItem.id}`, {
                     id: editingItem.id,
                     name,
                 });
                 message.success('Updated successfully');
             } else {
-                await API.post('https://localhost:7276/api/Modules', {
+                await API.post('/Modules', {
                     id: 0, // or omit if backend auto-generates it
                     name,
                 });
