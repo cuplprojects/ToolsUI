@@ -344,7 +344,7 @@ const ProjectConfiguration = () => {
               title={
                 <div>
                   <span>
-                    <InboxOutlined style={iconStyle} /> Envelope Making Criteria
+                    <InboxOutlined style={iconStyle} /> Envelope Making Criteria (Serial Numbering)
                   </span>
                   <br />
                   <Text type="secondary">

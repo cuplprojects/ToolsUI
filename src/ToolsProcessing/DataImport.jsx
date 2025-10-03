@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Row,Col,Card,Select,Upload,Button,Typography,Space,Table,Tabs,Divider,Checkbox,Input} from 'antd';
+import { Row, Col, Card, Select, Upload, Button, Typography, Space, Table, Tabs, Divider, Checkbox, Input } from 'antd';
 import { useToast } from '../hooks/useToast';
 import { CheckCircleOutlined, UploadOutlined, ToolOutlined } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
@@ -201,6 +201,7 @@ const DataImport = () => {
 
   // Upload file logic
   const beforeUpload = (file) => {
+    setFileList([file]); // Show the selected file
     proceedWithReading(file);
     return false; // prevent auto upload
   };
@@ -404,8 +405,85 @@ const DataImport = () => {
               </Row>
 
               <Divider />
-             
-              {existingData.length > 0 ? (
+              {fileHeaders.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  whileHover={{
+                    scale: 1.05,
+                    boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
+                  }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <Card title="Field Mapping" style={{ marginTop: 24, border: '1px solid #d9d9d9', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
+                    <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+                      Map fields from your file to expected fields
+                    </Text>
+                    <Row gutter={[16, 16]}>
+                      {expectedFields.map((expectedField) => {
+                        const autoMappedValue = autoMapField(expectedField, fileHeaders);
+
+                        return (
+                          <Col key={expectedField.fieldId} xs={24} md={8}>
+                            <div style={{ marginBottom: 12 }}>
+                              <div style={{ display: 'flex', alignItems: 'center' }}>
+                                <Text
+                                  style={{
+                                    display: 'block',
+                                    marginBottom: 8,
+                                    marginRight: 8,
+                                    color: fieldMappings[expectedField.fieldId] ? '#006400' : 'inherit',
+                                  }}
+                                >
+                                  {expectedField.name}
+                                </Text>
+                                {fieldMappings[expectedField.fieldId] && (
+                                  <CheckCircleOutlined style={{ color: '#006400', fontSize: '16px' }} />
+                                )}
+                              </div>
+                              <Select
+                                style={{
+                                  width: '100%',
+                                  borderColor: fieldMappings[expectedField.fieldId] ? '#006400' : undefined,
+                                  boxShadow: fieldMappings[expectedField.fieldId] ? '0 0 5px #006400' : undefined,
+                                }}
+                                placeholder="Select matching column from file"
+                                value={fieldMappings[expectedField.fieldId] || autoMappedValue}
+                                onChange={(value) => {
+                                  setFieldMappings((prev) => ({
+                                    ...prev,
+                                    [expectedField.fieldId]: value,
+                                  }));
+                                }}
+                              >
+                                {fileHeaders
+                                  .filter(
+                                    (header) =>
+                                      !Object.values(fieldMappings).includes(header) ||
+                                      fieldMappings[expectedField.fieldId] === header
+                                  )
+                                  .map((header, index) => (
+                                    <Select.Option key={`${header}-${index}`} value={header}>
+                                      {header}
+                                    </Select.Option>
+                                  ))}
+                              </Select>
+                            </div>
+                          </Col>
+                        );
+                      })}
+                    </Row>
+                    {isAnyFieldMapped() && (
+                      <Button type="primary" block onClick={handleUpload}>
+                        Upload and Validate
+                      </Button>
+                    )}
+                  </Card>
+                </motion.div>
+              )}
+
+              {/* Show Tabs if existing data is available */}
+              {existingData.length > 0 && (
                 <Tabs activeKey={activeTab} onChange={(key) => setActiveTab(key)} style={{ marginTop: 16 }}>
                   <TabPane tab="Uploaded Data" key="1">
                     <motion.div
@@ -426,7 +504,6 @@ const DataImport = () => {
                           scroll={{ x: "max-content" }}
                           loading={loading}
                         />
-
                       </Card>
                     </motion.div>
                   </TabPane>
@@ -434,82 +511,10 @@ const DataImport = () => {
                     {renderConflicts()}
                   </TabPane>
                 </Tabs>
-              ) : fileHeaders.length > 0 && (
-                //FieldMappingSection
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  whileHover={{
-                    scale: 1.05,
-                    boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
-                  }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <Card title="Field Mapping" style={{ marginTop: 24, border: '1px solid #d9d9d9', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
-                    <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>Map fields from your file to expected fields</Text>
-                    <Row gutter={[16, 16]}>
-                      {expectedFields.map((expectedField) => {
-                        // Check for auto-mapping and update fieldMappings
-                        const autoMappedValue = autoMapField(expectedField, fileHeaders);
-
-                        return (
-                          <Col key={expectedField.fieldId} xs={24} md={8}>
-                            <div style={{ marginBottom: 12 }}>
-                              <div style={{ display: 'flex', alignItems: 'center' }}>
-                                <Text
-                                  style={{
-                                    display: 'block',
-                                    marginBottom: 8,
-                                    marginRight: 8,
-                                    color: fieldMappings[expectedField.fieldId] ? '#006400' : 'inherit', // Dark green for mapped fields
-                                  }}
-                                >
-                                  {expectedField.name}
-                                </Text>
-                                {fieldMappings[expectedField.fieldId] && (
-                                  <CheckCircleOutlined style={{ color: '#006400', fontSize: '16px' }} />
-                                )}
-                              </div>
-                              <Select
-                                style={{
-                                  width: '100%',
-                                  borderColor: fieldMappings[expectedField.fieldId] ? '#006400' : undefined, // Dark green border
-                                  boxShadow: fieldMappings[expectedField.fieldId] ? '0 0 5px #006400' : undefined, // Optional: dark green shadow
-                                }}
-                                placeholder="Select matching column from file"
-                                value={fieldMappings[expectedField.fieldId] || autoMappedValue} // Automatically select if a match is found
-                                onChange={(value) => {
-                                  setFieldMappings((prev) => ({
-                                    ...prev,
-                                    [expectedField.fieldId]: value,
-                                  }));
-                                }}
-                              >
-                                {fileHeaders
-                                  .filter(
-                                    (header) =>
-                                      !Object.values(fieldMappings).includes(header) ||
-                                      fieldMappings[expectedField.fieldId] === header
-                                  )
-                                  .map((header, index) => (
-                                    <Option key={`${header}-${index}`} value={header}>
-                                      {header}
-                                    </Option>
-                                  ))}
-                              </Select>
-                            </div>
-                          </Col>
-                        );
-                      })}
-                    </Row>
-                    {isAnyFieldMapped() && (
-                      <Button type="primary" block onClick={handleUpload}>
-                        Upload and Validate
-                      </Button>
-                    )}
-                  </Card>
-                </motion.div>
               )}
+
+              {/* Show Field Mapping if file headers are available */}
+
             </Card> </motion.div>
         </Col>
 
