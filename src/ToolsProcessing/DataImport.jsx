@@ -1,19 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import {
-  Row,
-  Col,
-  Card,
-  Select,
-  Upload,
-  Button,
-  Typography,
-  Space,
-  Table,
-  Tabs,
-  Divider,
-  Checkbox,
-  Input,
-} from 'antd';
+import { Row,Col,Card,Select,Upload,Button,Typography,Space,Table,Tabs,Divider,Checkbox,Input} from 'antd';
 import { useToast } from '../hooks/useToast';
 import { CheckCircleOutlined, UploadOutlined, ToolOutlined } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
@@ -25,7 +11,7 @@ import useStore from '../stores/ProjectData';
 const { Text } = Typography;
 const { Option } = Select;
 const { TabPane } = Tabs;
-const PRIMARY_COLOR = "#1677ff"; 
+const PRIMARY_COLOR = "#1677ff";
 
 const DataImport = () => {
   const { showToast } = useToast();
@@ -68,18 +54,6 @@ const DataImport = () => {
       setShowData(false);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleFileChange = (info) => {
-    const { status, file } = info;
-
-    if (status === 'done') {
-      message.success(`${file.name} file uploaded successfully.`);
-      // Clear the file list after successful upload
-      setFileList([]);
-    } else if (status === 'error') {
-      message.error(`${file.name} file upload failed.`);
     }
   };
 
@@ -199,7 +173,6 @@ const DataImport = () => {
         /></div>
     );
   };
-
 
   // Excel parsing
   const proceedWithReading = (file) => {
@@ -377,16 +350,16 @@ const DataImport = () => {
           >
             <Card title={<div>
               <span>
-              <ToolOutlined style={iconStyle}/> Data Import</span><br/>
- <Text type="secondary" >
-      Upload and map your data files here
-    </Text>
+                <ToolOutlined style={iconStyle} /> Data Import</span><br />
+              <Text type="secondary" >
+                Upload and map your data files here
+              </Text>
             </div>}
-            bordered={true} 
-            style={{ boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
-<div>
-   
-  </div>              <Row gutter={[16, 16]}>
+              bordered={true}
+              style={{ boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
+              <div>
+
+              </div>              <Row gutter={[16, 16]}>
                 <Col xs={24} md={12}>
                   <Upload.Dragger
                     name="file"
@@ -430,78 +403,80 @@ const DataImport = () => {
               </Row>
 
               <Divider />
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                whileHover={{
-                  scale: 1.05,
-                  boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
-                }}
-                transition={{ duration: 0.3 }}
-              >
-                <Card title="Field Mapping" style={{ marginTop: 24, border: '1px solid #d9d9d9', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
-                  <Row gutter={[16, 16]}>
-                    {expectedFields.map((expectedField) => {
-                      // Check for auto-mapping and update fieldMappings
-                      const autoMappedValue = autoMapField(expectedField, fileHeaders);
+              {fileHeaders.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  whileHover={{
+                    scale: 1.05,
+                    boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
+                  }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <Card title="Field Mapping" style={{ marginTop: 24, border: '1px solid #d9d9d9', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
+                    <Row gutter={[16, 16]}>
+                      {expectedFields.map((expectedField) => {
+                        // Check for auto-mapping and update fieldMappings
+                        const autoMappedValue = autoMapField(expectedField, fileHeaders);
 
-                      return (
-                        <Col key={expectedField.fieldId} xs={24} md={8}>
-                          <div style={{ marginBottom: 12 }}>
-                            <div style={{ display: 'flex', alignItems: 'center' }}>
-                              <Text
+                        return (
+                          <Col key={expectedField.fieldId} xs={24} md={8}>
+                            <div style={{ marginBottom: 12 }}>
+                              <div style={{ display: 'flex', alignItems: 'center' }}>
+                                <Text
+                                  style={{
+                                    display: 'block',
+                                    marginBottom: 8,
+                                    marginRight: 8,
+                                    color: fieldMappings[expectedField.fieldId] ? '#006400' : 'inherit', // Dark green for mapped fields
+                                  }}
+                                >
+                                  {expectedField.name}
+                                </Text>
+                                {fieldMappings[expectedField.fieldId] && (
+                                  <CheckCircleOutlined style={{ color: '#006400', fontSize: '16px' }} />
+                                )}
+                              </div>
+                              <Select
                                 style={{
-                                  display: 'block',
-                                  marginBottom: 8,
-                                  marginRight: 8,
-                                  color: fieldMappings[expectedField.fieldId] ? '#006400' : 'inherit', // Dark green for mapped fields
+                                  width: '100%',
+                                  borderColor: fieldMappings[expectedField.fieldId] ? '#006400' : undefined, // Dark green border
+                                  boxShadow: fieldMappings[expectedField.fieldId] ? '0 0 5px #006400' : undefined, // Optional: dark green shadow
+                                }}
+                                placeholder="Select matching column from file"
+                                value={fieldMappings[expectedField.fieldId] || autoMappedValue} // Automatically select if a match is found
+                                onChange={(value) => {
+                                  setFieldMappings((prev) => ({
+                                    ...prev,
+                                    [expectedField.fieldId]: value,
+                                  }));
                                 }}
                               >
-                                {expectedField.name}
-                              </Text>
-                              {fieldMappings[expectedField.fieldId] && (
-                                <CheckCircleOutlined style={{ color: '#006400', fontSize: '16px' }} />
-                              )}
+                                {fileHeaders
+                                  .filter(
+                                    (header) =>
+                                      !Object.values(fieldMappings).includes(header) ||
+                                      fieldMappings[expectedField.fieldId] === header
+                                  )
+                                  .map((header, index) => (
+                                    <Option key={`${header}-${index}`} value={header}>
+                                      {header}
+                                    </Option>
+                                  ))}
+                              </Select>
                             </div>
-                            <Select
-                              style={{
-                                width: '100%',
-                                borderColor: fieldMappings[expectedField.fieldId] ? '#006400' : undefined, // Dark green border
-                                boxShadow: fieldMappings[expectedField.fieldId] ? '0 0 5px #006400' : undefined, // Optional: dark green shadow
-                              }}
-                              placeholder="Select matching column from file"
-                              value={fieldMappings[expectedField.fieldId] || autoMappedValue} // Automatically select if a match is found
-                              onChange={(value) => {
-                                setFieldMappings((prev) => ({
-                                  ...prev,
-                                  [expectedField.fieldId]: value,
-                                }));
-                              }}
-                            >
-                              {fileHeaders
-                                .filter(
-                                  (header) =>
-                                    !Object.values(fieldMappings).includes(header) ||
-                                    fieldMappings[expectedField.fieldId] === header
-                                )
-                                .map((header, index) => (
-                                  <Option key={`${header}-${index}`} value={header}>
-                                    {header}
-                                  </Option>
-                                ))}
-                            </Select>
-                          </div>
-                        </Col>
-                      );
-                    })}
-                  </Row>
-                  {isAnyFieldMapped() && (
-                    <Button type="primary" onClick={handleUpload} loading={loading}>
-                      Upload and Validate
-                    </Button>
-                  )}
-                </Card>
-              </motion.div>
+                          </Col>
+                        );
+                      })}
+                    </Row>
+                    {isAnyFieldMapped() && (
+                      <Button type="primary" onClick={handleUpload} loading={loading}>
+                        Upload and Validate
+                      </Button>
+                    )}
+                  </Card>
+                </motion.div>
+              )}
               {existingData.length > 0 ? (
                 <Tabs activeKey={activeTab} onChange={(key) => setActiveTab(key)} style={{ marginTop: 16 }}>
                   <TabPane tab="Uploaded Data" key="1">
@@ -531,8 +506,7 @@ const DataImport = () => {
                     {renderConflicts()}
                   </TabPane>
                 </Tabs>
-              ) : (
-<div />
+              ) : fileHeaders.length > 0 && (
                 //FieldMappingSection
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
@@ -607,9 +581,6 @@ const DataImport = () => {
                     )}
                   </Card>
                 </motion.div>
-
-                
-
               )}
             </Card> </motion.div>
         </Col>
@@ -629,25 +600,25 @@ const DataImport = () => {
               <Card title={
                 <div>
                   <span>
-                    <ToolOutlined style={iconStyle} /> Action                    
-                     </span>
-                     <br/>
-                     <Text type="secondary" >Perform additional actions on your data</Text>
-                   </div>
+                    <ToolOutlined style={iconStyle} /> Action
+                  </span>
+                  <br />
+                  <Text type="secondary" >Perform additional actions on your data</Text>
+                </div>
               }
-              bordered={true} 
-              style={{ marginTop: '10px', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
+                bordered={true}
+                style={{ marginTop: '10px', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
                 <Button
-  block
-  onClick={fetchConflictReport}
-  style={{
-    backgroundColor: '#f0dc24ff',  // Light yellow color
-    borderColor: '#FFEB3B',      // Ensure the border matches the background
-    color: '#000',               // Set text color to black or adjust as needed
-  }}
->
-  🎉 Load Conflict
-</Button>
+                  block
+                  onClick={fetchConflictReport}
+                  style={{
+                    backgroundColor: '#f0dc24ff',  // Light yellow color
+                    borderColor: '#FFEB3B',      // Ensure the border matches the background
+                    color: '#000',               // Set text color to black or adjust as needed
+                  }}
+                >
+                  🎉 Load Conflict
+                </Button>
               </Card></motion.div>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -661,15 +632,15 @@ const DataImport = () => {
               <Card title={
                 <div>
                   <span>
-                    <ToolOutlined style={iconStyle}/>Duplicate Tool
+                    <ToolOutlined style={iconStyle} />Duplicate Tool
                   </span>
-                  <br/>
-                <Text type="secondary">Manage duplicates in your data</Text>
+                  <br />
+                  <Text type="secondary">Manage duplicates in your data</Text>
 
                 </div>
-              } 
-              bordered={true} 
-              style={{ marginTop: '10px', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
+              }
+                bordered={true}
+                style={{ marginTop: '10px', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
                 <DuplicateTool />
               </Card></motion.div>
           </Col>
