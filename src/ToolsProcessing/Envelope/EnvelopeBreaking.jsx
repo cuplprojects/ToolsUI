@@ -133,7 +133,7 @@ const EnvelopeBreaking = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             whileHover={{
-              scale: 1.05,
+              scale: 1.01,
               boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
             }}
             transition={{ duration: 0.3 }}
@@ -172,7 +172,7 @@ const EnvelopeBreaking = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             whileHover={{
-              scale: 1.05,
+              scale: 1.01,
               boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
             }}
             transition={{ duration: 0.3 }}

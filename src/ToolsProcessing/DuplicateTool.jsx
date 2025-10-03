@@ -82,15 +82,7 @@ const DuplicateTool = () => {
           </Select>
         </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          whileHover={{
-            scale: 1.05,
-            boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
-          }}
-          transition={{ duration: 0.3 }}
-        >
+       
           <Card title="Processing Options" bordered={true} style={{ boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
             <Row gutter={[16, 16]}>
               <Title level={5}>Duplicate Handling Strategy</Title>
@@ -133,7 +125,7 @@ const DuplicateTool = () => {
               )}
             </Row>
           </Card>
-        </motion.div>
+       
 
         <Space style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
           <Button type="primary" onClick={handleSave}>
