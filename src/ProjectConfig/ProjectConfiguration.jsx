@@ -72,6 +72,8 @@ const ProjectConfiguration = () => {
   const boxConfigured = isEnabled("Box Breaking");
   const extraConfigured = isEnabled(EXTRA_ALIAS_NAME);
 
+
+
   // Fetch Project and Extra Config Data on Mount
   useEffect(() => {
     if (!projectId) return;
@@ -90,6 +92,23 @@ const ProjectConfiguration = () => {
 
         const projectConfig = projectConfigRes.data;
         const extrasConfig = extrasConfigRes.data;
+
+        if (projectConfig.modules && toolModules.length > 0) {
+          const enabledNames = new Set();
+          const extraModuleNames = ["Nodal Extra Calculation", "University Extra Calculation"];
+
+          projectConfig.modules.forEach(moduleId => {
+            const module = toolModules.find(m => m.id === moduleId);
+            if (module) {
+              if (extraModuleNames.includes(module.name)) {
+                enabledNames.add("Extra Configuration");
+              } else {
+                enabledNames.add(module.name);
+              }
+            }
+          });
+          setEnabledModules(Array.from(enabledNames));
+        }
 
         // Parse Envelope Setup
         const envelopeParsed = JSON.parse(projectConfig.envelope);
@@ -133,7 +152,7 @@ const ProjectConfiguration = () => {
     };
 
     fetchProjectConfigData();
-  }, [projectId, token, extraTypes, fields, showToast]);
+  }, [projectId, token, extraTypes, fields, showToast, toolModules]);
 
   return (
     <div style={{ padding: 16 }}>
@@ -198,4 +217,4 @@ const ProjectConfiguration = () => {
   );
 };
 
-export default ProjectConfiguration;
+export default ProjectConfiguration; 
