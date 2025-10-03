@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Row, Col } from "antd";
 import { useToast } from '../hooks/useToast';
 import useStore from "../stores/ProjectData";
-import { useProjectConfigData } from "./hooks/useProjectConfigData";
+import { useProjectConfigData } from "./hooks/useProjectConfigData";  // Custom hook for fetching config data
 import { useProjectConfigSave } from "./hooks/useProjectConfigSave";
 import ModuleSelectionCard from "./components/ModuleSelectionCard";
 import EnvelopeSetupCard from "./components/EnvelopeSetupCard";
@@ -11,6 +11,7 @@ import ExtraProcessingCard from "./components/ExtraProcessingCard";
 import BoxBreakingCard from "./components/BoxBreakingCard";
 import ConfigSummaryCard from "./components/ConfigSummaryCard";
 import { EXTRA_ALIAS_NAME } from "./components/constants";
+import axios from "axios";
 
 const ProjectConfiguration = () => {
   const { showToast } = useToast();
@@ -70,6 +71,69 @@ const ProjectConfiguration = () => {
   const envelopeConfigured = isEnabled("Envelope Breaking");
   const boxConfigured = isEnabled("Box Breaking");
   const extraConfigured = isEnabled(EXTRA_ALIAS_NAME);
+
+  // Fetch Project and Extra Config Data on Mount
+  useEffect(() => {
+    if (!projectId) return;
+
+    const fetchProjectConfigData = async () => {
+      try {
+        // Fetch project and extra config using axios
+        const [projectConfigRes, extrasConfigRes] = await Promise.all([
+          axios.get(`${import.meta.env.VITE_API_URL}/ProjectConfigs/ByProject/${projectId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          axios.get(`${import.meta.env.VITE_API_URL}/ExtrasConfigurations/ByProject/${projectId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
+
+        const projectConfig = projectConfigRes.data;
+        const extrasConfig = extrasConfigRes.data;
+
+        // Parse Envelope Setup
+        const envelopeParsed = JSON.parse(projectConfig.envelope);
+        setInnerEnvelopes(envelopeParsed.Inner ? [envelopeParsed.Inner] : []);
+        setOuterEnvelopes(envelopeParsed.Outer ? [envelopeParsed.Outer] : []);
+
+        // Envelope Making Criteria
+        setSelectedEnvelopeFields(projectConfig.envelopeMakingCriteria || []);
+
+        // Box Breaking Criteria
+        setSelectedBoxFields(fields.filter(f => projectConfig.boxBreakingCriteria?.includes(f.fieldId)).map(f => f.fieldId));
+        setBoxBreakingCriteria(["capacity", ...(projectConfig.boxBreakingCriteria || [])]);
+
+        // Extra Configurations
+        const extraProcessingParsed = {};
+        const extraSelections = {};
+
+        extrasConfig.forEach(item => {
+          const type = extraTypes.find(e => e.extraTypeId === item.extraType)?.type;
+          if (!type) return;
+
+          const env = item.envelopeType ? JSON.parse(item.envelopeType) : { Inner: "", Outer: "" };
+          extraProcessingParsed[type] = {
+            envelopeType: {
+              inner: env.Inner ? [env.Inner] : [],
+              outer: env.Outer ? [env.Outer] : [],
+            },
+            fixedQty: item.mode === "Fixed" ? parseFloat(item.value) : 0,
+            range: item.mode === "Range" ? parseFloat(item.value) : 0,
+            percentage: item.mode === "Percentage" ? parseFloat(item.value) : 0,
+          };
+          extraSelections[type] = item.mode;
+        });
+
+        setExtraProcessingConfig(extraProcessingParsed);
+        setExtraTypeSelection(extraSelections);
+      } catch (err) {
+        console.error("Failed to load config data", err);
+        showToast("error", "Failed to load project configuration");
+      }
+    };
+
+    fetchProjectConfigData();
+  }, [projectId, token, extraTypes, fields, showToast]);
 
   return (
     <div style={{ padding: 16 }}>
