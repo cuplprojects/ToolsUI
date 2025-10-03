@@ -14,6 +14,8 @@ import Master from "./Masters/Master";
 import EnvelopeBreaking from "./ToolsProcessing/Envelope/EnvelopeBreaking";
 import ProcessingPipeline from "./ToolsProcessing/ProcessingPipeline";
 import Report from "./pages/Report/Report";
+import Project from "./Masters/Project";
+import ProjectDashboard from "./components/ProjectDashboard";
 
 export default function App() {
   const [token, setToken] = useState(localStorage.getItem("token"));
@@ -119,6 +121,14 @@ export default function App() {
                   </MainLayout>
                 }
               />
+              <Route
+                path="/projectdashboard"
+                element={
+                  <MainLayout setToken={setToken}>
+                    <ProjectDashboard/>
+                  </MainLayout>
+                }
+              /> 
             </>
           )}
         </Routes>
