@@ -10,6 +10,7 @@ export const useProjectConfigSave = (
   selectedEnvelopeFields,
   extraTypeSelection,
   extraTypes,
+  selectedCapacity,
   extraProcessingConfig,
   showToast,
   resetForm
@@ -28,6 +29,7 @@ export const useProjectConfigSave = (
         }),
         BoxBreakingCriteria: selectedBoxFields,
         EnvelopeMakingCriteria: selectedEnvelopeFields,
+        BoxCapacity: selectedCapacity
       };
 
       await API.post(`/ProjectConfigs`, projectConfigPayload);
