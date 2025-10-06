@@ -39,51 +39,6 @@ const ProjectConfiguration = () => {
     setExtraTypeSelection,
   } = useProjectConfigData(token);
 
-  // Reset form function
-  const resetForm = () => {
-    setEnabledModules([]);
-    setInnerEnvelopes([]);
-    setOuterEnvelopes([]);
-    setSelectedBoxFields([]);
-    setSelectedEnvelopeFields([]);
-    setExtraTypeSelection({});
-    setBoxCapacities([]);
-    setSelectedCapacity();
-  };
-
-  // Save logic using custom hook
-  const { handleSave } = useProjectConfigSave(
-    projectId,
-    enabledModules,
-    toolModules,
-    innerEnvelopes,
-    outerEnvelopes,
-    selectedBoxFields,
-    selectedEnvelopeFields,
-    extraTypeSelection,
-    extraTypes,
-    selectedCapacity,
-    extraProcessingConfig,
-    showToast,
-    resetForm
-  );
-  console.log(selectedCapacity)
-  console.log("Type of selectedCapacity:", typeof selectedCapacity);
-
-  // Helper function
-  const isEnabled = (toolName) => enabledModules.includes(toolName);
-
-  // Configuration status
-  const envelopeConfigured = isEnabled("Envelope Breaking");
-  const boxConfigured = isEnabled("Box Breaking");
-  const extraConfigured = isEnabled(EXTRA_ALIAS_NAME);
-
-
-
-  // Fetch Project and Extra Config Data on Mount
- useEffect(() => {
-  if (!projectId) return;
-
   const fetchProjectConfigData = async () => {
     console.log("Fetching config data for project:", projectId);
 
@@ -98,11 +53,9 @@ const ProjectConfiguration = () => {
     } catch (err) {
       if (err.response?.status === 404) {
         console.warn(`No existing configuration for ProjectId: ${projectId}`);
-        showToast("info", "No existing configuration found. You can create a new one.");
         // No config yet → proceed with empty defaults
       } else {
         console.error("Failed to load project config", err.response?.data || err.message);
-        showToast("error", "Failed to load project configuration");
         return;
       }
     }
@@ -127,6 +80,13 @@ const ProjectConfiguration = () => {
       const boxConfig = boxConfigRes.data;
       console.log("Box Capacities:", boxConfig);
       setBoxCapacities(boxConfig);
+      const selectedBoxCapacity = projectConfig.boxCapacity; // Assuming 'selectedCapacity' is in projectConfig
+      if (selectedBoxCapacity) {
+        setSelectedCapacity(selectedBoxCapacity);  // Set the selected capacity based on projectConfig
+      } else if (boxConfig.length > 0) {
+        // If no selectedCapacity, set the first box capacity as default (if available)
+        setSelectedCapacity(boxConfig[0].id);  // Set the first capacity as the default
+      }
     } catch (err) {
       console.error("Failed to load box capacities", err.response?.data || err.message);
     }
@@ -194,14 +154,57 @@ const ProjectConfiguration = () => {
     setExtraProcessingConfig(extraProcessingParsed);
     setExtraTypeSelection(extraSelections);
   };
+  // Reset form function
+  const resetForm = () => {
+    setEnabledModules([]);
+    setInnerEnvelopes([]);
+    setOuterEnvelopes([]);
+    setSelectedBoxFields([]);
+    setSelectedEnvelopeFields([]);
+    setExtraTypeSelection({});
+    setBoxCapacities([]);
+    setSelectedCapacity();
+  };
 
-  fetchProjectConfigData();
-}, [projectId, token, extraTypes, fields, showToast, toolModules]);
+  // Save logic using custom hook
+  const { handleSave } = useProjectConfigSave(
+    projectId,
+    enabledModules,
+    toolModules,
+    innerEnvelopes,
+    outerEnvelopes,
+    selectedBoxFields,
+    selectedEnvelopeFields,
+    extraTypeSelection,
+    extraTypes,
+    selectedCapacity,
+    extraProcessingConfig,
+    fetchProjectConfigData,
+    showToast,
+    resetForm
+  );
+  console.log(selectedCapacity)
+  console.log("Type of selectedCapacity:", typeof selectedCapacity);
+
+  // Helper function
+  const isEnabled = (toolName) => enabledModules.includes(toolName);
+
+  // Configuration status
+  const envelopeConfigured = isEnabled("Envelope Breaking");
+  const boxConfigured = isEnabled("Box Breaking");
+  const extraConfigured = isEnabled(EXTRA_ALIAS_NAME);
 
 
-useEffect(() => {
-  console.log("Box Capacities Updated:", boxCapacities);
-}, [boxCapacities]);
+
+  useEffect(() => {
+    if (!projectId) return;
+    fetchProjectConfigData();
+  }, [projectId, token, extraTypes, fields, showToast, toolModules]);
+
+  useEffect(() => {
+    console.log("Box Capacities Updated:", boxCapacities);
+  }, [boxCapacities]);
+
   return (
     <div style={{ padding: 16 }}>
       <Row gutter={16} align="top">

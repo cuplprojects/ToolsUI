@@ -188,6 +188,9 @@ const DataImport = () => {
         let rowData = {};
         headers.forEach((header, index) => {
           rowData[header] = row[index];
+          if (header === "ExamDate" && value) {
+            value = parseDate(value); // Parse date if it's for "ExamDate"
+          }
         });
         return rowData;
       });
@@ -272,12 +275,27 @@ const DataImport = () => {
       expectedFields.forEach((field) => {
         const column = fieldMappings[field.fieldId];  // e.g. "Name" or "Age"
         if (column) {
-          mappedRow[field.name] = row[column] ?? null;  // ✅ directly use header name
+          let value = row[column] ?? null;
+
+          // Check if the field is "ExamDate" and format the value as a valid date
+          if (field.name === "ExamDate" && value) {
+            value =formatDateForBackend(parseDate(value));
+          }
+
+          mappedRow[field.name] = value;
         }
       });
       return mappedRow;
     });
   };
+
+  const formatDateForBackend = (date) => {
+  if (date instanceof Date && !isNaN(date.getTime())) {
+    // Return date in "YYYY-MM-DD" format
+    return date.toISOString().split('T')[0];
+  }
+  return date; // Return the original value if it's not a valid date
+};
 
   // Render uploaded Excel preview
   const renderUploadedData = () => {
@@ -335,6 +353,22 @@ const DataImport = () => {
     }
   };
   const iconStyle = { color: PRIMARY_COLOR, marginRight: 6 };
+
+  const parseDate = (value) => {
+    // If the value is a number, it's a date stored as a number in Excel
+    if (typeof value === 'number') {
+      // Excel stores dates as serial numbers, so convert it to a Date object
+      return new Date(Math.round((value - 25569) * 86400 * 1000)); // Convert Excel date to JS date
+    }
+
+    // If the value is a string, try to parse it as a date
+    if (typeof value === 'string' && Date.parse(value)) {
+      return new Date(value);  // If it's a valid date string, parse it
+    }
+
+    // If it's neither, return the value as-is
+    return value;
+  };
 
   return (
     <div style={{ padding: 24 }}>
