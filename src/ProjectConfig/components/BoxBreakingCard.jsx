@@ -14,6 +14,9 @@ const BoxBreakingCard = ({
   fields,
   selectedBoxFields,
   setSelectedBoxFields,
+  selectedCapacity,
+  setSelectedCapacity,
+  boxCapacities,
 }) => {
   return (
     <AnimatedCard>
@@ -47,59 +50,65 @@ const BoxBreakingCard = ({
             marginTop: 12,
           }}
         >
-          {[
-            {
-              key: "capacity",
-              label: "Breaking by Capacity",
-              always: true,
-            },
-            {
-              key: "selectFields",
-              label: (
-                <>
-                  <Text strong>Select fields to concatenate</Text>
-                  <Select
-                    mode="multiple"
-                    disabled={!isEnabled("Box Breaking")}
-                    allowClear
-                    style={{ width: "100%", marginTop: 4 }}
-                    placeholder="Select one or more fields"
-                    value={selectedBoxFields}
-                    onChange={setSelectedBoxFields}
-                  >
-                    {fields.map((f) => (
-                      <Option key={f.fieldId} value={f.fieldId}>
-                        {f.name}
-                      </Option>
-                    ))}
-                  </Select>
-                </>
-              ),
-              always: false,
-            },
-          ].map((item) => (
-            <div key={item.key}>
-              {item.key !== "selectFields" && (
-                <Checkbox
-                  checked={item.always ? true : boxBreakingCriteria.includes(item.key)}
-                  disabled={item.always || !isEnabled("Box Breaking")}
-                  onChange={(e) => {
-                    const checked = e.target.checked;
-                    setBoxBreakingCriteria((prev) => {
-                      if (checked) {
-                        return Array.from(new Set([...(prev || []), item.key]));
-                      }
-                      return (prev || []).filter((k) => k !== item.key);
-                    });
-                  }}
-                >
-                  {item.label}{" "}
-                  {item.always && <Text type="secondary">(Always enabled)</Text>}
-                </Checkbox>
-              )}
-              {item.key === "selectFields" && item.label}
-            </div>
-          ))}
+          {/* Breaking by Capacity checkbox and Select */}
+          <div>
+            <Checkbox
+              checked={true} // Always enabled
+              disabled
+              style={{ marginBottom: 4 }}
+            >
+              Breaking by Capacity <Text type="secondary">(Always enabled)</Text>
+            </Checkbox>
+            <Select
+              disabled={!isEnabled("Box Breaking")}
+              value={selectedCapacity}
+              onChange={setSelectedCapacity}
+              style={{ width: "100%" }}
+              placeholder="Select or enter capacity"
+            >
+              {boxCapacities.map((capacity) => (
+                <Option key={capacity.boxCapacityId} value={capacity.boxCapacityId}>
+                  {capacity.capacity}
+                </Option>
+              ))}
+            </Select>
+          </div>
+
+          {/* Select fields to concatenate */}
+          <div>
+            <Text strong>Select fields to concatenate</Text>
+            <Select
+              mode="multiple"
+              disabled={!isEnabled("Box Breaking")}
+              allowClear
+              style={{ width: "100%", marginTop: 4 }}
+              placeholder="Select one or more fields"
+              value={selectedBoxFields}
+              onChange={setSelectedBoxFields}
+            >
+              {fields.map((f) => (
+                <Option key={f.fieldId} value={f.fieldId}>
+                  {f.name}
+                </Option>
+              ))}
+            </Select>
+            <Checkbox
+              checked={boxBreakingCriteria.includes("selectFields")}
+              disabled={!isEnabled("Box Breaking")}
+              onChange={(e) => {
+                const checked = e.target.checked;
+                setBoxBreakingCriteria((prev) => {
+                  if (checked) {
+                    return Array.from(new Set([...(prev || []), "selectFields"]));
+                  }
+                  return (prev || []).filter((k) => k !== "selectFields");
+                });
+              }}
+              style={{ marginTop: 8 }}
+            >
+              Enable field concatenation criteria
+            </Checkbox>
+          </div>
         </div>
       </Card>
     </AnimatedCard>

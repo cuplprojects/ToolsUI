@@ -179,10 +179,10 @@ const ProcessingPipeline = () => {
           duration: `${mm}:${ss}`,
           fileUrl: step.key === "duplicate"
             ? `${url3}/${projectId}/DuplicateTool.xlsx`
-            : step.key === "extras"
+            : step.key === "extra"
               ? `${url3}/${projectId}/ExtrasCalculation.xlsx`
               : step.key === "envelope"
-                ? `${url3}/${projectId}/EnvelopeBreaking.xlsx`
+                ? `${url3}/${projectId}/BreakingReport.xlsx`
                 : `${url3}/${projectId}/BoxBreaking.xlsx`,
         });
       }

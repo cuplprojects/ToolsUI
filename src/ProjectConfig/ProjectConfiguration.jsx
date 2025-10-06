@@ -11,7 +11,7 @@ import ExtraProcessingCard from "./components/ExtraProcessingCard";
 import BoxBreakingCard from "./components/BoxBreakingCard";
 import ConfigSummaryCard from "./components/ConfigSummaryCard";
 import { EXTRA_ALIAS_NAME } from "./components/constants";
-import axios from "axios";
+import API from "../hooks/api";
 
 const ProjectConfiguration = () => {
   const { showToast } = useToast();
@@ -26,7 +26,8 @@ const ProjectConfiguration = () => {
   const [extraProcessingConfig, setExtraProcessingConfig] = useState({});
   const [selectedEnvelopeFields, setSelectedEnvelopeFields] = useState([]);
   const [selectedBoxFields, setSelectedBoxFields] = useState([]);
-
+  const [boxCapacities, setBoxCapacities] = useState([]);
+  const [selectedCapacity, setSelectedCapacity] = useState(null);
   // Fetch data using custom hook
   const {
     toolModules,
@@ -46,6 +47,8 @@ const ProjectConfiguration = () => {
     setSelectedBoxFields([]);
     setSelectedEnvelopeFields([]);
     setExtraTypeSelection({});
+    setBoxCapacities([]);
+    setSelectedCapacity();
   };
 
   // Save logic using custom hook
@@ -59,10 +62,13 @@ const ProjectConfiguration = () => {
     selectedEnvelopeFields,
     extraTypeSelection,
     extraTypes,
+    selectedCapacity,
     extraProcessingConfig,
     showToast,
     resetForm
   );
+  console.log(selectedCapacity)
+  console.log("Type of selectedCapacity:", typeof selectedCapacity);
 
   // Helper function
   const isEnabled = (toolName) => enabledModules.includes(toolName);
@@ -81,18 +87,19 @@ const ProjectConfiguration = () => {
     const fetchProjectConfigData = async () => {
       try {
         // Fetch project and extra config using axios
-        const [projectConfigRes, extrasConfigRes] = await Promise.all([
-          axios.get(`${import.meta.env.VITE_API_URL}/ProjectConfigs/ByProject/${projectId}`, {
-            headers: { Authorization: `Bearer ${token}` },
+        const [projectConfigRes, extrasConfigRes, boxConfigRes] = await Promise.all([
+          API.get(`/ProjectConfigs/ByProject/${projectId}`, {
           }),
-          axios.get(`${import.meta.env.VITE_API_URL}/ExtrasConfigurations/ByProject/${projectId}`, {
-            headers: { Authorization: `Bearer ${token}` },
+          API.get(`/ExtrasConfigurations/ByProject/${projectId}`, {
           }),
+          API.get(`/BoxCapacities`, {
+          })
         ]);
 
         const projectConfig = projectConfigRes.data;
         const extrasConfig = extrasConfigRes.data;
-
+        const boxConfig = boxConfigRes.data;
+        setBoxCapacities(boxConfig);
         if (projectConfig.modules && toolModules.length > 0) {
           const enabledNames = new Set();
           const extraModuleNames = ["Nodal Extra Calculation", "University Extra Calculation"];
@@ -201,6 +208,10 @@ const ProjectConfiguration = () => {
             fields={fields}
             selectedBoxFields={selectedBoxFields}
             setSelectedBoxFields={setSelectedBoxFields}
+            boxCapacities={boxCapacities}
+            selectedCapacity={selectedCapacity}
+            setSelectedCapacity={setSelectedCapacity}
+            setBoxCapacity={setBoxCapacities}
           />
 
           <ConfigSummaryCard
