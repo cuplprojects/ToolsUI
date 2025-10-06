@@ -81,86 +81,127 @@ const ProjectConfiguration = () => {
 
 
   // Fetch Project and Extra Config Data on Mount
-  useEffect(() => {
-    if (!projectId) return;
+ useEffect(() => {
+  if (!projectId) return;
 
-    const fetchProjectConfigData = async () => {
-      try {
-        // Fetch project and extra config using axios
-        const [projectConfigRes, extrasConfigRes, boxConfigRes] = await Promise.all([
-          API.get(`/ProjectConfigs/ByProject/${projectId}`, {
-          }),
-          API.get(`/ExtrasConfigurations/ByProject/${projectId}`, {
-          }),
-          API.get(`/BoxCapacities`, {
-          })
-        ]);
+  const fetchProjectConfigData = async () => {
+    console.log("Fetching config data for project:", projectId);
 
-        const projectConfig = projectConfigRes.data;
-        const extrasConfig = extrasConfigRes.data;
-        const boxConfig = boxConfigRes.data;
-        setBoxCapacities(boxConfig);
-        if (projectConfig.modules && toolModules.length > 0) {
-          const enabledNames = new Set();
-          const extraModuleNames = ["Nodal Extra Calculation", "University Extra Calculation"];
+    let projectConfig = null;
+    let extrasConfig = [];
 
-          projectConfig.modules.forEach(moduleId => {
-            const module = toolModules.find(m => m.id === moduleId);
-            if (module) {
-              if (extraModuleNames.includes(module.name)) {
-                enabledNames.add("Extra Configuration");
-              } else {
-                enabledNames.add(module.name);
-              }
-            }
-          });
-          setEnabledModules(Array.from(enabledNames));
-        }
-
-        // Parse Envelope Setup
-        const envelopeParsed = JSON.parse(projectConfig.envelope);
-        setInnerEnvelopes(envelopeParsed.Inner ? [envelopeParsed.Inner] : []);
-        setOuterEnvelopes(envelopeParsed.Outer ? [envelopeParsed.Outer] : []);
-
-        // Envelope Making Criteria
-        setSelectedEnvelopeFields(projectConfig.envelopeMakingCriteria || []);
-
-        // Box Breaking Criteria
-        setSelectedBoxFields(fields.filter(f => projectConfig.boxBreakingCriteria?.includes(f.fieldId)).map(f => f.fieldId));
-        setBoxBreakingCriteria(["capacity", ...(projectConfig.boxBreakingCriteria || [])]);
-
-        // Extra Configurations
-        const extraProcessingParsed = {};
-        const extraSelections = {};
-
-        extrasConfig.forEach(item => {
-          const type = extraTypes.find(e => e.extraTypeId === item.extraType)?.type;
-          if (!type) return;
-
-          const env = item.envelopeType ? JSON.parse(item.envelopeType) : { Inner: "", Outer: "" };
-          extraProcessingParsed[type] = {
-            envelopeType: {
-              inner: env.Inner ? [env.Inner] : [],
-              outer: env.Outer ? [env.Outer] : [],
-            },
-            fixedQty: item.mode === "Fixed" ? parseFloat(item.value) : 0,
-            range: item.mode === "Range" ? parseFloat(item.value) : 0,
-            percentage: item.mode === "Percentage" ? parseFloat(item.value) : 0,
-          };
-          extraSelections[type] = item.mode;
-        });
-
-        setExtraProcessingConfig(extraProcessingParsed);
-        setExtraTypeSelection(extraSelections);
-      } catch (err) {
-        console.error("Failed to load config data", err);
+    try {
+      // Fetch project config data
+      const projectConfigRes = await API.get(`/ProjectConfigs/ByProject/${projectId}`);
+      projectConfig = projectConfigRes.data;
+      console.log("Parsed Project Config:", projectConfig);
+    } catch (err) {
+      if (err.response?.status === 404) {
+        console.warn(`No existing configuration for ProjectId: ${projectId}`);
+        showToast("info", "No existing configuration found. You can create a new one.");
+        // No config yet → proceed with empty defaults
+      } else {
+        console.error("Failed to load project config", err.response?.data || err.message);
         showToast("error", "Failed to load project configuration");
+        return;
       }
-    };
+    }
 
-    fetchProjectConfigData();
-  }, [projectId, token, extraTypes, fields, showToast, toolModules]);
+    try {
+      // Fetch extra config data
+      const extrasConfigRes = await API.get(`/ExtrasConfigurations/ByProject/${projectId}`);
+      extrasConfig = extrasConfigRes.data;
+      console.log("Extras Config:", extrasConfig);
+    } catch (err) {
+      if (err.response?.status === 404) {
+        console.warn(`No extra configuration for ProjectId: ${projectId}`);
+        // No extras yet → proceed with empty defaults
+      } else {
+        console.error("Failed to load extras config", err.response?.data || err.message);
+      }
+    }
 
+    try {
+      // Fetch box capacities
+      const boxConfigRes = await API.get(`/BoxCapacities`);
+      const boxConfig = boxConfigRes.data;
+      console.log("Box Capacities:", boxConfig);
+      setBoxCapacities(boxConfig);
+    } catch (err) {
+      console.error("Failed to load box capacities", err.response?.data || err.message);
+    }
+
+    // If project config exists, initialize states
+    if (projectConfig && toolModules.length > 0) {
+      const enabledNames = new Set();
+      const extraModuleNames = ["Nodal Extra Calculation", "University Extra Calculation"];
+
+      projectConfig.modules?.forEach(moduleId => {
+        const module = toolModules.find(m => m.id === moduleId);
+        if (module) {
+          if (extraModuleNames.includes(module.name)) {
+            enabledNames.add("Extra Configuration");
+          } else {
+            enabledNames.add(module.name);
+          }
+        }
+      });
+
+      setEnabledModules(Array.from(enabledNames));
+
+      // Envelope Setup
+      const envelopeParsed = JSON.parse(projectConfig.envelope || '{}');
+      setInnerEnvelopes(envelopeParsed.Inner ? [envelopeParsed.Inner] : []);
+      setOuterEnvelopes(envelopeParsed.Outer ? [envelopeParsed.Outer] : []);
+
+      // Envelope Making Criteria
+      setSelectedEnvelopeFields(projectConfig.envelopeMakingCriteria || []);
+
+      // Box Breaking Criteria
+      setSelectedBoxFields(fields.filter(f => projectConfig.boxBreakingCriteria?.includes(f.fieldId)).map(f => f.fieldId));
+      setBoxBreakingCriteria(["capacity", ...(projectConfig.boxBreakingCriteria || [])]);
+    } else {
+      // No project config → initialize empty/defaults
+      setEnabledModules([]);
+      setInnerEnvelopes([]);
+      setOuterEnvelopes([]);
+      setSelectedEnvelopeFields([]);
+      setSelectedBoxFields([]);
+      setBoxBreakingCriteria(["capacity"]);
+    }
+
+    // Process Extra Configurations
+    const extraProcessingParsed = {};
+    const extraSelections = {};
+
+    extrasConfig.forEach(item => {
+      const type = extraTypes.find(e => e.extraTypeId === item.extraType)?.type;
+      if (!type) return;
+
+      const env = item.envelopeType ? JSON.parse(item.envelopeType) : { Inner: "", Outer: "" };
+      extraProcessingParsed[type] = {
+        envelopeType: {
+          inner: env.Inner ? [env.Inner] : [],
+          outer: env.Outer ? [env.Outer] : [],
+        },
+        fixedQty: item.mode === "Fixed" ? parseFloat(item.value) : 0,
+        range: item.mode === "Range" ? parseFloat(item.value) : 0,
+        percentage: item.mode === "Percentage" ? parseFloat(item.value) : 0,
+      };
+      extraSelections[type] = item.mode;
+    });
+
+    setExtraProcessingConfig(extraProcessingParsed);
+    setExtraTypeSelection(extraSelections);
+  };
+
+  fetchProjectConfigData();
+}, [projectId, token, extraTypes, fields, showToast, toolModules]);
+
+
+useEffect(() => {
+  console.log("Box Capacities Updated:", boxCapacities);
+}, [boxCapacities]);
   return (
     <div style={{ padding: 16 }}>
       <Row gutter={16} align="top">
