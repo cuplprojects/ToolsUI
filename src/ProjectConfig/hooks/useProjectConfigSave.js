@@ -12,6 +12,7 @@ export const useProjectConfigSave = (
   extraTypes,
   selectedCapacity,
   extraProcessingConfig,
+  fetchProjectConfigData,
   showToast,
   resetForm
 ) => {
@@ -72,6 +73,7 @@ export const useProjectConfigSave = (
       }
 
       showToast("Configuration saved successfully!", "success");
+      fetchProjectConfigData();
       resetForm();
       console.log("Saved:", { projectConfigPayload, extrasPayloads });
     } catch (err) {

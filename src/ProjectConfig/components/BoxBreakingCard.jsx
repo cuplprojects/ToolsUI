@@ -1,5 +1,5 @@
 import React from "react";
-import { Card, Checkbox, Select, Typography, Tag } from "antd";
+import { Card, Select, Typography, Tag, Checkbox } from "antd";
 import { InboxOutlined, LockOutlined } from "@ant-design/icons";
 import AnimatedCard from "./AnimatedCard";
 import { cardStyle, iconStyle, PRIMARY_COLOR } from "./constants";
@@ -18,6 +18,22 @@ const BoxBreakingCard = ({
   setSelectedCapacity,
   boxCapacities,
 }) => {
+  // Helper function to manage field concatenation criteria
+  const handleFieldConcatenation = (selectedFields) => {
+    if (selectedFields.length > 0) {
+      // Ensure the concatenation criteria is enabled
+      setBoxBreakingCriteria((prev) => {
+        if (!prev.includes("selectFields")) {
+          return [...prev, "selectFields"];
+        }
+        return prev;
+      });
+    } else {
+      // Disable field concatenation if no fields are selected
+      setBoxBreakingCriteria((prev) => prev.filter((item) => item !== "selectFields"));
+    }
+  };
+
   return (
     <AnimatedCard>
       <Card
@@ -84,7 +100,10 @@ const BoxBreakingCard = ({
               style={{ width: "100%", marginTop: 4 }}
               placeholder="Select one or more fields"
               value={selectedBoxFields}
-              onChange={setSelectedBoxFields}
+              onChange={(selectedFields) => {
+                setSelectedBoxFields(selectedFields);
+                handleFieldConcatenation(selectedFields);
+              }}
             >
               {fields.map((f) => (
                 <Option key={f.fieldId} value={f.fieldId}>
@@ -92,22 +111,6 @@ const BoxBreakingCard = ({
                 </Option>
               ))}
             </Select>
-            <Checkbox
-              checked={boxBreakingCriteria.includes("selectFields")}
-              disabled={!isEnabled("Box Breaking")}
-              onChange={(e) => {
-                const checked = e.target.checked;
-                setBoxBreakingCriteria((prev) => {
-                  if (checked) {
-                    return Array.from(new Set([...(prev || []), "selectFields"]));
-                  }
-                  return (prev || []).filter((k) => k !== "selectFields");
-                });
-              }}
-              style={{ marginTop: 8 }}
-            >
-              Enable field concatenation criteria
-            </Checkbox>
           </div>
         </div>
       </Card>
