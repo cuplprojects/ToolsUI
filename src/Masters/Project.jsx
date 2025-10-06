@@ -99,7 +99,7 @@ const Project = () => {
             };
 
             if (editingItem) {
-                await API.put(`/Projects/${editingItem.fieldId}`, payload);
+                await API.put(`/Projects/${editingItem.projectId}`, payload);
                 message.success('Updated successfully');
             } else {
                 await API.post('/Projects', payload);
@@ -188,7 +188,7 @@ const Project = () => {
             render: (_, record) => (
                 <Space>
                     <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)} />
-                    <Button type="link" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.fieldId)} />
+                    <Button type="link" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.projectId)} />
                 </Space>
             ),
         },
