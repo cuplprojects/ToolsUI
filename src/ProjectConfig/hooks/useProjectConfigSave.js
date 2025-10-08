@@ -12,13 +12,14 @@ export const useProjectConfigSave = (
   extraTypes,
   selectedCapacity,
   extraProcessingConfig,
+  duplicateConfig,           // ✅ add duplicateConfig here
   fetchProjectConfigData,
   showToast,
   resetForm
 ) => {
   const handleSave = async () => {
     try {
-      // 1️⃣ Save ProjectConfigs
+      // 1️⃣ Save ProjectConfigs including Duplicate Tool
       const projectConfigPayload = {
         projectId: Number(projectId),
         modules: enabledModules.map(
@@ -30,7 +31,11 @@ export const useProjectConfigSave = (
         }),
         BoxBreakingCriteria: selectedBoxFields,
         EnvelopeMakingCriteria: selectedEnvelopeFields,
-        BoxCapacity: selectedCapacity
+        BoxCapacity: selectedCapacity,
+        DuplicateCriteria: duplicateConfig?.duplicateCriteria || [], // ✅
+        Enhancement: duplicateConfig?.enhancementEnabled
+          ? duplicateConfig?.enhancement || 0
+          : 0, // ✅
       };
 
       await API.post(`/ProjectConfigs`, projectConfigPayload);
@@ -43,11 +48,11 @@ export const useProjectConfigSave = (
 
           const config = extraProcessingConfig[typeName] || {};
 
-          // normalize envelope
           const normalizedEnvelope = {
             Inner: String(config.envelopeType?.inner || ""),
             Outer: String(config.envelopeType?.outer || ""),
           };
+
           return {
             id: 0,
             projectId: Number(projectId),

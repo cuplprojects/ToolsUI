@@ -4,7 +4,6 @@ import { useToast } from '../hooks/useToast';
 import { CheckCircleOutlined, UploadOutlined, ToolOutlined } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
 import { motion } from 'framer-motion';
-import DuplicateTool from './DuplicateTool';
 import API from '../hooks/api';
 import useStore from '../stores/ProjectData';
 
@@ -587,29 +586,7 @@ const DataImport = () => {
                   🎉 Load Conflict
                 </Button>
               </Card></motion.div>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              whileHover={{
-                scale: 1.01,
-                boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
-              }}
-              transition={{ duration: 0.3 }}
-            >
-              <Card title={
-                <div>
-                  <span>
-                    <ToolOutlined style={iconStyle} />Duplicate Tool
-                  </span>
-                  <br />
-                  <Text type="secondary">Manage duplicates in your data</Text>
-
-                </div>
-              }
-                bordered={true}
-                style={{ marginTop: '10px', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
-                <DuplicateTool />
-              </Card></motion.div>
+           
           </Col>
         )}
       </Row>
