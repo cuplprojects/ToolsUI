@@ -11,9 +11,38 @@ const ConfigSummaryCard = ({
   envelopeConfigured,
   boxConfigured,
   extraConfigured,
+  duplicateConfigured, // <-- new prop
   handleSave,
   projectId,
 }) => {
+  const summaryItems = [
+    {
+      label: "Enabled Modules",
+      value: enabledModules.length,
+      strong: true,
+    },
+    {
+      label: "Envelope Setup",
+      value: envelopeConfigured ? "Configured" : "Not Configured",
+      danger: !envelopeConfigured,
+    },
+    {
+      label: "Box Breaking",
+      value: boxConfigured ? "Configured" : "Not Configured",
+      danger: !boxConfigured,
+    },
+    {
+      label: "Extra Processing",
+      value: extraConfigured ? "Configured" : "Not Configured",
+      danger: !extraConfigured,
+    },
+    { 
+      label: "Duplicate Tool", 
+      value: duplicateConfigured ? "Configured" : "Not Configured", 
+      danger: !duplicateConfigured 
+    },
+  ];
+
   return (
     <AnimatedCard>
       <Card
@@ -32,28 +61,7 @@ const ConfigSummaryCard = ({
       >
         <List
           size="small"
-          dataSource={[
-            {
-              label: "Enabled Modules",
-              value: enabledModules.length,
-              strong: true,
-            },
-            {
-              label: "Envelope Setup",
-              value: envelopeConfigured ? "Configured" : "Not Configured",
-              danger: !envelopeConfigured,
-            },
-            {
-              label: "Box Breaking",
-              value: boxConfigured ? "Configured" : "Not Configured",
-              danger: !boxConfigured,
-            },
-            {
-              label: "Extra Processing",
-              value: extraConfigured ? "Configured" : "Not Configured",
-              danger: !extraConfigured,
-            },
-          ]}
+          dataSource={summaryItems}
           renderItem={(item) => (
             <List.Item>
               <Row style={{ width: "100%" }}>

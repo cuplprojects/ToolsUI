@@ -11,6 +11,7 @@ import ExtraProcessingCard from "./components/ExtraProcessingCard";
 import BoxBreakingCard from "./components/BoxBreakingCard";
 import ConfigSummaryCard from "./components/ConfigSummaryCard";
 import { EXTRA_ALIAS_NAME } from "./components/constants";
+import DuplicateTool from "../ToolsProcessing/DuplicateTool";
 import API from "../hooks/api";
 
 const ProjectConfiguration = () => {
@@ -28,6 +29,12 @@ const ProjectConfiguration = () => {
   const [selectedBoxFields, setSelectedBoxFields] = useState([]);
   const [boxCapacities, setBoxCapacities] = useState([]);
   const [selectedCapacity, setSelectedCapacity] = useState(null);
+  const [duplicateConfig, setDuplicateConfig] = useState({
+  duplicateCriteria: [],
+  enhancement: 0,
+  enhancementEnabled: false,
+  enhancementType: "round",
+});
   // Fetch data using custom hook
   const {
     toolModules,
@@ -40,120 +47,151 @@ const ProjectConfiguration = () => {
   } = useProjectConfigData(token);
 
   const fetchProjectConfigData = async () => {
-    console.log("Fetching config data for project:", projectId);
+  console.log("Fetching config data for project:", projectId);
 
-    let projectConfig = null;
-    let extrasConfig = [];
+  let projectConfig = null;
+  let extrasConfig = [];
+  let duplicateConfigRes = null;
 
-    try {
-      // Fetch project config data
-      const projectConfigRes = await API.get(`/ProjectConfigs/ByProject/${projectId}`);
-      projectConfig = projectConfigRes.data;
-      console.log("Parsed Project Config:", projectConfig);
-    } catch (err) {
-      if (err.response?.status === 404) {
-        console.warn(`No existing configuration for ProjectId: ${projectId}`);
-        // No config yet → proceed with empty defaults
-      } else {
-        console.error("Failed to load project config", err.response?.data || err.message);
-        return;
-      }
-    }
-
-    try {
-      // Fetch extra config data
-      const extrasConfigRes = await API.get(`/ExtrasConfigurations/ByProject/${projectId}`);
-      extrasConfig = extrasConfigRes.data;
-      console.log("Extras Config:", extrasConfig);
-    } catch (err) {
-      if (err.response?.status === 404) {
-        console.warn(`No extra configuration for ProjectId: ${projectId}`);
-        // No extras yet → proceed with empty defaults
-      } else {
-        console.error("Failed to load extras config", err.response?.data || err.message);
-      }
-    }
-
-    try {
-      // Fetch box capacities
-      const boxConfigRes = await API.get(`/BoxCapacities`);
-      const boxConfig = boxConfigRes.data;
-      console.log("Box Capacities:", boxConfig);
-      setBoxCapacities(boxConfig);
-      const selectedBoxCapacity = projectConfig.boxCapacity; // Assuming 'selectedCapacity' is in projectConfig
-      if (selectedBoxCapacity) {
-        setSelectedCapacity(selectedBoxCapacity);  // Set the selected capacity based on projectConfig
-      } else if (boxConfig.length > 0) {
-        // If no selectedCapacity, set the first box capacity as default (if available)
-        setSelectedCapacity(boxConfig[0].id);  // Set the first capacity as the default
-      }
-    } catch (err) {
-      console.error("Failed to load box capacities", err.response?.data || err.message);
-    }
-
-    // If project config exists, initialize states
-    if (projectConfig && toolModules.length > 0) {
-      const enabledNames = new Set();
-      const extraModuleNames = ["Nodal Extra Calculation", "University Extra Calculation"];
-
-      projectConfig.modules?.forEach(moduleId => {
-        const module = toolModules.find(m => m.id === moduleId);
-        if (module) {
-          if (extraModuleNames.includes(module.name)) {
-            enabledNames.add("Extra Configuration");
-          } else {
-            enabledNames.add(module.name);
-          }
-        }
-      });
-
-      setEnabledModules(Array.from(enabledNames));
-
-      // Envelope Setup
-      const envelopeParsed = JSON.parse(projectConfig.envelope || '{}');
-      setInnerEnvelopes(envelopeParsed.Inner ? [envelopeParsed.Inner] : []);
-      setOuterEnvelopes(envelopeParsed.Outer ? [envelopeParsed.Outer] : []);
-
-      // Envelope Making Criteria
-      setSelectedEnvelopeFields(projectConfig.envelopeMakingCriteria || []);
-
-      // Box Breaking Criteria
-      setSelectedBoxFields(fields.filter(f => projectConfig.boxBreakingCriteria?.includes(f.fieldId)).map(f => f.fieldId));
-      setBoxBreakingCriteria(["capacity", ...(projectConfig.boxBreakingCriteria || [])]);
+  try {
+    // Fetch project config data
+    const projectConfigRes = await API.get(`/ProjectConfigs/ByProject/${projectId}`);
+    projectConfig = projectConfigRes.data;
+    console.log("Parsed Project Config:", projectConfig);
+  } catch (err) {
+    if (err.response?.status === 404) {
+      console.warn(`No existing configuration for ProjectId: ${projectId}`);
     } else {
-      // No project config → initialize empty/defaults
-      setEnabledModules([]);
-      setInnerEnvelopes([]);
-      setOuterEnvelopes([]);
-      setSelectedEnvelopeFields([]);
-      setSelectedBoxFields([]);
-      setBoxBreakingCriteria(["capacity"]);
+      console.error("Failed to load project config", err.response?.data || err.message);
+      return;
     }
+  }
 
-    // Process Extra Configurations
-    const extraProcessingParsed = {};
-    const extraSelections = {};
+  try {
+    // Fetch extra config data
+    const extrasConfigRes = await API.get(`/ExtrasConfigurations/ByProject/${projectId}`);
+    extrasConfig = extrasConfigRes.data;
+    console.log("Extras Config:", extrasConfig);
+  } catch (err) {
+    if (err.response?.status === 404) {
+      console.warn(`No extra configuration for ProjectId: ${projectId}`);
+    } else {
+      console.error("Failed to load extras config", err.response?.data || err.message);
+    }
+  }
 
-    extrasConfig.forEach(item => {
-      const type = extraTypes.find(e => e.extraTypeId === item.extraType)?.type;
-      if (!type) return;
+  try {
+  // Fetch duplicate tool config
+  const duplicateRes = await API.get(`/ProjectConfigs/ByProject/${projectId}`);
+  let duplicateConfigRes = duplicateRes.data || {
+    duplicateCriteria: [],
+    enhancement: 0,
+  };
 
-      const env = item.envelopeType ? JSON.parse(item.envelopeType) : { Inner: "", Outer: "" };
-      extraProcessingParsed[type] = {
-        envelopeType: {
-          inner: env.Inner ? [env.Inner] : [],
-          outer: env.Outer ? [env.Outer] : [],
-        },
-        fixedQty: item.mode === "Fixed" ? parseFloat(item.value) : 0,
-        range: item.mode === "Range" ? parseFloat(item.value) : 0,
-        percentage: item.mode === "Percentage" ? parseFloat(item.value) : 0,
-      };
-      extraSelections[type] = item.mode;
+  // Normalize data
+  duplicateConfigRes = {
+    duplicateCriteria: Array.isArray(duplicateConfigRes.duplicateCriteria)
+      ? duplicateConfigRes.duplicateCriteria
+      : JSON.parse(duplicateConfigRes.duplicateCriteria || "[]"),
+    enhancement: Number(duplicateConfigRes.enhancement) || 0,
+    enhancementEnabled: Number(duplicateConfigRes.enhancement) > 0,
+  };
+
+  setDuplicateConfig(duplicateConfigRes);
+  console.log("Duplicate Tool Config (Mapped):", duplicateConfigRes);
+} catch (err) {
+  if (err.response?.status === 404) {
+    console.warn(`No duplicate tool configuration for ProjectId: ${projectId}`);
+    setDuplicateConfig({
+      duplicateCriteria: [],
+      enhancement: 0,
+      enhancementEnabled: false,
+    });
+  } else {
+    console.error("Failed to load duplicate tool config", err.response?.data || err.message);
+  }
+}
+
+
+  try {
+    // Fetch box capacities
+    const boxConfigRes = await API.get(`/BoxCapacities`);
+    const boxConfig = boxConfigRes.data;
+    console.log("Box Capacities:", boxConfig);
+    setBoxCapacities(boxConfig);
+
+    const selectedBoxCapacity = projectConfig?.boxCapacity;
+    setSelectedCapacity(selectedBoxCapacity || (boxConfig.length > 0 ? boxConfig[0].id : null));
+  } catch (err) {
+    console.error("Failed to load box capacities", err.response?.data || err.message);
+  }
+
+  // If project config exists, initialize states
+  if (projectConfig && toolModules.length > 0) {
+    const enabledNames = new Set();
+    const extraModuleNames = ["Nodal Extra Calculation", "University Extra Calculation"];
+
+    projectConfig.modules?.forEach(moduleId => {
+      const module = toolModules.find(m => m.id === moduleId);
+      if (module) {
+        if (extraModuleNames.includes(module.name)) {
+          enabledNames.add("Extra Configuration");
+        } else {
+          enabledNames.add(module.name);
+        }
+      }
     });
 
-    setExtraProcessingConfig(extraProcessingParsed);
-    setExtraTypeSelection(extraSelections);
-  };
+    setEnabledModules(Array.from(enabledNames));
+
+    // Envelope Setup
+    const envelopeParsed = JSON.parse(projectConfig.envelope || '{}');
+    setInnerEnvelopes(envelopeParsed.Inner ? [envelopeParsed.Inner] : []);
+    setOuterEnvelopes(envelopeParsed.Outer ? [envelopeParsed.Outer] : []);
+
+    // Envelope Making Criteria
+    setSelectedEnvelopeFields(projectConfig.envelopeMakingCriteria || []);
+
+    // Box Breaking Criteria
+    setSelectedBoxFields(
+      fields.filter(f => projectConfig.boxBreakingCriteria?.includes(f.fieldId))
+            .map(f => f.fieldId)
+    );
+    setBoxBreakingCriteria(["capacity", ...(projectConfig.boxBreakingCriteria || [])]);
+  } else {
+    setEnabledModules([]);
+    setInnerEnvelopes([]);
+    setOuterEnvelopes([]);
+    setSelectedEnvelopeFields([]);
+    setSelectedBoxFields([]);
+    setBoxBreakingCriteria(["capacity"]);
+  }
+
+  // Process Extra Configurations
+  const extraProcessingParsed = {};
+  const extraSelections = {};
+
+  extrasConfig.forEach(item => {
+    const type = extraTypes.find(e => e.extraTypeId === item.extraType)?.type;
+    if (!type) return;
+
+    const env = item.envelopeType ? JSON.parse(item.envelopeType) : { Inner: "", Outer: "" };
+    extraProcessingParsed[type] = {
+      envelopeType: {
+        inner: env.Inner ? [env.Inner] : [],
+        outer: env.Outer ? [env.Outer] : [],
+      },
+      fixedQty: item.mode === "Fixed" ? parseFloat(item.value) : 0,
+      range: item.mode === "Range" ? parseFloat(item.value) : 0,
+      percentage: item.mode === "Percentage" ? parseFloat(item.value) : 0,
+    };
+    extraSelections[type] = item.mode;
+  });
+
+  setExtraProcessingConfig(extraProcessingParsed);
+  setExtraTypeSelection(extraSelections);
+};
+
   // Reset form function
   const resetForm = () => {
     setEnabledModules([]);
@@ -167,22 +205,23 @@ const ProjectConfiguration = () => {
   };
 
   // Save logic using custom hook
-  const { handleSave } = useProjectConfigSave(
-    projectId,
-    enabledModules,
-    toolModules,
-    innerEnvelopes,
-    outerEnvelopes,
-    selectedBoxFields,
-    selectedEnvelopeFields,
-    extraTypeSelection,
-    extraTypes,
-    selectedCapacity,
-    extraProcessingConfig,
-    fetchProjectConfigData,
-    showToast,
-    resetForm
-  );
+ const { handleSave } = useProjectConfigSave(
+  projectId,
+  enabledModules,
+  toolModules,
+  innerEnvelopes,
+  outerEnvelopes,
+  selectedBoxFields,
+  selectedEnvelopeFields,
+  extraTypeSelection,
+  extraTypes,
+  selectedCapacity,
+  extraProcessingConfig,
+  duplicateConfig,
+  fetchProjectConfigData,
+  showToast,
+  resetForm
+);
   console.log(selectedCapacity)
   console.log("Type of selectedCapacity:", typeof selectedCapacity);
 
@@ -193,7 +232,7 @@ const ProjectConfiguration = () => {
   const envelopeConfigured = isEnabled("Envelope Breaking");
   const boxConfigured = isEnabled("Box Breaking");
   const extraConfigured = isEnabled(EXTRA_ALIAS_NAME);
-
+  const duplicateConfigured = isEnabled("Duplicate Tool");
 
 
   useEffect(() => {
@@ -258,11 +297,18 @@ const ProjectConfiguration = () => {
             setBoxCapacity={setBoxCapacities}
           />
 
+          <DuplicateTool 
+          isEnabled = {isEnabled} 
+          duplicateConfig={duplicateConfig} 
+          setDuplicateConfig={setDuplicateConfig}
+          />
+
           <ConfigSummaryCard
             enabledModules={enabledModules}
             envelopeConfigured={envelopeConfigured}
             boxConfigured={boxConfigured}
             extraConfigured={extraConfigured}
+            duplicateConfigured={duplicateConfigured}
             handleSave={handleSave}
             projectId={projectId}
           />

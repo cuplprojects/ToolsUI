@@ -1,78 +1,73 @@
-import React, { useEffect, useState } from 'react';
-import { Row, Col, Card, Select, Button, Typography, Radio, Checkbox, InputNumber, Space, message, Statistic } from 'antd';
-import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import API from '../hooks/api';
-import useStore from '../stores/ProjectData';
-const { Title, Text } = Typography;
+import React, { useEffect, useState } from "react";
+import { Card, Select, Checkbox, InputNumber, Typography, Space, Tag } from "antd";
+import API from "./../hooks/api";
+import useStore from "./../stores/ProjectData";
+import { InboxOutlined, LockOutlined } from "@ant-design/icons";
+import { iconStyle, PRIMARY_COLOR } from "../ProjectConfig/components/constants";
+
+const { Text } = Typography;
 const { Option } = Select;
 
-const DuplicateTool = () => {
-  const navigate = useNavigate();
-  const [fields, setFields] = useState([]);
-  const [selectedFieldIds, setSelectedFieldIds] = useState([]);
-  const [strategy, setStrategy] = useState('consolidate');
-  const [enhance, setEnhance] = useState(false);
-  const [enhanceType, setEnhanceType] = useState('round'); // 'percent' | 'round'
-  const [percent, setPercent] = useState(0);
+const DuplicateTool = ({ isEnabled, duplicateConfig = {}, setDuplicateConfig }) => {
   const projectId = useStore((state) => state.projectId);
+  const [fields, setFields] = useState([]);
 
   useEffect(() => {
-    API
-      .get(`/Fields`)
+    if (!projectId) return;
+    API.get(`/Fields`)
       .then((res) => setFields(res.data || []))
-      .catch((err) => console.error('Failed to fetch fields', err));
+      .catch((err) => console.error("Failed to fetch fields", err));
   }, [projectId]);
 
+  const enabled = isEnabled("Duplicate Tool");
 
-  const handleSave = () => {
-    if (selectedFieldIds.length === 0) {
-      message.warning('Select at least one field');
-      return;
-    }
-
-    const fieldIdToName = new Map(fields.map((f) => [f.fieldId, f.name]));
-    const mergefields = selectedFieldIds
-      .map((id) => fieldIdToName.get(id))
-      .filter(Boolean)
-      .join(',');
-
-    if (!mergefields) {
-      message.warning('Selected fields are invalid.');
-      return;
-    }
-
-    // Save the selected settings in localStorage
-    const settings = {
-      projectId: projectId,
-      selectedFieldIds,
-      strategy,
-      enhance,
-      enhanceType,
-      percent,
-      mergefields,
-    };
-
-    localStorage.setItem('duplicateToolSettings', JSON.stringify(settings));
-    message.success('Settings saved successfully!');
-    navigate('/processingpipeline', { state: { projectId: projectId } });
+  const handleFieldChange = (value) => {
+    setDuplicateConfig((prev) => ({ ...prev, duplicateCriteria: value }));
   };
 
+  const handleEnhancementChange = (checked) => {
+    setDuplicateConfig((prev) => ({
+      ...prev,
+      enhancementEnabled: checked,
+    }));
+  };
+
+  const handlePercentChange = (val) => {
+    setDuplicateConfig((prev) => ({ ...prev, enhancement: val }));
+  };
 
   return (
-    <div>
-  <Row gutter={[24, 24]}>
-    <Col xs={24} md={24}>
-      <Space direction="vertical" style={{ width: '100%' }} size="large">
+    <Card
+      title={
+        <div>
+          <span>
+            <InboxOutlined style={iconStyle} /> Duplicate Tool
+          </span>
+          <br />
+          <Text type="secondary">
+            Define conditions that trigger creation of new boxes
+          </Text>
+        </div>
+      }
+      extra={
+        !enabled ? (
+          <Tag icon={<LockOutlined style={{ color: PRIMARY_COLOR }} />}>Disabled</Tag>
+        ) : null
+      }
+      bordered
+      style={{ marginTop: 16, boxShadow: "0 4px 8px rgba(0,0,0,0.1)" }}
+    >
+      <Space direction="vertical" style={{ width: "100%" }} size="middle">
         <div>
           <Text strong>Select fields to concatenate</Text>
           <Select
             mode="multiple"
             allowClear
-            style={{ width: '100%', marginTop: 4 }}
+            disabled={!enabled}
+            style={{ width: "100%", marginTop: 4 }}
             placeholder="Select one or more fields"
-            value={selectedFieldIds}
-            onChange={setSelectedFieldIds}
+            value={duplicateConfig?.duplicateCriteria || []}
+            onChange={handleFieldChange}
           >
             {fields.map((f) => (
               <Option key={f.fieldId} value={f.fieldId}>
@@ -82,61 +77,31 @@ const DuplicateTool = () => {
           </Select>
         </div>
 
-       
-          <Card title="Processing Options" bordered={true} style={{ boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
-            <Row gutter={[16, 16]}>
-              <Title level={5}>Duplicate Handling Strategy</Title>
-              <Radio.Group
-                onChange={(e) => setStrategy(e.target.value)}
-                value={strategy}
-                style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
-              >
-                <Radio value="consolidate">Sum quantities</Radio>
-                <Radio value="first">Keep first occurrence</Radio>
-                <Radio value="manual">Manual review required</Radio>
-              </Radio.Group>
-            </Row>
+        <div>
+          <Text strong>Enhancement Options</Text>
+          <Checkbox
+            checked={duplicateConfig?.enhancementEnabled}
+            disabled={!enabled}
+            onChange={(e) => handleEnhancementChange(e.target.checked)}
+            style={{ marginTop: 8 }}
+          >
+            Enable Enhancement
+          </Checkbox>
 
-            <Row>
-              <div className="mt-2">
-                <Title level={5}>Enhancement Options</Title>
-              </div>
-              <Checkbox checked={enhance} onChange={(e) => setEnhance(e.target.checked)}>
-                Enable Enhancement
-              </Checkbox>
-
-              {enhance && (
-                <Radio.Group
-                  value={enhanceType}
-                  onChange={(e) => setEnhanceType(e.target.value)}
-                  style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}
-                >
-                  <Radio value="percent">Apply enhancement percentage</Radio>
-                  {enhance && enhanceType === 'percent' && (
-                    <InputNumber
-                      value={percent}
-                      onChange={setPercent}
-                      style={{ marginTop: 8, width: '100%' }}
-                      addonAfter="%"
-                    />
-                  )}
-                  <Radio value="round">Round up to envelope size</Radio>
-                </Radio.Group>
-              )}
-            </Row>
-          </Card>
-       
-
-        <Space style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
-          <Button type="primary" onClick={handleSave}>
-            Save Settings
-          </Button>
-        </Space>
+          {duplicateConfig?.enhancementEnabled && (
+            <InputNumber
+              value={duplicateConfig?.enhancement || 0}
+              disabled={!enabled}
+              onChange={handlePercentChange}
+              style={{ marginTop: 8, width: "100%" }}
+              addonAfter="%"
+              min={0}
+              max={100}
+            />
+          )}
+        </div>
       </Space>
-    </Col>
-  </Row>
-</div>
-
+    </Card>
   );
 };
 
