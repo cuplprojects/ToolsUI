@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Progress,
   Badge,
@@ -26,6 +26,30 @@ const ProcessingPipeline = () => {
 
   const projectId = useStore((state) => state.projectId);
 
+  const fileMap = useMemo(() => {
+    if (!projectId) return {};
+    return {
+      duplicate: `${url3}/${projectId}/DuplicateTool.xlsx`,
+      extra: `${url3}/${projectId}/ExtrasCalculation.xlsx`,
+      envelope: `${url3}/${projectId}/BreakingReport.xlsx`,
+      box: `${url3}/${projectId}/BoxBreaking.xlsx`,
+    };
+  }, [projectId]);
+
+  const computeRunOrder = useCallback(() => {
+    const names = (enabledModuleNames || []).map((n) => String(n).toLowerCase());
+    const order = [];
+    if (names.some((n) => n.includes("duplicate")))
+      order.push({ key: "duplicate", title: "Duplicate Processing" });
+    if (names.some((n) => n.includes("extra")))
+      order.push({ key: "extra", title: "Extra Configuration" });
+    if (names.some((n) => n.includes("envelope")))
+      order.push({ key: "envelope", title: "Envelope Breaking" });
+    if (names.some((n) => n.includes("box")))
+      order.push({ key: "box", title: "Box Breaking" });
+    return order;
+  }, [enabledModuleNames]);
+
   const currentStep = useMemo(
     () =>
       steps.findIndex((s) => s.status === "in-progress") + 1 ||
@@ -37,8 +61,8 @@ const ProcessingPipeline = () => {
     () =>
       steps.length
         ? (steps.filter((s) => s.status === "completed").length /
-            steps.length) *
-          100
+          steps.length) *
+        100
         : 0,
     [steps]
   );
@@ -47,6 +71,7 @@ const ProcessingPipeline = () => {
   useEffect(() => {
     if (!projectId) {
       setEnabledModuleNames([]);
+      setSteps([]);
       return;
     }
     const loadEnabled = async () => {
@@ -61,13 +86,16 @@ const ProcessingPipeline = () => {
           const modsRes = await API.get(`/Modules`);
           const allMods = modsRes.data || [];
           const idToName = new Map(allMods.map((m) => [m.id, m.name]));
-          moduleEntries = moduleEntries.map((id) => idToName.get(id)).filter(Boolean);
+          moduleEntries = moduleEntries
+            .sort((a, b) => a - b)                // Sort ascending
+            .map((id) => idToName.get(id))       // Map ID to name
+            .filter(Boolean);
         }
-
         setEnabledModuleNames(moduleEntries || []);
       } catch (err) {
         console.error("Failed to load enabled modules", err);
         setEnabledModuleNames([]);
+        setSteps([]);
       } finally {
         setLoadingModules(false);
       }
@@ -76,60 +104,58 @@ const ProcessingPipeline = () => {
     loadEnabled();
   }, [projectId]);
 
+  useEffect(() => {
+    if (!projectId || !enabledModuleNames.length) return;
+    const order = computeRunOrder();
+    if (!order.length) {
+      setSteps([]);
+      return;
+    }
+
+    const preloadedSteps = order.map((step) => ({
+      key: step.key,
+      title: step.title,
+      status: "pending",
+      duration: null,
+      fileUrl: fileMap[step.key] || null,
+    }));
+
+    const hasFiles = preloadedSteps.some((s) => s.fileUrl);
+    setSteps((prev) => {
+      if (!prev.length || prev.some((p) => p.status === "in-progress")) {
+        return preloadedSteps;
+      }
+      const merged = order.map((step) => {
+        const existing = prev.find((p) => p.key === step.key);
+        return existing
+          ? { ...existing, fileUrl: fileMap[step.key] || existing.fileUrl }
+          : preloadedSteps.find((p) => p.key === step.key);
+      });
+      return merged;
+    });
+
+    if (hasFiles) {
+      setSteps((prev) => prev.map((s) => {
+        if (!s.fileUrl) return s;
+        return {
+          ...s,
+          status: s.status === "failed" ? "failed" : "completed",
+          duration: s.duration || "--:--",
+        };
+      }));
+    }
+  }, [projectId, enabledModuleNames, fileMap, computeRunOrder]);
+
   // Run order helper
-  const computeRunOrder = () => {
-    const names = (enabledModuleNames || []).map((n) => String(n).toLowerCase());
-    const order = [];
-    if (names.some((n) => n.includes("duplicate")))
-      order.push({ key: "duplicate", title: "Duplicate Processing" });
-    if (names.some((n) => n.includes("extra")))
-      order.push({ key: "extra", title: "Extra Configuration" });
-    if (names.some((n) => n.includes("envelope")))
-      order.push({ key: "envelope", title: "Envelope Breaking" });
-    if (names.some((n) => n.includes("box")))
-      order.push({ key: "box", title: "Box Breaking" });
-    return order;
-  };
 
-  // --- Individual Process Calls ---
   const runDuplicate = async (projectId) => {
-    const savedSettingsRaw = localStorage.getItem("duplicateToolSettings");
-    if (!savedSettingsRaw) {
-      message.warning(
-        "Duplicate settings not found. Please save settings in Duplicate Tool."
-      );
-      throw new Error("Missing duplicate settings");
-    }
-
-    const savedSettings = JSON.parse(savedSettingsRaw);
-    const { selectedFieldIds, strategy, enhance, enhanceType, percent, mergefields } =
-      savedSettings || {};
-
-    if (!mergefields || !Array.isArray(selectedFieldIds) || selectedFieldIds.length === 0) {
-      message.warning("Invalid duplicate settings. Please re-save in Duplicate Tool.");
-      throw new Error("Invalid duplicate settings");
-    }
-
     const queryParams = {
       ProjectId: projectId,
-      consolidate: strategy === "consolidate",
-      mergefields,
     };
-
-    if (enhance) {
-      if (enhanceType === "percent") {
-        queryParams.enhancement = true;
-        queryParams.percent = percent;
-      } else if (enhanceType === "round") {
-        queryParams.enhancement = false;
-        queryParams.percent = 0;
-      }
-    }
-
     const query = new URLSearchParams(queryParams).toString();
     const res = await API.post(`/Duplicate?${query}`);
     const data = res?.data || {};
-    const duplicatesRemoved = data.duplicatesRemoved ?? data.removedCount ?? 0;
+    const duplicatesRemoved = data.mergedRows ?? data.mergedRows ?? 0;
     message.success(`Duplicate processing completed. Duplicates removed: ${duplicatesRemoved}`);
   };
 
@@ -216,7 +242,8 @@ const ProcessingPipeline = () => {
 
   // Build table data
   const data = (enabledModuleNames || []).map((name) => {
-    const step = steps.find((s) => s.title.toLowerCase().includes(name.toLowerCase())) || {};
+    const normalized = String(name).toLowerCase();
+    const step = steps.find((s) => normalized.includes(s.key)) || {};
     return {
       key: name,
       moduleName: name,
