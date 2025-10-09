@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Row, Col, Card, Select, Upload, Button, Typography, Space, Table, Tabs, Divider, Checkbox, Input } from 'antd';
+import '@ant-design/v5-patch-for-react-19'
+import { Row, Col, Card, Select, Upload, Button, Typography, Space, Table, Tabs, Divider, Checkbox, Input, Modal } from 'antd';
 import { useToast } from '../hooks/useToast';
 import { CheckCircleOutlined, UploadOutlined, ToolOutlined } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
@@ -30,6 +31,7 @@ const DataImport = () => {
   const [skipItems, setSkipItems] = useState(false);
   const [quantity, setQuantity] = useState(0);
   const [fileList, setFileList] = useState([]);
+  const toast = useToast()
   // Load projects
   useEffect(() => {
     if (!projectId) return;
@@ -338,6 +340,40 @@ const DataImport = () => {
     return match || null;
   };
 
+  const deleteNRData = async (closeModal) => {
+  setLoading(true);
+  try {
+    const token = localStorage.getItem("token");
+
+    // Await the delete call
+    await API.delete(`/NRDatas/DeleteByProject/${projectId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    // Success message only
+    showToast("NR data deleted successfully!", "success");
+
+    // Clear local state
+    setExistingData([]);
+    setFileList([]);
+    setFieldMappings({});
+    setFileHeaders({});
+
+    // Close modal
+    if (closeModal) closeModal();
+
+  } catch (error) {
+    console.error("Error deleting NRData:", error);
+
+    // Safely check for response data
+    const errorMsg = error?.response?.data || error?.message || "Failed to delete NR data";
+    showToast(errorMsg, "error");
+  } finally {
+    setLoading(false);
+  }
+};
+
+
   const handleKeepZeroQuantityChange = (e) => {
     setKeepZeroQuantity(e.target.checked);
     if (e.target.checked) {
@@ -370,10 +406,84 @@ const DataImport = () => {
   };
 
   return (
-    <div style={{ padding: 24 }}>
-      <Row gutter={[24, 24]}>
-        {/* Left Section */}
-        <Col xs={24} md={16}>
+  <div style={{ padding: 24 }}>
+    {/* === PAGE HEADER === */}
+    <Typography.Title level={3} style={{ marginBottom: 24 }}>
+      Project Configuration
+    </Typography.Title>
+
+    {/* === DATA IMPORT SECTION === */}
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{
+        scale: 1.01,
+        boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
+      }}
+      transition={{ duration: 0.3 }}
+    >
+      <Card
+        title={
+          <div>
+            <span>
+              <ToolOutlined style={iconStyle} /> Data Import
+            </span>
+            <br />
+            <Text type="secondary">Upload and map your data files here</Text>
+          </div>
+        }
+        bordered={true}
+        style={{
+          width: "100%",
+          boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
+          marginBottom: 24,
+          backgroundColor: "#f5f5f5"
+        }}
+      >
+        <Row gutter={[16, 16]}>
+          <Col xs={24} md={12}>
+            <Upload.Dragger
+              name="file"
+              accept=".xls,.xlsx,.csv"
+              fileList={fileList}
+              beforeUpload={beforeUpload}
+              maxCount={1}
+            >
+              <p className="ant-upload-drag-icon">📤</p>
+              <p className="ant-upload-text">Upload Excel or CSV file</p>
+              <Button icon={<UploadOutlined />}>Choose File</Button>
+            </Upload.Dragger>
+          </Col>
+
+          <Col xs={24} md={12}>
+            <Space direction="vertical" style={{ width: "100%" }}>
+              <Checkbox
+                checked={keepZeroQuantity}
+                onChange={handleKeepZeroQuantityChange}
+              >
+                Keep items with 0 quantity and change their quantity
+              </Checkbox>
+
+              {keepZeroQuantity && (
+                <Input
+                  type="number"
+                  value={quantity}
+                  onChange={(e) => setQuantity(e.target.value)}
+                  placeholder="Enter quantity to replace 0"
+                />
+              )}
+
+              <Checkbox checked={skipItems} onChange={handleSkipItemsChange}>
+                Skip items with 0 quantity
+              </Checkbox>
+            </Space>
+          </Col>
+        </Row>
+
+        <Divider />
+
+        {/* === FIELD MAPPING SECTION === */}
+        {fileHeaders.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -383,215 +493,205 @@ const DataImport = () => {
             }}
             transition={{ duration: 0.3 }}
           >
-            <Card title={<div>
-              <span>
-                <ToolOutlined style={iconStyle} /> Data Import</span><br />
-              <Text type="secondary" >
-                Upload and map your data files here
+            <Card
+              title="Field Mapping"
+              style={{
+                border: "1px solid #d9d9d9",
+                boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
+              }}
+            >
+              <Text
+                type="secondary"
+                style={{ display: "block", marginBottom: 16 }}
+              >
+                Map fields from your file to expected fields
               </Text>
-            </div>}
-              bordered={true}
-              style={{ boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
-              <div>
 
-              </div>              <Row gutter={[16, 16]}>
-                <Col xs={24} md={12}>
-                  <Upload.Dragger
-                    name="file"
-                    accept=".xls,.xlsx,.csv"
-                    fileList={fileList}
-                    beforeUpload={beforeUpload}
-                    maxCount={1}
-                  >
-                    <p className="ant-upload-drag-icon">📤</p>
-                    <p className="ant-upload-text">Upload Excel or CSV file</p>
-                    <Button icon={<UploadOutlined />}>Choose File</Button>
-                  </Upload.Dragger>
-                </Col>
-                <Col xs={24} md={12}>
-                  <Space direction="vertical" style={{ width: '100%' }}>
-                    <Checkbox
-                      checked={keepZeroQuantity}
-                      onChange={handleKeepZeroQuantityChange}
-                    >
-                      Keep items with 0 quantity and change their quantity
-                    </Checkbox>
+              <Row gutter={[16, 16]}>
+                {expectedFields.map((expectedField) => {
+                  const autoMappedValue = autoMapField(
+                    expectedField,
+                    fileHeaders
+                  );
 
-                    {keepZeroQuantity && (
-                      <Input
-                        type="number"
-                        value={quantity}
-                        onChange={(e) => setQuantity(e.target.value)}
-                        placeholder="Enter quantity to replace 0"
-                        disabled={!keepZeroQuantity}
-                      />
-                    )}
-
-                    <Checkbox
-                      checked={skipItems}
-                      onChange={handleSkipItemsChange}
-                    >
-                      Skip items with 0 quantity
-                    </Checkbox>
-                  </Space>
-                </Col>
+                  return (
+                    <Col key={expectedField.fieldId} xs={24} md={8}>
+                      <div style={{ marginBottom: 12 }}>
+                        <div style={{ display: "flex", alignItems: "center" }}>
+                          <Text
+                            style={{
+                              marginRight: 8,
+                              color: fieldMappings[expectedField.fieldId]
+                                ? "#006400"
+                                : "inherit",
+                            }}
+                          >
+                            {expectedField.name}
+                          </Text>
+                          {fieldMappings[expectedField.fieldId] && (
+                            <CheckCircleOutlined
+                              style={{ color: "#006400", fontSize: 16 }}
+                            />
+                          )}
+                        </div>
+                        <Select
+                          style={{
+                            width: "100%",
+                            borderColor: fieldMappings[expectedField.fieldId]
+                              ? "#006400"
+                              : undefined,
+                            boxShadow: fieldMappings[expectedField.fieldId]
+                              ? "0 0 5px #006400"
+                              : undefined,
+                          }}
+                          placeholder="Select matching column from file"
+                          value={
+                            fieldMappings[expectedField.fieldId] ||
+                            autoMappedValue
+                          }
+                          onChange={(value) => {
+                            setFieldMappings((prev) => ({
+                              ...prev,
+                              [expectedField.fieldId]: value,
+                            }));
+                          }}
+                        >
+                          {fileHeaders
+                            .filter(
+                              (header) =>
+                                !Object.values(fieldMappings).includes(header) ||
+                                fieldMappings[expectedField.fieldId] === header
+                            )
+                            .map((header, index) => (
+                              <Select.Option
+                                key={`${header}-${index}`}
+                                value={header}
+                              >
+                                {header}
+                              </Select.Option>
+                            ))}
+                        </Select>
+                      </div>
+                    </Col>
+                  );
+                })}
               </Row>
 
-              <Divider />
-              {fileHeaders.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  whileHover={{
-                    scale: 1.01,
-                    boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
-                  }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <Card title="Field Mapping" style={{ marginTop: 24, border: '1px solid #d9d9d9', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
-                    <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-                      Map fields from your file to expected fields
-                    </Text>
-                    <Row gutter={[16, 16]}>
-                      {expectedFields.map((expectedField) => {
-                        const autoMappedValue = autoMapField(expectedField, fileHeaders);
-
-                        return (
-                          <Col key={expectedField.fieldId} xs={24} md={8}>
-                            <div style={{ marginBottom: 12 }}>
-                              <div style={{ display: 'flex', alignItems: 'center' }}>
-                                <Text
-                                  style={{
-                                    display: 'block',
-                                    marginBottom: 8,
-                                    marginRight: 8,
-                                    color: fieldMappings[expectedField.fieldId] ? '#006400' : 'inherit',
-                                  }}
-                                >
-                                  {expectedField.name}
-                                </Text>
-                                {fieldMappings[expectedField.fieldId] && (
-                                  <CheckCircleOutlined style={{ color: '#006400', fontSize: '16px' }} />
-                                )}
-                              </div>
-                              <Select
-                                style={{
-                                  width: '100%',
-                                  borderColor: fieldMappings[expectedField.fieldId] ? '#006400' : undefined,
-                                  boxShadow: fieldMappings[expectedField.fieldId] ? '0 0 5px #006400' : undefined,
-                                }}
-                                placeholder="Select matching column from file"
-                                value={fieldMappings[expectedField.fieldId] || autoMappedValue}
-                                onChange={(value) => {
-                                  setFieldMappings((prev) => ({
-                                    ...prev,
-                                    [expectedField.fieldId]: value,
-                                  }));
-                                }}
-                              >
-                                {fileHeaders
-                                  .filter(
-                                    (header) =>
-                                      !Object.values(fieldMappings).includes(header) ||
-                                      fieldMappings[expectedField.fieldId] === header
-                                  )
-                                  .map((header, index) => (
-                                    <Select.Option key={`${header}-${index}`} value={header}>
-                                      {header}
-                                    </Select.Option>
-                                  ))}
-                              </Select>
-                            </div>
-                          </Col>
-                        );
-                      })}
-                    </Row>
-                    {isAnyFieldMapped() && (
-                      <Button type="primary" block onClick={handleUpload}>
-                        Upload and Validate
-                      </Button>
-                    )}
-                  </Card>
-                </motion.div>
+              {isAnyFieldMapped() && (
+                <Space style={{ marginTop: 16, width: "100%", justifyContent: "space-between" }}>
+                  <Button type="primary" onClick={handleUpload}>
+                    Upload and Validate
+                  </Button>
+                 
+                </Space>
               )}
-
-              {/* Show Tabs if existing data is available */}
-              {existingData.length > 0 && (
-                <Tabs activeKey={activeTab} onChange={(key) => setActiveTab(key)} style={{ marginTop: 16 }}>
-                  <TabPane tab="Uploaded Data" key="1">
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      whileHover={{
-                        scale: 1.05,
-                        boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
-                      }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      <Card style={{ border: '1px solid #d9d9d9', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
-                        <Table
-                          dataSource={existingData}
-                          columns={columns}
-                          pagination={{ pageSize: 10 }}
-                          rowKey="id"
-                          scroll={{ x: "max-content" }}
-                          loading={loading}
-                        />
-                      </Card>
-                    </motion.div>
-                  </TabPane>
-                  <TabPane tab="Conflict Report" key="2">
-                    {renderConflicts()}
-                  </TabPane>
-                </Tabs>
-              )}
-
-              {/* Show Field Mapping if file headers are available */}
-
-            </Card> </motion.div>
-        </Col>
-
-        {/* Right Section */}
-        {existingData.length > 0 && (
-          <Col xs={24} md={8}>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              whileHover={{
-                scale: 1.01,
-                boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
-              }}
-              transition={{ duration: 0.3 }}
-            >
-              <Card title={
-                <div>
-                  <span>
-                    <ToolOutlined style={iconStyle} /> Action
-                  </span>
-                  <br />
-                  <Text type="secondary" >Perform additional actions on your data</Text>
-                </div>
-              }
-                bordered={true}
-                style={{ marginTop: '10px', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
-                <Button
-                  block
-                  onClick={fetchConflictReport}
-                  style={{
-                    backgroundColor: '#f0dc24ff',  // Light yellow color
-                    borderColor: '#FFEB3B',      // Ensure the border matches the background
-                    color: '#000',               // Set text color to black or adjust as needed
-                  }}
-                >
-                  🎉 Load Conflict
-                </Button>
-              </Card></motion.div>
-           
-          </Col>
+            </Card>
+          </motion.div>
         )}
-      </Row>
-    </div >
-  );
+      </Card>
+    </motion.div>
+
+    {/* === DATA AND CONFLICTS SECTION === */}
+    {existingData.length > 0 && (
+      <>
+        <div
+  style={{
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 32,
+    marginBottom: 16,
+  }}
+>
+  {/* Left side: Title */}
+  <Typography.Title level={4} style={{ margin: 0 }}>
+    Data & Conflicts
+  </Typography.Title>
+
+  {/* Right side: Buttons */}
+  <div style={{ display: "flex", gap: 8 }}>
+    <Button
+      onClick={fetchConflictReport}
+      style={{
+        backgroundColor: "#f0dc24ff",
+        borderColor: "#FFEB3B",
+        color: "#000",
+      }}
+    >
+      ⚠️ Load Conflict
+    </Button>
+
+    <Button
+      danger
+      style={{
+        backgroundColor: "#ff4d4f", // full red background
+        borderColor: "#ff4d4f",
+        color: "#fff",
+      }}
+      onClick={() => {
+        const modal = Modal.confirm({
+          title: "Confirm Deletion",
+          content: "Are you sure you want to delete NR data for this project?",
+          okText: "Yes, Delete",
+          cancelText: "Cancel",
+          okButtonProps: { danger: true },
+          onOk: async () => {
+            await deleteNRData(() => modal.destroy());
+          },
+        });
+      }}
+    >
+      🗑️ Delete NR Data
+    </Button>
+  </div>
+</div>
+
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          whileHover={{
+            scale: 1.01,
+            boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
+          }}
+          transition={{ duration: 0.3 }}
+        >
+          <Card
+            bordered
+            style={{ border: "1px solid #d9d9d9", boxShadow: "0 4px 8px rgba(0,0,0,0.1)" }}
+          >
+            <Tabs
+              activeKey={activeTab}
+              onChange={(key) => setActiveTab(key)}
+              style={{ marginTop: 8 }}
+            >
+              <TabPane tab="Uploaded Data" key="1">
+                {existingData.length > 0 ? (
+                  <Table
+                  dataSource={existingData}
+                  columns={columns}
+                  pagination={{ pageSize: 10 }}
+                  rowKey="id"
+                  scroll={{ x: "max-content" }}
+                  loading={loading}
+                />
+                ): (
+                   <Typography.Text type="secondary">No data found</Typography.Text>
+                )}
+                
+              </TabPane>
+
+              <TabPane tab="Conflict Report" key="2">
+                {renderConflicts()}
+              </TabPane>
+            </Tabs>
+          </Card>
+        </motion.div>
+      </>
+    )}
+  </div>
+);
+
 };
 
 export default DataImport;
