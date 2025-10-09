@@ -280,7 +280,7 @@ const DataImport = () => {
 
           // Check if the field is "ExamDate" and format the value as a valid date
           if (field.name === "ExamDate" && value) {
-            value =formatDateForBackend(parseDate(value));
+            value = formatDateForBackend(parseDate(value));
           }
 
           mappedRow[field.name] = value;
@@ -291,12 +291,15 @@ const DataImport = () => {
   };
 
   const formatDateForBackend = (date) => {
-  if (date instanceof Date && !isNaN(date.getTime())) {
-    // Return date in "YYYY-MM-DD" format
-    return date.toISOString().split('T')[0];
-  }
-  return date; // Return the original value if it's not a valid date
-};
+    if (date instanceof Date && !isNaN(date.getTime())) {
+      const day = String(date.getDate()).padStart(2, '0'); // Ensure two-digit day
+      const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are zero-based, so add 1
+      const year = date.getFullYear();
+      return `${day}-${month}-${year}`;
+    }
+    return date; // Return the original value if it's not a valid date
+  };
+
 
   // Render uploaded Excel preview
   const renderUploadedData = () => {
@@ -341,37 +344,37 @@ const DataImport = () => {
   };
 
   const deleteNRData = async (closeModal) => {
-  setLoading(true);
-  try {
-    const token = localStorage.getItem("token");
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token");
 
-    // Await the delete call
-    await API.delete(`/NRDatas/DeleteByProject/${projectId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+      // Await the delete call
+      await API.delete(`/NRDatas/DeleteByProject/${projectId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-    // Success message only
-    showToast("NR data deleted successfully!", "success");
+      // Success message only
+      showToast("NR data deleted successfully!", "success");
 
-    // Clear local state
-    setExistingData([]);
-    setFileList([]);
-    setFieldMappings({});
-    setFileHeaders({});
+      // Clear local state
+      setExistingData([]);
+      setFileList([]);
+      setFieldMappings({});
+      setFileHeaders({});
 
-    // Close modal
-    if (closeModal) closeModal();
+      // Close modal
+      if (closeModal) closeModal();
 
-  } catch (error) {
-    console.error("Error deleting NRData:", error);
+    } catch (error) {
+      console.error("Error deleting NRData:", error);
 
-    // Safely check for response data
-    const errorMsg = error?.response?.data || error?.message || "Failed to delete NR data";
-    showToast(errorMsg, "error");
-  } finally {
-    setLoading(false);
-  }
-};
+      // Safely check for response data
+      const errorMsg = error?.response?.data || error?.message || "Failed to delete NR data";
+      showToast(errorMsg, "error");
+    } finally {
+      setLoading(false);
+    }
+  };
 
 
   const handleKeepZeroQuantityChange = (e) => {
@@ -406,84 +409,247 @@ const DataImport = () => {
   };
 
   return (
-  <div style={{ padding: 24 }}>
-    {/* === PAGE HEADER === */}
-    <Typography.Title level={3} style={{ marginBottom: 24 }}>
-      Project Configuration
-    </Typography.Title>
+    <div style={{ padding: 24 }}>
+      {/* === PAGE HEADER === */}
+      <Typography.Title level={3} style={{ marginBottom: 24 }}>
+        Project Configuration
+      </Typography.Title>
 
-    {/* === DATA IMPORT SECTION === */}
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileHover={{
-        scale: 1.01,
-        boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
-      }}
-      transition={{ duration: 0.3 }}
-    >
-      <Card
-        title={
-          <div>
-            <span>
-              <ToolOutlined style={iconStyle} /> Data Import
-            </span>
-            <br />
-            <Text type="secondary">Upload and map your data files here</Text>
-          </div>
-        }
-        bordered={true}
-        style={{
-          width: "100%",
-          boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-          marginBottom: 24,
-          backgroundColor: "#f5f5f5"
+      {/* === DATA IMPORT SECTION === */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        whileHover={{
+          scale: 1.01,
+          boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
         }}
+        transition={{ duration: 0.3 }}
       >
-        <Row gutter={[16, 16]}>
-          <Col xs={24} md={12}>
-            <Upload.Dragger
-              name="file"
-              accept=".xls,.xlsx,.csv"
-              fileList={fileList}
-              beforeUpload={beforeUpload}
-              maxCount={1}
-            >
-              <p className="ant-upload-drag-icon">📤</p>
-              <p className="ant-upload-text">Upload Excel or CSV file</p>
-              <Button icon={<UploadOutlined />}>Choose File</Button>
-            </Upload.Dragger>
-          </Col>
-
-          <Col xs={24} md={12}>
-            <Space direction="vertical" style={{ width: "100%" }}>
-              <Checkbox
-                checked={keepZeroQuantity}
-                onChange={handleKeepZeroQuantityChange}
+        <Card
+          title={
+            <div>
+              <span>
+                <ToolOutlined style={iconStyle} /> Data Import
+              </span>
+              <br />
+              <Text type="secondary">Upload and map your data files here</Text>
+            </div>
+          }
+          bordered={true}
+          style={{
+            width: "100%",
+            boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
+            marginBottom: 24,
+            backgroundColor: "#f5f5f5"
+          }}
+        >
+          <Row gutter={[16, 16]}>
+            <Col xs={24} md={12}>
+              <Upload.Dragger
+                name="file"
+                accept=".xls,.xlsx,.csv"
+                fileList={fileList}
+                beforeUpload={beforeUpload}
+                maxCount={1}
               >
-                Keep items with 0 quantity and change their quantity
-              </Checkbox>
+                <p className="ant-upload-drag-icon">📤</p>
+                <p className="ant-upload-text">Upload Excel or CSV file</p>
+                <Button icon={<UploadOutlined />}>Choose File</Button>
+              </Upload.Dragger>
+            </Col>
 
-              {keepZeroQuantity && (
-                <Input
-                  type="number"
-                  value={quantity}
-                  onChange={(e) => setQuantity(e.target.value)}
-                  placeholder="Enter quantity to replace 0"
-                />
-              )}
+            <Col xs={24} md={12}>
+              <Space direction="vertical" style={{ width: "100%" }}>
+                <Checkbox
+                  checked={keepZeroQuantity}
+                  onChange={handleKeepZeroQuantityChange}
+                >
+                  Keep items with 0 quantity and change their quantity
+                </Checkbox>
 
-              <Checkbox checked={skipItems} onChange={handleSkipItemsChange}>
-                Skip items with 0 quantity
-              </Checkbox>
-            </Space>
-          </Col>
-        </Row>
+                {keepZeroQuantity && (
+                  <Input
+                    type="number"
+                    value={quantity}
+                    onChange={(e) => setQuantity(e.target.value)}
+                    placeholder="Enter quantity to replace 0"
+                  />
+                )}
 
-        <Divider />
+                <Checkbox checked={skipItems} onChange={handleSkipItemsChange}>
+                  Skip items with 0 quantity
+                </Checkbox>
+              </Space>
+            </Col>
+          </Row>
 
-        {/* === FIELD MAPPING SECTION === */}
-        {fileHeaders.length > 0 && (
+          <Divider />
+
+          {/* === FIELD MAPPING SECTION === */}
+          {fileHeaders.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              whileHover={{
+                scale: 1.01,
+                boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
+              }}
+              transition={{ duration: 0.3 }}
+            >
+              <Card
+                title="Field Mapping"
+                style={{
+                  border: "1px solid #d9d9d9",
+                  boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
+                }}
+              >
+                <Text
+                  type="secondary"
+                  style={{ display: "block", marginBottom: 16 }}
+                >
+                  Map fields from your file to expected fields
+                </Text>
+
+                <Row gutter={[16, 16]}>
+                  {expectedFields.map((expectedField) => {
+                    const autoMappedValue = autoMapField(
+                      expectedField,
+                      fileHeaders
+                    );
+
+                    return (
+                      <Col key={expectedField.fieldId} xs={24} md={8}>
+                        <div style={{ marginBottom: 12 }}>
+                          <div style={{ display: "flex", alignItems: "center" }}>
+                            <Text
+                              style={{
+                                marginRight: 8,
+                                color: fieldMappings[expectedField.fieldId]
+                                  ? "#006400"
+                                  : "inherit",
+                              }}
+                            >
+                              {expectedField.name}
+                            </Text>
+                            {fieldMappings[expectedField.fieldId] && (
+                              <CheckCircleOutlined
+                                style={{ color: "#006400", fontSize: 16 }}
+                              />
+                            )}
+                          </div>
+                          <Select
+                            style={{
+                              width: "100%",
+                              borderColor: fieldMappings[expectedField.fieldId]
+                                ? "#006400"
+                                : undefined,
+                              boxShadow: fieldMappings[expectedField.fieldId]
+                                ? "0 0 5px #006400"
+                                : undefined,
+                            }}
+                            placeholder="Select matching column from file"
+                            value={
+                              fieldMappings[expectedField.fieldId] ||
+                              autoMappedValue
+                            }
+                            onChange={(value) => {
+                              setFieldMappings((prev) => ({
+                                ...prev,
+                                [expectedField.fieldId]: value,
+                              }));
+                            }}
+                          >
+                            {fileHeaders
+                              .filter(
+                                (header) =>
+                                  !Object.values(fieldMappings).includes(header) ||
+                                  fieldMappings[expectedField.fieldId] === header
+                              )
+                              .map((header, index) => (
+                                <Select.Option
+                                  key={`${header}-${index}`}
+                                  value={header}
+                                >
+                                  {header}
+                                </Select.Option>
+                              ))}
+                          </Select>
+                        </div>
+                      </Col>
+                    );
+                  })}
+                </Row>
+
+                {isAnyFieldMapped() && (
+                  <Space style={{ marginTop: 16, width: "100%", justifyContent: "space-between" }}>
+                    <Button type="primary" onClick={handleUpload}>
+                      Upload and Validate
+                    </Button>
+
+                  </Space>
+                )}
+              </Card>
+            </motion.div>
+          )}
+        </Card>
+      </motion.div>
+
+      {/* === DATA AND CONFLICTS SECTION === */}
+      {existingData.length > 0 && (
+        <>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginTop: 32,
+              marginBottom: 16,
+            }}
+          >
+            {/* Left side: Title */}
+            <Typography.Title level={4} style={{ margin: 0 }}>
+              Data & Conflicts
+            </Typography.Title>
+
+            {/* Right side: Buttons */}
+            <div style={{ display: "flex", gap: 8 }}>
+              <Button
+                onClick={fetchConflictReport}
+                style={{
+                  backgroundColor: "#f0dc24ff",
+                  borderColor: "#FFEB3B",
+                  color: "#000",
+                }}
+              >
+                ⚠️ Load Conflict
+              </Button>
+
+              <Button
+                danger
+                style={{
+                  backgroundColor: "#ff4d4f", // full red background
+                  borderColor: "#ff4d4f",
+                  color: "#fff",
+                }}
+                onClick={() => {
+                  const modal = Modal.confirm({
+                    title: "Confirm Deletion",
+                    content: "Are you sure you want to delete NR data for this project?",
+                    okText: "Yes, Delete",
+                    cancelText: "Cancel",
+                    okButtonProps: { danger: true },
+                    onOk: async () => {
+                      await deleteNRData(() => modal.destroy());
+                    },
+                  });
+                }}
+              >
+                🗑️ Delete NR Data
+              </Button>
+            </div>
+          </div>
+
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -494,203 +660,40 @@ const DataImport = () => {
             transition={{ duration: 0.3 }}
           >
             <Card
-              title="Field Mapping"
-              style={{
-                border: "1px solid #d9d9d9",
-                boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-              }}
+              bordered
+              style={{ border: "1px solid #d9d9d9", boxShadow: "0 4px 8px rgba(0,0,0,0.1)" }}
             >
-              <Text
-                type="secondary"
-                style={{ display: "block", marginBottom: 16 }}
+              <Tabs
+                activeKey={activeTab}
+                onChange={(key) => setActiveTab(key)}
+                style={{ marginTop: 8 }}
               >
-                Map fields from your file to expected fields
-              </Text>
+                <TabPane tab="Uploaded Data" key="1">
+                  {existingData.length > 0 ? (
+                    <Table
+                      dataSource={existingData}
+                      columns={columns}
+                      pagination={{ pageSize: 10 }}
+                      rowKey="id"
+                      scroll={{ x: "max-content" }}
+                      loading={loading}
+                    />
+                  ) : (
+                    <Typography.Text type="secondary">No data found</Typography.Text>
+                  )}
 
-              <Row gutter={[16, 16]}>
-                {expectedFields.map((expectedField) => {
-                  const autoMappedValue = autoMapField(
-                    expectedField,
-                    fileHeaders
-                  );
+                </TabPane>
 
-                  return (
-                    <Col key={expectedField.fieldId} xs={24} md={8}>
-                      <div style={{ marginBottom: 12 }}>
-                        <div style={{ display: "flex", alignItems: "center" }}>
-                          <Text
-                            style={{
-                              marginRight: 8,
-                              color: fieldMappings[expectedField.fieldId]
-                                ? "#006400"
-                                : "inherit",
-                            }}
-                          >
-                            {expectedField.name}
-                          </Text>
-                          {fieldMappings[expectedField.fieldId] && (
-                            <CheckCircleOutlined
-                              style={{ color: "#006400", fontSize: 16 }}
-                            />
-                          )}
-                        </div>
-                        <Select
-                          style={{
-                            width: "100%",
-                            borderColor: fieldMappings[expectedField.fieldId]
-                              ? "#006400"
-                              : undefined,
-                            boxShadow: fieldMappings[expectedField.fieldId]
-                              ? "0 0 5px #006400"
-                              : undefined,
-                          }}
-                          placeholder="Select matching column from file"
-                          value={
-                            fieldMappings[expectedField.fieldId] ||
-                            autoMappedValue
-                          }
-                          onChange={(value) => {
-                            setFieldMappings((prev) => ({
-                              ...prev,
-                              [expectedField.fieldId]: value,
-                            }));
-                          }}
-                        >
-                          {fileHeaders
-                            .filter(
-                              (header) =>
-                                !Object.values(fieldMappings).includes(header) ||
-                                fieldMappings[expectedField.fieldId] === header
-                            )
-                            .map((header, index) => (
-                              <Select.Option
-                                key={`${header}-${index}`}
-                                value={header}
-                              >
-                                {header}
-                              </Select.Option>
-                            ))}
-                        </Select>
-                      </div>
-                    </Col>
-                  );
-                })}
-              </Row>
-
-              {isAnyFieldMapped() && (
-                <Space style={{ marginTop: 16, width: "100%", justifyContent: "space-between" }}>
-                  <Button type="primary" onClick={handleUpload}>
-                    Upload and Validate
-                  </Button>
-                 
-                </Space>
-              )}
+                <TabPane tab="Conflict Report" key="2">
+                  {renderConflicts()}
+                </TabPane>
+              </Tabs>
             </Card>
           </motion.div>
-        )}
-      </Card>
-    </motion.div>
-
-    {/* === DATA AND CONFLICTS SECTION === */}
-    {existingData.length > 0 && (
-      <>
-        <div
-  style={{
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 32,
-    marginBottom: 16,
-  }}
->
-  {/* Left side: Title */}
-  <Typography.Title level={4} style={{ margin: 0 }}>
-    Data & Conflicts
-  </Typography.Title>
-
-  {/* Right side: Buttons */}
-  <div style={{ display: "flex", gap: 8 }}>
-    <Button
-      onClick={fetchConflictReport}
-      style={{
-        backgroundColor: "#f0dc24ff",
-        borderColor: "#FFEB3B",
-        color: "#000",
-      }}
-    >
-      ⚠️ Load Conflict
-    </Button>
-
-    <Button
-      danger
-      style={{
-        backgroundColor: "#ff4d4f", // full red background
-        borderColor: "#ff4d4f",
-        color: "#fff",
-      }}
-      onClick={() => {
-        const modal = Modal.confirm({
-          title: "Confirm Deletion",
-          content: "Are you sure you want to delete NR data for this project?",
-          okText: "Yes, Delete",
-          cancelText: "Cancel",
-          okButtonProps: { danger: true },
-          onOk: async () => {
-            await deleteNRData(() => modal.destroy());
-          },
-        });
-      }}
-    >
-      🗑️ Delete NR Data
-    </Button>
-  </div>
-</div>
-
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          whileHover={{
-            scale: 1.01,
-            boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
-          }}
-          transition={{ duration: 0.3 }}
-        >
-          <Card
-            bordered
-            style={{ border: "1px solid #d9d9d9", boxShadow: "0 4px 8px rgba(0,0,0,0.1)" }}
-          >
-            <Tabs
-              activeKey={activeTab}
-              onChange={(key) => setActiveTab(key)}
-              style={{ marginTop: 8 }}
-            >
-              <TabPane tab="Uploaded Data" key="1">
-                {existingData.length > 0 ? (
-                  <Table
-                  dataSource={existingData}
-                  columns={columns}
-                  pagination={{ pageSize: 10 }}
-                  rowKey="id"
-                  scroll={{ x: "max-content" }}
-                  loading={loading}
-                />
-                ): (
-                   <Typography.Text type="secondary">No data found</Typography.Text>
-                )}
-                
-              </TabPane>
-
-              <TabPane tab="Conflict Report" key="2">
-                {renderConflicts()}
-              </TabPane>
-            </Tabs>
-          </Card>
-        </motion.div>
-      </>
-    )}
-  </div>
-);
+        </>
+      )}
+    </div>
+  );
 
 };
 
