@@ -56,7 +56,7 @@ const BoxCapacity = () => {
 
         // Check for duplicates
         const isDuplicate = boxCapacities.some(item => 
-            item.capacity.toLowerCase() === capacity.toLowerCase() && 
+            item.capacity=== parseInt(capacity) && 
             (!editingItem || item.boxCapacityId !== editingItem.boxCapacityId)
         );
 
@@ -73,7 +73,7 @@ const BoxCapacity = () => {
                 });
                 message.success('Updated successfully');
             } else {
-                await API.post('/api/BoxCapacities', {
+                await API.post('/BoxCapacities', {
                     capacity
                 });
                 message.success('Added successfully');
