@@ -23,17 +23,17 @@ export default function Sidebar({ collapsed }) {
 
   const menuItems = [
     {
-      label: projectName? "Project Dashboard" : "Dashboard",
+      label: projectName ? "Project Dashboard" : "Dashboard",
       icon: <FiHome />,
-      path: projectName? "/projectdashboard" : "/dashboard",
+      path: projectName ? "/projectdashboard" : "/dashboard",
     },
     {
       label: "Masters",
       icon: <FiBook />,
       path: "/masters",
     },
-     ...(projectName
-    ? [
+    ...(projectName
+      ? [
         {
           label: "Tools",
           icon: <FiTool />,
@@ -44,15 +44,20 @@ export default function Sidebar({ collapsed }) {
           ],
         },
       ]
-    : []),
-    {
-      label: "Correction Tool",
-      icon: <FiTool />,
-      children: [
-        { label: "Excel Upload", path: "/excelupload" },
-        { label: "Correction Tool", path: "/correctiontool" },
-      ],
-    },
+      : []),
+    ...(projectName
+      ? [] // Don't show "Correction Tool" if projectName exists
+      : [
+        {
+          label: "Correction Tool",
+          icon: <FiTool />,
+          children: [
+            { label: "Excel Upload", path: "/excelupload" },
+            { label: "Correction Tool", path: "/correctiontool" },
+          ],
+        },
+      ]
+    ),
     { label: "Reports", icon: <FiBarChart2 />, path: "/reports" },
     { label: "Settings", icon: <FiSettings />, path: "/settings", disabled: true },
   ];
