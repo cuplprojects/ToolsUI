@@ -92,13 +92,9 @@ const Report = () => {
     if (selectedProject) {
       setSelectedProjectId(projectId);
       setSelectedProjectName(selectedProject.name);
-      localStorage.setItem("selectedProjectId", projectId);
-      localStorage.setItem("selectedProjectName", selectedProject.name);
     } else {
       setSelectedProjectId(null);
       setSelectedProjectName("");
-      localStorage.removeItem("selectedProjectId");
-      localStorage.removeItem("selectedProjectName");
     }
   };
 
