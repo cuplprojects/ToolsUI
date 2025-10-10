@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Progress,
   Badge,
@@ -23,32 +23,8 @@ const ProcessingPipeline = () => {
   const [loadingModules, setLoadingModules] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [steps, setSteps] = useState([]);
-
+  const [fileExistsMap, setFileExistsMap] = useState({});
   const projectId = useStore((state) => state.projectId);
-
-  const fileMap = useMemo(() => {
-    if (!projectId) return {};
-    return {
-      duplicate: `${url3}/${projectId}/DuplicateTool.xlsx`,
-      extra: `${url3}/${projectId}/ExtrasCalculation.xlsx`,
-      envelope: `${url3}/${projectId}/BreakingReport.xlsx`,
-      box: `${url3}/${projectId}/BoxBreaking.xlsx`,
-    };
-  }, [projectId]);
-
-  const computeRunOrder = useCallback(() => {
-    const names = (enabledModuleNames || []).map((n) => String(n).toLowerCase());
-    const order = [];
-    if (names.some((n) => n.includes("duplicate")))
-      order.push({ key: "duplicate", title: "Duplicate Processing" });
-    if (names.some((n) => n.includes("extra")))
-      order.push({ key: "extra", title: "Extra Configuration" });
-    if (names.some((n) => n.includes("envelope")))
-      order.push({ key: "envelope", title: "Envelope Breaking" });
-    if (names.some((n) => n.includes("box")))
-      order.push({ key: "box", title: "Box Breaking" });
-    return order;
-  }, [enabledModuleNames]);
 
   const currentStep = useMemo(
     () =>
@@ -67,11 +43,62 @@ const ProcessingPipeline = () => {
     [steps]
   );
 
+  const checkReportExistence = async (projectId) => {
+    const fileNames = {
+      duplicate: "DuplicateTool.xlsx",
+      extra: "ExtrasCalculation.xlsx",
+      envelope: "BreakingReport.xlsx",
+      box: "BoxBreaking.xlsx",
+    };
+
+    const results = {};
+
+    await Promise.all(
+      Object.entries(fileNames).map(async ([key, fileName]) => {
+        try {
+          const res = await API.get(
+            `/EnvelopeBreakages/Reports/Exists?projectId=${projectId}&fileName=${fileName}`
+          );
+          const exists = res.data.exists;
+          results[fileName] = exists;
+
+          if (exists) {
+            const fileUrl = `${url3}/${projectId}/${fileName}`;
+            console.log("Updating step", key, "to completed");
+            updateStepStatus(key, {
+              status: "completed",
+              fileUrl,
+              duration: "--:--", // Optional: or you can leave as null
+            });
+          }
+        } catch (err) {
+          console.error(`Failed to check file: ${fileName}`, err);
+          results[fileName] = false;
+        }
+      })
+    );
+
+    setFileExistsMap(results);
+  };
+
+
+  const computeRunOrder = (names = []) => {
+     const lowerNames = names.map((n) => String(n).toLowerCase());
+    const order = [];
+    if (lowerNames.some((n) => n.includes("duplicate")))
+      order.push({ key: "duplicate", title: "Duplicate Processing" });
+    if (lowerNames.some((n) => n.includes("extra")))
+      order.push({ key: "extra", title: "Extra Configuration" });
+    if (lowerNames.some((n) => n.includes("envelope")))
+      order.push({ key: "envelope", title: "Envelope Breaking" });
+    if (lowerNames.some((n) => n.includes("box")))
+      order.push({ key: "box", title: "Box Breaking" });
+    return order;
+  };
   // Load enabled modules when project changes
   useEffect(() => {
     if (!projectId) {
       setEnabledModuleNames([]);
-      setSteps([]);
       return;
     }
     const loadEnabled = async () => {
@@ -92,6 +119,16 @@ const ProcessingPipeline = () => {
             .filter(Boolean);
         }
         setEnabledModuleNames(moduleEntries || []);
+        const order = computeRunOrder(moduleEntries);
+        const initialSteps = order.map((o) => ({
+          key: o.key,
+          title: o.title,
+          status: "pending",
+          duration: null,
+          fileUrl: null,
+        }));
+        setSteps(initialSteps);
+        await checkReportExistence(projectId);
       } catch (err) {
         console.error("Failed to load enabled modules", err);
         setEnabledModuleNames([]);
@@ -103,48 +140,6 @@ const ProcessingPipeline = () => {
 
     loadEnabled();
   }, [projectId]);
-
-  useEffect(() => {
-    if (!projectId || !enabledModuleNames.length) return;
-    const order = computeRunOrder();
-    if (!order.length) {
-      setSteps([]);
-      return;
-    }
-
-    const preloadedSteps = order.map((step) => ({
-      key: step.key,
-      title: step.title,
-      status: "pending",
-      duration: null,
-      fileUrl: fileMap[step.key] || null,
-    }));
-
-    const hasFiles = preloadedSteps.some((s) => s.fileUrl);
-    setSteps((prev) => {
-      if (!prev.length || prev.some((p) => p.status === "in-progress")) {
-        return preloadedSteps;
-      }
-      const merged = order.map((step) => {
-        const existing = prev.find((p) => p.key === step.key);
-        return existing
-          ? { ...existing, fileUrl: fileMap[step.key] || existing.fileUrl }
-          : preloadedSteps.find((p) => p.key === step.key);
-      });
-      return merged;
-    });
-
-    if (hasFiles) {
-      setSteps((prev) => prev.map((s) => {
-        if (!s.fileUrl) return s;
-        return {
-          ...s,
-          status: s.status === "failed" ? "failed" : "completed",
-          duration: s.duration || "--:--",
-        };
-      }));
-    }
-  }, [projectId, enabledModuleNames, fileMap, computeRunOrder]);
 
   // Run order helper
 
@@ -183,13 +178,11 @@ const ProcessingPipeline = () => {
       message.warning("Please select a project");
       return;
     }
-
     const order = computeRunOrder();
     if (!order.length) {
       message.info("No enabled modules to process for this project.");
       return;
     }
-
     const initialSteps = order.map((o) => ({
       key: o.key,
       title: o.title,

@@ -1,4 +1,3 @@
-// src/pages/Report.jsx
 import React, { useEffect, useState } from "react";
 import { List, Typography, Select, Spin, message } from "antd";
 import axios from "axios";
@@ -22,8 +21,8 @@ const Report = () => {
   const [selectedProjectId, setSelectedProjectId] = useState(null);
   const [selectedProjectName, setSelectedProjectName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [availableReports, setAvailableReports] = useState({});
 
-  // Load project from localStorage or ask to select
   useEffect(() => {
     const storedId = localStorage.getItem("selectedProjectId");
     const storedName = localStorage.getItem("selectedProjectName");
@@ -36,7 +35,12 @@ const Report = () => {
     getProjects();
   }, []);
 
-  // Fetch list of available projects
+  useEffect(() => {
+    if (selectedProjectId) {
+      checkAvailableReports(selectedProjectId);
+    }
+  }, [selectedProjectId]);
+
   const getProjects = async () => {
     setLoading(true);
     try {
@@ -65,7 +69,24 @@ const Report = () => {
     }
   };
 
-  // When a user selects a project from dropdown
+  const checkAvailableReports = async (projectId) => {
+    const availability = {};
+    await Promise.all(
+      possibleReports.map(async (report) => {
+        try {
+          const res = await API.get(
+            `EnvelopeBreakages/Reports/Exists?projectId=${projectId}&fileName=${report.fileName}`
+          );
+          availability[report.fileName] = res.data.exists;
+        } catch (err) {
+          console.error(`Failed to check existence for ${report.fileName}`, err);
+          availability[report.fileName] = false;
+        }
+      })
+    );
+    setAvailableReports(availability);
+  };
+
   const handleProjectChange = (projectId) => {
     const selectedProject = projects.find((project) => project.id === projectId);
     if (selectedProject) {
@@ -78,13 +99,19 @@ const Report = () => {
   };
 
   const renderReports = () => {
-    if (!selectedProjectId) {
-      return;
+    if (!selectedProjectId) return;
+
+    const filteredReports = possibleReports.filter(
+      (report) => availableReports[report.fileName]
+    );
+
+    if (filteredReports.length === 0) {
+      return <Text>No available reports for this project.</Text>;
     }
 
     return (
       <List
-        dataSource={possibleReports}
+        dataSource={filteredReports}
         renderItem={(report) => {
           const fileUrl = `${url3}/${selectedProjectId}/${report.fileName}`;
           return (
@@ -115,27 +142,25 @@ const Report = () => {
 
   return (
     <div style={{ padding: 20 }}>
-      {
-        <>
-          <Title level={3}>Select a Project</Title>
-          <Select
-            style={{ width: 300, marginBottom: 20 }}
-            placeholder="Select a project"
-            onChange={handleProjectChange}
-            allowClear
-          >
-            {projects.map((project) => (
-              <Select.Option key={project.id} value={project.id}>
-                {project.name}
-              </Select.Option>
-            ))}
-          </Select>
-          {selectedProjectName && (
-            <Title level={4}>Reports for Project: {selectedProjectName}</Title>
-          )}
-        </>
-      }
-
+      <>
+        <Title level={3}>Select a Project</Title>
+        <Select
+          style={{ width: 300, marginBottom: 20 }}
+          placeholder="Select a project"
+          onChange={handleProjectChange}
+          value={selectedProjectName}
+          allowClear
+        >
+          {projects.map((project) => (
+            <Select.Option key={project.id} value={project.id}>
+              {project.name}
+            </Select.Option>
+          ))}
+        </Select>
+        {selectedProjectName && (
+          <Title level={4}>Reports for Project: {selectedProjectName}</Title>
+        )}
+      </>
       {renderReports()}
     </div>
   );
