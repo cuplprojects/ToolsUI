@@ -1,8 +1,7 @@
-// src/components/Sidebar.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { FiHome, FiTool, FiBarChart2, FiSettings, FiBookmark, FiBook, FiChevronDown, FiChevronRight, FiLogOut } from "react-icons/fi";
+import { FaHome, FaWrench, FaChartBar, FaSignOutAlt, FaBookmark, FaBook, FaChevronDown, FaChevronRight } from "react-icons/fa"; // Using filled versions from FontAwesome
 import useStore from "../stores/ProjectData";
 
 export default function Sidebar({ collapsed }) {
@@ -13,6 +12,7 @@ export default function Sidebar({ collapsed }) {
   // Subscribe to Zustand store for projectName (optimizing re-renders)
   const projectName = useStore((state) => state.projectName);
   const resetProject = useStore((state) => state.resetProject);
+  
   // Handle collapse toggle
   const toggleGroup = (groupKey) => {
     setOpenGroups((prev) => ({
@@ -24,19 +24,19 @@ export default function Sidebar({ collapsed }) {
   const menuItems = [
     {
       label: projectName ? "Project Dashboard" : "Dashboard",
-      icon: <FiHome />,
+      icon: <FaHome className="text-black" />, // Filled version of home icon
       path: projectName ? "/projectdashboard" : "/dashboard",
     },
     {
       label: "Masters",
-      icon: <FiBook />,
+      icon: <FaBookmark className="text-black" />, // Filled version of bookmark icon
       path: "/masters",
     },
     ...(projectName
       ? [
         {
           label: "Tools",
-          icon: <FiTool />,
+          icon: <FaWrench className="text-black" />, // Filled wrench icon
           children: [
             { label: "Project Configuration", path: "/projectconfiguration" },
             { label: "Data Import", path: "/dataimport" },
@@ -50,7 +50,7 @@ export default function Sidebar({ collapsed }) {
       : [
         {
           label: "Correction Tool",
-          icon: <FiTool />,
+          icon: <FaWrench className="text-black" />, // Filled wrench icon
           children: [
             { label: "Excel Upload", path: "/excelupload" },
             { label: "Correction Tool", path: "/correctiontool" },
@@ -58,8 +58,7 @@ export default function Sidebar({ collapsed }) {
         },
       ]
     ),
-    { label: "Reports", icon: <FiBarChart2 />, path: "/reports" },
-    // { label: "Settings", icon: <FiSettings />, path: "/settings", disabled: true },
+    { label: "Reports", icon: <FaChartBar className="text-black" />, path: "/reports" }, // Filled bar chart icon
   ];
 
   const renderMenuItem = (item) => {
@@ -97,7 +96,7 @@ export default function Sidebar({ collapsed }) {
           </div>
           {!collapsed && (
             <span className="ml-auto">
-              {isOpen ? <FiChevronDown /> : <FiChevronRight />}
+              {isOpen ? <FaChevronDown className="text-black" /> : <FaChevronRight className="text-black" />}
             </span>
           )}
         </div>
@@ -135,18 +134,20 @@ export default function Sidebar({ collapsed }) {
       {/* Logo / Heading */}
       <div className="mb-6">
         {!collapsed && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileHover={{ scale: 1.05, boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)" }} transition={{ duration: 0.3 }}>
-            <h2 className="text-gray-800 text-xl font-bold tracking-wide">ERP Menu</h2>
-          </motion.div>
+          <h2 className="text-gray-800 text-xl font-bold tracking-wide">Tools Menu</h2>
         )}
       </div>
 
       {/* Project Name Display */}
-      {!collapsed && projectName && (
-        <div className="mb-6 flex items-center gap-2">
-          <span className="text-blue-600">{projectName}</span>
-        </div>
-      )}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileHover={{ scale: 1.05, boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)" }} transition={{ duration: 0.3 }}>
+        {!collapsed && projectName && (
+          <div className="mb-6 flex items-center gap-2">
+            <div className="px-4 py-2 bg-blue-900 text-white rounded-lg text-sm">
+              Project : {projectName}
+            </div>
+          </div>
+        )}
+      </motion.div>
 
       {/* Menu Items */}
       <ul className="space-y-1">
@@ -154,12 +155,12 @@ export default function Sidebar({ collapsed }) {
       </ul>
 
       {/* Logout Button */}
-      {projectName &&
+      {projectName && (
         <div onClick={handleLogout} className={`mt-auto flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer text-gray-800 hover:bg-gray-100 transition-all duration-150 ${collapsed ? "justify-center" : ""}`}>
-          <FiLogOut className={collapsed ? "text-2xl" : "text-base"} />
+          <FaSignOutAlt className={collapsed ? "text-2xl" : "text-base"} /> {/* Filled log-out icon */}
           {!collapsed && <span>Logout</span>}
         </div>
-      }
+      )}
     </aside>
   );
 }
