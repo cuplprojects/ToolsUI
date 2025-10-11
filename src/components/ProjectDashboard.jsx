@@ -58,28 +58,14 @@ const ProjectDashboard = () => {
     if (!projectId) return;
     setLoadingData(true);
     try {
-      const res = await API.get(`/NRDatas/GetByProjectId/${projectId}`);
-      setExistingData(res.data || []);
+      const res = await API.get(`/NRDatas/Counts?ProjectId=${projectId}`);
+      setExistingData(res.data.nrData);
+      console.log(res.data.nrData)
+      setConflicts(res.data.conflict);
+      console.log(res.data.conflict)
     } catch (err) {
       console.error("Failed to fetch existing data", err);
       setExistingData([]);
-    } finally {
-      setLoadingData(false);
-    }
-  };
-
-  const fetchConflictReport = async () => {
-    if (!projectId) return;
-    setLoadingData(true);
-    try {
-      const res = await API.get(`/NRDatas/ErrorReport?ProjectId=${projectId}`);
-      if (res.data?.duplicatesFound) {
-        setConflicts(res.data);
-      } else {
-        setConflicts({ errors: [] });
-      }
-    } catch (err) {
-      console.error("Failed to fetch conflict report", err);
     } finally {
       setLoadingData(false);
     }
@@ -174,7 +160,6 @@ const ProjectDashboard = () => {
     if (projectId) {
       fetchProjectConfig();
       fetchExistingData();
-      fetchConflictReport();
       loadEnabledModules();
     }
   }, [projectId]);
@@ -369,8 +354,8 @@ const ProjectDashboard = () => {
                 <div className="space-y-4">
                   <div>
                     <Text strong>Records Imported</Text>
-                    <p className="text-3xl font-bold">{existingData.length}</p>
-                    {existingData.length === 0 && (
+                    <p className="text-3xl font-bold">{existingData}</p>
+                    {existingData === 0 && (
                       <Button
                         onClick={() => navigate("/data-import")}
                         className="mt-2"
@@ -383,14 +368,14 @@ const ProjectDashboard = () => {
                     <Text strong>Data Conflicts</Text>
                     <p
                       className={`text-3xl font-bold ${
-                        conflicts?.errors?.length > 0
+                        conflicts > 0
                           ? "text-red-500"
                           : "text-green-500"
                       }`}
                     >
-                      {conflicts ? conflicts.errors.length : "..."}
+                      {conflicts}
                     </p>
-                    {conflicts?.errors?.length > 0 && (
+                    {conflicts> 0 && (
                       <Button
                         danger
                         onClick={() =>
