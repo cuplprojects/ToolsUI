@@ -31,6 +31,10 @@ const DataImport = () => {
   const [skipItems, setSkipItems] = useState(false);
   const [quantity, setQuantity] = useState(0);
   const [fileList, setFileList] = useState([]);
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+  });
   const toast = useToast()
   // Load projects
   useEffect(() => {
@@ -169,7 +173,15 @@ const DataImport = () => {
         <Table
           columns={columns}
           dataSource={dataSource}
-          pagination={{ pageSize: 10 }}
+          pagination={{
+            ...pagination,
+            showSizeChanger: true,
+            pageSizeOptions: ['10', '20', '50', '100'],
+            showQuickJumper: true,
+            onChange: (page, pageSize) => {
+              setPagination({ current: page, pageSize });
+            },
+          }}
           rowKey="catchNo"
         /></div>
     );
@@ -314,7 +326,15 @@ const DataImport = () => {
       key: header,
     }));
 
-    return <Table columns={columns} dataSource={excelData} pagination={{ pageSize: 10 }} />;
+    return <Table columns={columns} dataSource={excelData} pagination={{
+      ...pagination,
+      showSizeChanger: true,
+      pageSizeOptions: ['10', '20', '50', '100'],
+      showQuickJumper: true,
+      onChange: (page, pageSize) => {
+        setPagination({ current: page, pageSize });
+      },
+    }} />;
   };
 
   // Columns for existing data
@@ -676,7 +696,15 @@ const DataImport = () => {
                     <Table
                       dataSource={existingData}
                       columns={columns}
-                      pagination={{ pageSize: 10 }}
+                      pagination={{
+                        ...pagination,
+                        showSizeChanger: true,
+                        pageSizeOptions: ['10', '20', '50', '100'],
+                        showQuickJumper: true,
+                        onChange: (page, pageSize) => {
+                          setPagination({ current: page, pageSize });
+                        },
+                      }}
                       rowKey="id"
                       scroll={{ x: "max-content" }}
                       loading={loading}

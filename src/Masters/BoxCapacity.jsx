@@ -124,7 +124,7 @@ const BoxCapacity = () => {
             title: 'Capacity',
             dataIndex: 'capacity',
             key: 'capacity',
-            sorter: (a, b) => a.capacity.localeCompare(b.capacity),
+           sorter: (a, b) => a.capacity - b.capacity,
             ...getColumnSearchProps('capacity'),
         },
         {
