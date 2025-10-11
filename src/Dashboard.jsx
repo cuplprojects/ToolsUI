@@ -82,15 +82,15 @@ export default function Dashboard() {
           <h3 className="text-gray-600 text-sm">Total Projects</h3>
           <p className="text-3xl font-bold text-blue-800">{projects.length}</p>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-green-600">
-          <h3 className="text-gray-600 text-sm">Correction Tool</h3>
-          <p className="text-3xl font-bold text-green-800">{correctionGroups} <span className="text-lg font-normal">Groups Ready</span></p>
-          <Link to="/correction" className="text-sm text-green-700 hover:underline mt-1 block">Go to Tool &rarr;</Link>
-        </div>
         <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-yellow-500">
           <h3 className="text-gray-600 text-sm">Masters</h3>
           <p className="text-3xl font-bold text-yellow-700">6 <span className="text-lg font-normal">Types</span></p>
           <Link to="/masters" className="text-sm text-yellow-800 hover:underline mt-1 block">Manage &rarr;</Link>
+        </div>
+         <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-green-600">
+          <h3 className="text-gray-600 text-sm">Correction Tool</h3>
+          <p className="text-3xl font-bold text-green-800">{correctionGroups} <span className="text-lg font-normal">Groups Ready</span></p>
+          <Link to="/correctiontool" className="text-sm text-green-700 hover:underline mt-1 block">Go to Tool &rarr;</Link>
         </div>
       </div>
 
