@@ -58,14 +58,17 @@ const EnvelopeType = () => {
     }
 
     // Check for duplicates
-    const isDuplicate = envelopes.some(item => 
-      item.envelopeName.toLowerCase() === envelopeName.toLowerCase() && 
+    const isDuplicate = envelopes.some(item =>
+      item.envelopeName.toLowerCase() === envelopeName.toLowerCase() &&
       (!editingItem || item.envelopeId !== editingItem.envelopeId)
     );
 
     if (isDuplicate) {
       message.warning('This envelope name already exists');
       return;
+    }
+    if(!(capacity>0)){
+      message.error('Capacity should be greater than 0')
     }
 
     const payload = {
@@ -146,8 +149,8 @@ const EnvelopeType = () => {
       key: 'actions',
       render: (_, record) => (
         <Space>
-          <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)}/>
-          <Button type="link" danger icon = {<DeleteOutlined />} onClick={() => handleDelete(record.envelopeId)}/>
+          <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)} />
+          <Button type="link" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.envelopeId)} />
         </Space>
       )
     }
@@ -155,12 +158,12 @@ const EnvelopeType = () => {
 
   return (
     <div>
-        <div  style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
-          <Button type="primary" onClick={handleAdd} style={{ marginBottom: 16 }}>
-        Add
-      </Button>  
-        </div>
-      
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+        <Button type="primary" onClick={handleAdd} style={{ marginBottom: 16 }}>
+          Add
+        </Button>
+      </div>
+
       <Table
         dataSource={envelopes}
         columns={columns}
@@ -174,19 +177,25 @@ const EnvelopeType = () => {
         onCancel={() => setModalVisible(false)}
         okText="Save"
       >
-        
-          <Input
-            placeholder="Envelope name"
-            value={envelopeName}
-            onChange={(e) => setEnvelopeName(e.target.value)}
-          />
-          <InputNumber
-            placeholder="Capacity"
-            value={capacity}
-            onChange={(value) => setCapacity(value)}
-            style={{ width: '100%' }}
-          />
-        
+
+        <Input
+          placeholder="Envelope name"
+          value={envelopeName}
+          onChange={(e) => setEnvelopeName(e.target.value)}
+        />
+        <InputNumber
+          placeholder="Capacity"
+          value={capacity}
+          min={1} // ✅ prevents entering negative or zero values
+          onChange={(value) => {
+            if (value && value >= 1) {
+              setCapacity(value);
+            } else {
+              setCapacity(null); // or 1 as fallback
+            }
+          }}
+          style={{ width: '100%' }}
+        />
       </Modal>
     </div>
   );

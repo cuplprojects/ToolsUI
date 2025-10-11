@@ -51,7 +51,7 @@ const NodalUnivExtra = () => {
         message.success("Extra updated successfully.");
       } else {
         // Create
-        await API.post(API_URL, values);
+        await API.post('/ExtraTypes', values);
         message.success("Extra added successfully.");
       }
       fetchExtras();

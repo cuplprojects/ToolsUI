@@ -188,11 +188,14 @@ const DataImport = () => {
       const rows = jsonData.slice(1).map(row => {
         let rowData = {};
         headers.forEach((header, index) => {
-          rowData[header] = row[index];
+          const value = row[index];  // Define the value variable based on the current row's data
+          rowData[header] = value;
+
           if (header === "ExamDate" && value) {
-            value = parseDate(value); // Parse date if it's for "ExamDate"
+            rowData[header] = parseDate(value); // Parse date if it's for "ExamDate"
           }
         });
+
         return rowData;
       });
 

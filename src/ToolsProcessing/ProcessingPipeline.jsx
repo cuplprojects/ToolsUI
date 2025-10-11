@@ -83,7 +83,9 @@ const ProcessingPipeline = () => {
 
 
   const computeRunOrder = (names = []) => {
-     const lowerNames = names.map((n) => String(n).toLowerCase());
+
+    const lowerNames = names.map((n) => String(n).toLowerCase());
+    console.log(lowerNames)
     const order = [];
     if (lowerNames.some((n) => n.includes("duplicate")))
       order.push({ key: "duplicate", title: "Duplicate Processing" });
@@ -93,6 +95,7 @@ const ProcessingPipeline = () => {
       order.push({ key: "envelope", title: "Envelope Breaking" });
     if (lowerNames.some((n) => n.includes("box")))
       order.push({ key: "box", title: "Box Breaking" });
+    console.log("Final order:", order);
     return order;
   };
   // Load enabled modules when project changes
@@ -178,7 +181,8 @@ const ProcessingPipeline = () => {
       message.warning("Please select a project");
       return;
     }
-    const order = computeRunOrder();
+    const order = computeRunOrder(enabledModuleNames);
+    console.log(order.length)
     if (!order.length) {
       message.info("No enabled modules to process for this project.");
       return;
