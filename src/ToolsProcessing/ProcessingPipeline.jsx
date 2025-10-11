@@ -286,15 +286,17 @@ const ProcessingPipeline = () => {
   ];
 
   return (
-    <div className="bg-white shadow-md rounded-lg p-4">
+    <div className=" p-4">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-semibold">Processing Pipeline</h2>
+        <Typography.Title level={3} style={{ marginBottom: 24}}>
+                Project Configuration
+              </Typography.Title>
         <div className="text-sm flex items-center gap-2">
           <span>Status:</span>
           {isProcessing ? (
-            <Badge status="processing" text="Processing" />
+            <Badge status="processing" text="Processing" color="blue"/>
           ) : (
-            <Badge status="default" text="Idle" />
+            <Badge status="default" text="Idle" color="gray" />
           )}
           <Button type="primary" onClick={handleAudit} disabled={!projectId || isProcessing}>
             Audit

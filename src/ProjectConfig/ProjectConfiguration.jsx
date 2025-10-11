@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Row, Col } from "antd";
+import { Row, Col,Typography } from "antd";
 import { useToast } from '../hooks/useToast';
 import useStore from "../stores/ProjectData";
 import { useProjectConfigData } from "./hooks/useProjectConfigData";  // Custom hook for fetching config data
@@ -246,6 +246,11 @@ const ProjectConfiguration = () => {
 
   return (
     <div style={{ padding: 16 }}>
+      {/* === PAGE HEADER === */}
+      <Typography.Title level={3} style={{ marginBottom: 24}}>
+        Project Configuration
+      </Typography.Title>
+
       <Row gutter={16} align="top">
         {/* LEFT SIDE */}
         <Col xs={24} md={16}>

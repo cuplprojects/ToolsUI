@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { List, Typography, Select, Spin, message } from "antd";
+import { List, Typography, Select, Spin, message, Row,Col } from "antd";
 import axios from "axios";
 import API from "../../hooks/api";
 
@@ -110,6 +110,7 @@ const Report = () => {
     }
 
     return (
+      
       <List
         dataSource={filteredReports}
         renderItem={(report) => {
@@ -142,8 +143,15 @@ const Report = () => {
 
   return (
     <div style={{ padding: 20 }}>
+      <Typography.Title level={3} style={{ marginBottom: 24}}>
+        Reports
+      </Typography.Title>
       <>
+      <Row align="middle" justify="space-between" style={{ marginBottom: 20 }}>
+        <Col xs={24} sm={8}>
         <Title level={3}>Select a Project</Title>
+        </Col>
+        <Col xs={24} sm={16}>
         <Select
           style={{ width: 300, marginBottom: 20 }}
           placeholder="Select a project"
@@ -157,6 +165,9 @@ const Report = () => {
             </Select.Option>
           ))}
         </Select>
+        </Col>
+      </Row>
+        
         {selectedProjectName && (
           <Title level={4}>Reports for Project: {selectedProjectName}</Title>
         )}

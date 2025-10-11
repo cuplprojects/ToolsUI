@@ -3,7 +3,7 @@ import BoxCapacity from './BoxCapacity'; // adjust the path if needed
 import EnvelopeType from './EnvelopeType';
 import Field from './Field';
 import ToolsModule from './ToolsModule';
-import { Tabs } from 'antd';
+import { Tabs, Typography } from 'antd';
 import NodalUnivExtra from './NodalUnivExtra';
 import Project from './Project';
 
@@ -43,7 +43,9 @@ const Master = () => {
 
   return (
     <div style={{ padding: 24 }}>
-      <h1 style={{ marginBottom: 24 }}>Masters</h1>
+      <Typography.Title level={3} style={{ marginBottom: 24}}>
+        Masters
+      </Typography.Title>
       <Tabs 
         defaultActiveKey="1" 
         items={tabItems}
