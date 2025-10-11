@@ -2,13 +2,14 @@ import React, { useState, useEffect } from "react";
 import API from "./hooks/api";
 import useStore from "./stores/ProjectData";
 import axios from "axios";
-import { useNavigate} from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 
 const url = import.meta.env.VITE_API_BASE_URL; // Assuming this is the correct URL for fetching project names
 
 export default function Dashboard() {
   const [projects, setProjects] = useState([]);
+  const [correctionGroups, setCorrectionGroups] = useState(0);
   const token = localStorage.getItem("token");
   const setProject = useStore((state) => state.setProject);
   const navigate = useNavigate();
@@ -39,9 +40,21 @@ export default function Dashboard() {
     }
   };
 
+  const getCorrectionGroups = async () => {
+    try {
+      const res = await axios.get(`${url}/Groups`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setCorrectionGroups(res.data.length);
+    } catch (err) {
+      console.error("Failed to fetch correction groups:", err);
+    }
+  };
+
 
   useEffect(() => {
     getProjects();
+    getCorrectionGroups();
   }, []);
 
   const handleCardClick = (projectId, projectName) => {
@@ -54,40 +67,68 @@ export default function Dashboard() {
 
   return (
     <>
-      <h2 className="text-3xl font-semibold text-gray-800 mb-6">
-        Welcome to ERP Tools
-      </h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-blue-600 hover:shadow-xl hover:bg-blue-50 transition-all duration-300">
-          <h3 className="text-gray-600 text-sm">Total Projects</h3>
-          <p className="text-2xl font-bold text-blue-800">{projects.length}</p>
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-green-600 hover:shadow-xl hover:bg-green-50 transition-all duration-300">
-          <h3 className="text-gray-600 text-sm">Active Users</h3>
-          <p className="text-2xl font-bold text-green-800">36</p>
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-yellow-500 hover:shadow-xl hover:bg-yellow-50 transition-all duration-300">
-          <h3 className="text-gray-600 text-sm">Pending Tickets</h3>
-          <p className="text-2xl font-bold text-yellow-700">7</p>
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-red-600 hover:shadow-xl hover:bg-red-50 transition-all duration-300">
-          <h3 className="text-gray-600 text-sm">Issues Reported</h3>
-          <p className="text-2xl font-bold text-red-800">4</p>
+      <div className="bg-gray-50 p-6 rounded-lg shadow-inner mb-6">
+        <h2 className="text-3xl font-bold text-gray-800">Welcome to ERP Tools!</h2>
+        <p className="text-gray-600 mt-2">Select an existing project below or create a new one to get started.</p>
+        <div className="mt-4">
+          <button onClick={() => navigate('/masters')} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-semibold">
+            Create New Project
+          </button>
         </div>
       </div>
 
-      {/* Project Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
-        {projects.map((project) => (
-          <div
-            key={project.id}
-            className="bg-white p-6 rounded-lg shadow-md border-l-4 border-gray-400 hover:shadow-xl hover:bg-gray-50 transition-all duration-300"
-            onClick={() => handleCardClick(project.id, project.name)} // Now guaranteed to be in sync
-          >
-            <h3 className="text-gray-600 text-lg font-semibold mb-3">{project.name}</h3>
-            
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+        <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-blue-600">
+          <h3 className="text-gray-600 text-sm">Total Projects</h3>
+          <p className="text-3xl font-bold text-blue-800">{projects.length}</p>
+        </div>
+        <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-green-600">
+          <h3 className="text-gray-600 text-sm">Correction Tool</h3>
+          <p className="text-3xl font-bold text-green-800">{correctionGroups} <span className="text-lg font-normal">Groups Ready</span></p>
+          <Link to="/correction" className="text-sm text-green-700 hover:underline mt-1 block">Go to Tool &rarr;</Link>
+        </div>
+        <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-yellow-500">
+          <h3 className="text-gray-600 text-sm">Masters</h3>
+          <p className="text-3xl font-bold text-yellow-700">6 <span className="text-lg font-normal">Types</span></p>
+          <Link to="/masters" className="text-sm text-yellow-800 hover:underline mt-1 block">Manage &rarr;</Link>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="md:col-span-2">
+          <h3 className="text-2xl font-semibold text-gray-800 mb-4">Select a Project</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {projects.map((project) => (
+              <div
+                key={project.id}
+                className="bg-white p-6 rounded-lg shadow-md border-l-4 border-gray-400 hover:shadow-xl hover:bg-gray-50 transition-all duration-300 cursor-pointer"
+                onClick={() => handleCardClick(project.id, project.name)}
+              >
+                <h3 className="text-gray-800 text-lg font-semibold mb-2">{project.name}</h3>
+                <p className="text-sm text-gray-500">Last accessed: 2 hours ago</p>
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
+        <div>
+          <h3 className="text-2xl font-semibold text-gray-800 mb-4">Recent Activity</h3>
+          <div className="bg-white p-4 rounded-lg shadow-md">
+            <ul>
+              <li className="border-b py-2">
+                <p className="font-semibold">Project Alpha</p>
+                <p className="text-sm text-gray-500">Last accessed: 2 hours ago</p>
+              </li>
+              <li className="border-b py-2">
+                <p className="font-semibold">Project Beta</p>
+                <p className="text-sm text-gray-500">Last accessed: 1 day ago</p>
+              </li>
+              <li className="py-2">
+                <p className="font-semibold">Correction Tool</p>
+                <p className="text-sm text-gray-500">Data corrected: 3 hours ago</p>
+              </li>
+            </ul>
+          </div>
+        </div>
       </div>
     </>
   );
