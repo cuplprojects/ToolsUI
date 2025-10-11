@@ -20,12 +20,13 @@ const useUserTokenStore = create((set) => ({
   },
 
 }));
-
 export const useUserToken = () => useUserTokenStore((state) => state.token);
-export const useUserTokenActions = () => useUserTokenStore((state) => ({
-  setToken: state.setToken,
-  clearToken: state.clearToken,
-  getToken: state.getToken
-}));
+export const useUserTokenActions = () => {
+  const setToken = useUserTokenStore((state) => state.setToken);
+  const clearToken = useUserTokenStore((state) => state.clearToken);
+  const getToken = useUserTokenStore((state) => state.getToken);
+  return { setToken, clearToken, getToken };
+};
+
 
 export default useUserTokenStore;
