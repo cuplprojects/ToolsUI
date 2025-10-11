@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from "react";
-import { HashRouter as Router, Route, Routes, Navigate } from "react-router-dom";
+import React, { useState, useEffect, use } from "react";
+import { HashRouter as Router, Route, Routes, Navigate, useNavigate, useLocation } from "react-router-dom";
 import Login from "./Login";
 import Dashboard from "./Dashboard";
 import CorrectionTool from "./components/CorrectionTool";
 import ExcelUpload from "./components/ExcelUpload";
 import MainLayout from "./components/MainLayout";
 import axios from "axios";
+import {jwtDecode} from "jwt-decode";
 import { ToastProvider } from './services/notification/ToastProvider';
 import ProjectConfiguration from "./ProjectConfig/ProjectConfiguration";
 import DataImport from "./ToolsProcessing/DataImport";
@@ -14,11 +15,56 @@ import Master from "./Masters/Master";
 import EnvelopeBreaking from "./ToolsProcessing/Envelope/EnvelopeBreaking";
 import ProcessingPipeline from "./ToolsProcessing/ProcessingPipeline";
 import Report from "./pages/Report/Report";
-import Project from "./Masters/Project";
 import ProjectDashboard from "./components/ProjectDashboard";
+import ProtectedRoute from "./routes/ProtectedRoute";
+import { useUserToken, useUserTokenActions } from "./stores/UserToken";
 
+function isTokenExpired(token) {
+  console.log('checking token expiration',token);
+  if (!token) return true;
+  try {
+    console.log("Entering in loop",token)
+    const decoded = jwtDecode(token);
+    console.log(decoded);
+    return decoded.exp < Date.now() / 1000;
+  } catch {
+    return true;
+  }
+}
+
+function TokenChecker() {
+  const token = useUserToken();
+  const { clearToken } = useUserTokenActions();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    // Skip expiry check if on login page
+    if (location.pathname === "/login") return;
+
+    if (!token) return; // No token, no need to check
+
+    const checkTokenValidity = () => {
+      console.log("Checking token validity...");
+      if (isTokenExpired(token)) {
+        clearToken();
+        navigate("/login");
+      }
+    };
+
+    // Check immediately on mount
+    checkTokenValidity();
+
+    // Check every 1 minute
+    const intervalId = setInterval(checkTokenValidity, 60000);
+
+    return () => clearInterval(intervalId);
+  }, [token, clearToken, navigate, location.pathname]);
+
+  return null;
+}
 export default function App() {
-  const [token, setToken] = useState(localStorage.getItem("token"));
+  const token = useUserToken();
 
   useEffect(() => {
     if (token) {
@@ -31,106 +77,126 @@ export default function App() {
   return (
     <ToastProvider position="top-right">
       <Router>
+        <TokenChecker />
         <Routes>
           <Route
             path="/"
             element={token ? <Navigate to="/dashboard" /> : <Navigate to="/login" />}
           />
-          <Route path="/login" element={<Login setToken={setToken} />} />
+          <Route path="/login" element={<Login />} />
 
           {token && (
             <>
               <Route
                 path="/dashboard"
                 element={
-                  <MainLayout setToken={setToken}>
-                    <Dashboard />
-                  </MainLayout>
+                  <ProtectedRoute token={token}>
+                    <MainLayout >
+                      <Dashboard />
+                    </MainLayout>
+                  </ProtectedRoute>
                 }
               />
-              <Route 
-              path="/masters" 
+              <Route
+                path="/masters"
                 element={
-                  <MainLayout setToken={setToken}>
-                    <Master />
-                  </MainLayout>
-                } 
+                  <ProtectedRoute token={token}>
+                    <MainLayout >
+                      <Master />
+                    </MainLayout>
+                  </ProtectedRoute>
+                }
               />
               <Route
-              path="/projectconfiguration"
-              element={
-                <MainLayout setToken={setToken}>
-                  <ProjectConfiguration/>
-                </MainLayout>
-              }
+                path="/projectconfiguration"
+                element={
+                  <ProtectedRoute token={token}>
+                    <MainLayout >
+                      <ProjectConfiguration />
+                    </MainLayout>
+                  </ProtectedRoute>
+                }
               />
               <Route
-              path="/dataimport"
-              element={
-                <MainLayout setToken={setToken}>
-                  <DataImport/>
-                </MainLayout>
-              }
+                path="/dataimport"
+                element={
+                  <ProtectedRoute token={token}>
+                    <MainLayout >
+                      <DataImport />
+                    </MainLayout>
+                  </ProtectedRoute>
+                }
               />
               <Route
                 path="/duplicate"
                 element={
-                  <MainLayout setToken={setToken}>
-                    <DuplicateTool />
-                  </MainLayout>
+                  <ProtectedRoute token={token}>
+                    <MainLayout >
+                      <DuplicateTool />
+                    </MainLayout></ProtectedRoute>
                 }
               />
               <Route
                 path="/correctiontool"
                 element={
-                  <MainLayout setToken={setToken}>
-                    <CorrectionTool />
-                  </MainLayout>
+                  <ProtectedRoute token={token}>
+                    <MainLayout >
+                      <CorrectionTool />
+                    </MainLayout></ProtectedRoute>
                 }
               />
               <Route
                 path="/excelupload"
                 element={
-                  <MainLayout setToken={setToken}>
-                    <ExcelUpload />
-                  </MainLayout>
+                  <ProtectedRoute token={token}>
+                    <MainLayout >
+                      <ExcelUpload />
+                    </MainLayout></ProtectedRoute>
                 }
               />
 
               <Route
                 path="/envelopebreaking"
                 element={
-                  <MainLayout setToken={setToken}>
-                    <EnvelopeBreaking/>
-                  </MainLayout>
+                  <ProtectedRoute token={token}>
+                    <MainLayout >
+                      <EnvelopeBreaking />
+                    </MainLayout></ProtectedRoute>
                 }
-              /> 
+              />
               <Route
                 path="/processingpipeline"
                 element={
-                  <MainLayout setToken={setToken}>
-                    <ProcessingPipeline/>
-                  </MainLayout>
+                  <ProtectedRoute token={token}>
+                    <MainLayout >
+                      <ProcessingPipeline />
+                    </MainLayout></ProtectedRoute>
                 }
               />
               <Route
                 path="/reports"
                 element={
-                  <MainLayout setToken={setToken}>
-                    <Report/>
-                  </MainLayout>
+                  <ProtectedRoute token={token}>
+                    <MainLayout >
+                      <Report />
+                    </MainLayout></ProtectedRoute>
                 }
               />
               <Route
                 path="/projectdashboard"
                 element={
-                  <MainLayout setToken={setToken}>
-                    <ProjectDashboard/>
-                  </MainLayout>
+                  <ProtectedRoute token={token}>
+                    <MainLayout >
+                      <ProjectDashboard />
+                    </MainLayout></ProtectedRoute>
                 }
-              /> 
+              />
             </>
           )}
+          <Route
+            path="*"
+            element={<Navigate to={token ? "/dashboard" : "/login"} />}
+          />
         </Routes>
       </Router>
     </ToastProvider>

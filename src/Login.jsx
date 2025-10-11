@@ -5,20 +5,21 @@ import { useToast } from './hooks/useToast';
 import BG from './assets/bg/bg.svg'
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import API from "./hooks/api";
-
-export default function Login({ setToken }) {
+import { useUserToken, useUserTokenActions } from "./stores/UserToken";
+export default function Login() {
   const [userName, setUserName] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const token = useUserToken(); // reactive token
+  const { setToken } = useUserTokenActions();
   // Redirect to dashboard if already logged in
   useEffect(() => {
-    const storedToken = localStorage.getItem("token");
-    if (storedToken) {
+    if (token) {
       navigate("/dashboard");
     }
-  }, [navigate]);
+  }, [token,navigate]);
 
 
 
@@ -31,9 +32,7 @@ export default function Login({ setToken }) {
       });
 
       const jwtToken = response.data.token;
-
-      // Save token to localStorage
-      localStorage.setItem("token", jwtToken);
+      console.log(jwtToken);
       setToken(jwtToken);
 
       // Set token as default Authorization header
