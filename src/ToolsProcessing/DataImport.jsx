@@ -221,9 +221,17 @@ const DataImport = () => {
   // Upload file logic
   const beforeUpload = (file) => {
     setFileList([file]); // Show the selected file
+    setFileHeaders([]);
+  setFieldMappings({});
     proceedWithReading(file);
     return false; // prevent auto upload
   };
+
+  const handleRemove = (file) => {
+  setFileList([]); // Since only one file is allowed
+  setFileHeaders([]);
+  setFieldMappings({});
+};
 
   const isAnyFieldMapped = () => {
     return expectedFields.some(field => fieldMappings[field.fieldId]);
@@ -486,6 +494,7 @@ const handleQuantityChange = (e) => {
                 accept=".xls,.xlsx,.csv"
                 fileList={fileList}
                 beforeUpload={beforeUpload}
+                onRemove={handleRemove}
                 maxCount={1}
               >
                 <p className="ant-upload-drag-icon">📤</p>
