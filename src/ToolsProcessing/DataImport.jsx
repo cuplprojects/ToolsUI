@@ -448,7 +448,7 @@ const handleQuantityChange = (e) => {
     <div style={{ padding: 24 }}>
       {/* === PAGE HEADER === */}
       <Typography.Title level={3} style={{ marginBottom: 24 }}>
-        Project Configuration
+        Data Import
       </Typography.Title>
 
       {/* === DATA IMPORT SECTION === */}
