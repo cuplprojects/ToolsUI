@@ -15,6 +15,8 @@ const ConfigSummaryCard = ({
   handleSave,
   projectId,
 }) => {
+
+  const isAnyConfigMade = envelopeConfigured || boxConfigured || extraConfigured || duplicateConfigured;
   const summaryItems = [
     {
       label: "Enabled Modules",
@@ -85,7 +87,7 @@ const ConfigSummaryCard = ({
           type="primary"
           block
           onClick={handleSave}
-          disabled={!projectId}
+          disabled={!projectId || !isAnyConfigMade}
           className="mt-4"
         >
           Save Configuration
