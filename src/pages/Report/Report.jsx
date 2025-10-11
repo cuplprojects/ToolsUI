@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { List, Typography, Select, Spin, message, Row,Col } from "antd";
+import { List, Typography, Select, Spin, message, Row, Col, Card, Statistic, Button, Tag } from "antd";
 import axios from "axios";
 import API from "../../hooks/api";
 
@@ -21,6 +21,8 @@ const Report = () => {
   const [selectedProjectId, setSelectedProjectId] = useState(null);
   const [selectedProjectName, setSelectedProjectName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [generatingReport, setGeneratingReport] = useState({}); // Track generation status per report
+  const [projectStats, setProjectStats] = useState(null); // For project health dashboard
   const [availableReports, setAvailableReports] = useState({});
 
   useEffect(() => {
@@ -38,6 +40,7 @@ const Report = () => {
   useEffect(() => {
     if (selectedProjectId) {
       checkAvailableReports(selectedProjectId);
+      fetchProjectStats(selectedProjectId); // Fetch stats for the selected project
     }
   }, [selectedProjectId]);
 
@@ -69,8 +72,20 @@ const Report = () => {
     }
   };
 
+  const fetchProjectStats = async (projectId) => {
+    // Example: This endpoint would return key stats for the project
+    try {
+      const res = await API.get(`/Reports/ProjectSummary?projectId=${projectId}`);
+      setProjectStats(res.data);
+    } catch (err) {
+      console.error("Failed to fetch project stats", err);
+      setProjectStats(null); // Reset on error
+    }
+  };
+
   const checkAvailableReports = async (projectId) => {
     const availability = {};
+    setLoading(true);
     await Promise.all(
       possibleReports.map(async (report) => {
         try {
@@ -85,6 +100,7 @@ const Report = () => {
       })
     );
     setAvailableReports(availability);
+    setLoading(false);
   };
 
   const handleProjectChange = (projectId) => {
@@ -98,48 +114,58 @@ const Report = () => {
     }
   };
 
-  const renderReports = () => {
-    if (!selectedProjectId) return;
-
-    const filteredReports = possibleReports.filter(
-      (report) => availableReports[report.fileName]
-    );
-
-    if (filteredReports.length === 0) {
-      return <Text>No available reports for this project.</Text>;
-    }
-
+  const renderProjectDashboard = () => {
+    if (!selectedProjectId || !projectStats) return null;
     return (
-      
-      <List
-        dataSource={filteredReports}
-        renderItem={(report) => {
-          const fileUrl = `${url3}/${selectedProjectId}/${report.fileName}`;
-          return (
-            <List.Item
-              actions={[
-                <a
-                  key="download"
-                  href={fileUrl}
-                  download
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Download
-                </a>,
-              ]}
-            >
-              <List.Item.Meta title={report.title} />
-            </List.Item>
-          );
-        }}
-      />
+      <Card title="Project Health Summary" style={{ marginBottom: 24 }}>
+        <Row gutter={16}>
+          <Col span={6}><Statistic title="Imported Records" value={projectStats.totalRecords} /></Col>
+          <Col span={6}><Statistic title="Unresolved Conflicts" value={projectStats.unresolvedConflicts} valueStyle={{ color: projectStats.unresolvedConflicts > 0 ? '#cf1322' : '#3f8600' }} /></Col>
+          <Col span={6}><Statistic title="Envelopes Created" value={projectStats.envelopesCreated} /></Col>
+          <Col span={6}><Statistic title="Boxes Created" value={projectStats.boxesCreated} /></Col>
+        </Row>
+      </Card>
     );
   };
 
-  if (loading) {
-    return <Spin tip="Loading projects..." />;
+  const renderReportsList = () => {
+  if (!selectedProjectId) {
+    return <Text type="secondary">Please select a project to see available reports.</Text>;
   }
+
+  if (loading) {
+    return <Spin tip="Checking available reports..." />;
+  }
+
+  return (
+    <List
+      header={<Title level={4}>Available Reports for: {selectedProjectName}</Title>}
+      bordered
+      dataSource={possibleReports}
+      renderItem={(report) => {
+        const isAvailable = availableReports[report.fileName];
+        const fileUrl = `${url3}/${selectedProjectId}/${report.fileName}`;
+
+        return isAvailable ? (
+          <List.Item
+            actions={[
+              <a key="download" href={fileUrl} download target="_blank" rel="noopener noreferrer">
+                <Button type="primary">Download</Button>
+              </a>
+            ]}
+          >
+            <List.Item.Meta
+              title={report.title}
+              description="Ready for download."
+            />
+            <Tag color="green">Available</Tag>
+          </List.Item>
+        ) : null; // ❌ Do not render item if report is not available
+      }}
+    />
+  );
+};
+
 
   return (
     <div style={{ padding: 20 }}>
@@ -147,7 +173,7 @@ const Report = () => {
         Reports
       </Typography.Title>
       <>
-      <Row align="middle" justify="space-between" style={{ marginBottom: 20 }}>
+      <Row align="middle" justify="space-between" style={{ marginBottom: 24 }}>
         <Col xs={24} sm={8}>
         <Title level={3}>Select a Project</Title>
         </Col>
@@ -158,6 +184,7 @@ const Report = () => {
           onChange={handleProjectChange}
           value={selectedProjectName}
           allowClear
+          loading={loading && projects.length === 0}
         >
           {projects.map((project) => (
             <Select.Option key={project.id} value={project.id}>
@@ -168,11 +195,9 @@ const Report = () => {
         </Col>
       </Row>
         
-        {selectedProjectName && (
-          <Title level={4}>Reports for Project: {selectedProjectName}</Title>
-        )}
+        {renderProjectDashboard()}
       </>
-      {renderReports()}
+      {renderReportsList()}
     </div>
   );
 };
