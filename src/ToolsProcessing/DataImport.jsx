@@ -406,6 +406,19 @@ const DataImport = () => {
       setSkipItems(false);  // Deselect skipItems if keepZeroQuantity is selected
     }
   };
+  // Function to handle quantity change
+const handleQuantityChange = (e) => {
+  let newQuantity = parseInt(e.target.value, 10);
+
+  // Ensure quantity is a valid number and does not go below 0
+  if (newQuantity < 0) {
+    newQuantity = 0;
+  }
+
+  // Update the quantity state
+  setQuantity(newQuantity);
+};
+
 
   const handleSkipItemsChange = (e) => {
     setSkipItems(e.target.checked);
@@ -494,8 +507,9 @@ const DataImport = () => {
                   <Input
                     type="number"
                     value={quantity}
-                    onChange={(e) => setQuantity(e.target.value)}
+                    onChange={handleQuantityChange}
                     placeholder="Enter quantity to replace 0"
+                    min={0}
                   />
                 )}
 
