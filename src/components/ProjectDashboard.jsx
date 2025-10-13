@@ -295,7 +295,7 @@ const ProjectDashboard = () => {
             transition={{ duration: 0.5 }}
           >
             <Card
-              title="Processing Pipeline"
+              title="Process Data"
               bordered={false}
               className="shadow-lg"
             >
@@ -323,7 +323,7 @@ const ProjectDashboard = () => {
                       }
                       className="ml-6"
                     >
-                      {isProcessing ? "Running..." : "Run Pipeline"}
+                      {isProcessing ? "Running..." : "Start Process"}
                     </Button>
                   </span>
                 </Tooltip>
@@ -401,10 +401,10 @@ const ProjectDashboard = () => {
           >
             <Card title="Quick Actions" bordered={false} className="shadow-lg">
               <div className="flex flex-col space-y-2">
-                <Button onClick={() => navigate("/projectconfiguration")}>
+                <Button type="primary" onClick={() => navigate("/projectconfiguration")}>
                   Project Configuration
                 </Button>
-                <Button onClick={() => navigate("/reports")}>
+                <Button type="primary" onClick={() => navigate("/reports")}>
                   View Reports
                 </Button>
               </div>
