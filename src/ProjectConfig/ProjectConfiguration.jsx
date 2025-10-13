@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { Row, Col,Typography } from "antd";
-import { useToast } from '../hooks/useToast';
+import { Row, Col, Typography, message } from "antd";
+import { useToast } from "../hooks/useToast";
 import useStore from "../stores/ProjectData";
-import { useProjectConfigData } from "./hooks/useProjectConfigData";  // Custom hook for fetching config data
+import { useProjectConfigData } from "./hooks/useProjectConfigData"; // Custom hook for fetching config data
 import { useProjectConfigSave } from "./hooks/useProjectConfigSave";
 import ModuleSelectionCard from "./components/ModuleSelectionCard";
 import EnvelopeSetupCard from "./components/EnvelopeSetupCard";
@@ -12,7 +12,8 @@ import BoxBreakingCard from "./components/BoxBreakingCard";
 import ConfigSummaryCard from "./components/ConfigSummaryCard";
 import { EXTRA_ALIAS_NAME } from "./components/constants";
 import DuplicateTool from "../ToolsProcessing/DuplicateTool";
-import API from "../hooks/api";
+import API from "../hooks/api"; 
+import ImportConfig from "./components/ImportConfig";
 
 const ProjectConfiguration = () => {
   const { showToast } = useToast();
@@ -29,12 +30,13 @@ const ProjectConfiguration = () => {
   const [selectedBoxFields, setSelectedBoxFields] = useState([]);
   const [boxCapacities, setBoxCapacities] = useState([]);
   const [selectedCapacity, setSelectedCapacity] = useState(null);
+  const [configExists, setConfigExists] = useState(false);
   const [duplicateConfig, setDuplicateConfig] = useState({
-  duplicateCriteria: [],
-  enhancement: 0,
-  enhancementEnabled: false,
-  enhancementType: "round",
-});
+    duplicateCriteria: [],
+    enhancement: 0,
+    enhancementEnabled: false,
+    enhancementType: "round",
+  });
   // Fetch data using custom hook
   const {
     toolModules,
@@ -46,93 +48,94 @@ const ProjectConfiguration = () => {
     setExtraTypeSelection,
   } = useProjectConfigData(token);
 
-  const fetchProjectConfigData = async () => {
+  const fetchProjectConfigData = async (projectId) => {
   console.log("Fetching config data for project:", projectId);
 
   let projectConfig = null;
   let extrasConfig = [];
-  let duplicateConfigRes = null;
+  let duplicateConfigRes = {
+    duplicateCriteria: [],
+    enhancement: 0,
+    enhancementEnabled: false,
+  };
 
+  // Fetch project config
   try {
-    // Fetch project config data
-    const projectConfigRes = await API.get(`/ProjectConfigs/ByProject/${projectId}`);
-    projectConfig = projectConfigRes.data;
+    const res = await API.get(`/ProjectConfigs/ByProject/${projectId}`);
+    projectConfig = res.data;
     console.log("Parsed Project Config:", projectConfig);
+    setConfigExists(true); // Config exists
+
+    // Normalize duplicate config from project config
+    duplicateConfigRes = {
+      duplicateCriteria: Array.isArray(projectConfig.duplicateCriteria)
+        ? projectConfig.duplicateCriteria
+        : JSON.parse(projectConfig.duplicateCriteria || "[]"),
+      enhancement: Number(projectConfig.enhancement) || 0,
+      enhancementEnabled: Number(projectConfig.enhancement) > 0,
+    };
+    setDuplicateConfig(duplicateConfigRes);
+    console.log("Duplicate Tool Config (Mapped):", duplicateConfigRes);
+
   } catch (err) {
     if (err.response?.status === 404) {
       console.warn(`No existing configuration for ProjectId: ${projectId}`);
+      setConfigExists(false);
+      setDuplicateConfig(duplicateConfigRes); // Set defaults
     } else {
-      console.error("Failed to load project config", err.response?.data || err.message);
+      console.error(
+        "Failed to load project config",
+        err.response?.data || err.message
+      );
+      setConfigExists(false);
       return;
     }
   }
 
+  // Fetch extra config data
   try {
-    // Fetch extra config data
-    const extrasConfigRes = await API.get(`/ExtrasConfigurations/ByProject/${projectId}`);
-    extrasConfig = extrasConfigRes.data;
+    const extrasRes = await API.get(`/ExtrasConfigurations/ByProject/${projectId}`);
+    extrasConfig = extrasRes.data;
     console.log("Extras Config:", extrasConfig);
   } catch (err) {
     if (err.response?.status === 404) {
       console.warn(`No extra configuration for ProjectId: ${projectId}`);
     } else {
-      console.error("Failed to load extras config", err.response?.data || err.message);
+      console.error(
+        "Failed to load extras config",
+        err.response?.data || err.message
+      );
     }
   }
 
+  // Fetch box capacities
   try {
-  // Fetch duplicate tool config
-  const duplicateRes = await API.get(`/ProjectConfigs/ByProject/${projectId}`);
-  let duplicateConfigRes = duplicateRes.data || {
-    duplicateCriteria: [],
-    enhancement: 0,
-  };
-
-  // Normalize data
-  duplicateConfigRes = {
-    duplicateCriteria: Array.isArray(duplicateConfigRes.duplicateCriteria)
-      ? duplicateConfigRes.duplicateCriteria
-      : JSON.parse(duplicateConfigRes.duplicateCriteria || "[]"),
-    enhancement: Number(duplicateConfigRes.enhancement) || 0,
-    enhancementEnabled: Number(duplicateConfigRes.enhancement) > 0,
-  };
-
-  setDuplicateConfig(duplicateConfigRes);
-  console.log("Duplicate Tool Config (Mapped):", duplicateConfigRes);
-} catch (err) {
-  if (err.response?.status === 404) {
-    console.warn(`No duplicate tool configuration for ProjectId: ${projectId}`);
-    setDuplicateConfig({
-      duplicateCriteria: [],
-      enhancement: 0,
-      enhancementEnabled: false,
-    });
-  } else {
-    console.error("Failed to load duplicate tool config", err.response?.data || err.message);
-  }
-}
-
-
-  try {
-    // Fetch box capacities
-    const boxConfigRes = await API.get(`/BoxCapacities`);
-    const boxConfig = boxConfigRes.data;
+    const boxRes = await API.get(`/BoxCapacities`);
+    const boxConfig = boxRes.data;
     console.log("Box Capacities:", boxConfig);
     setBoxCapacities(boxConfig);
 
     const selectedBoxCapacity = projectConfig?.boxCapacity;
-    setSelectedCapacity(selectedBoxCapacity || (boxConfig.length > 0 ? boxConfig[0].id : null));
+    setSelectedCapacity(
+      selectedBoxCapacity || (boxConfig.length > 0 ? boxConfig[0].id : null)
+    );
   } catch (err) {
-    console.error("Failed to load box capacities", err.response?.data || err.message);
+    console.error(
+      "Failed to load box capacities",
+      err.response?.data || err.message
+    );
   }
 
-  // If project config exists, initialize states
+  // Initialize project config states
   if (projectConfig && toolModules.length > 0) {
     const enabledNames = new Set();
-    const extraModuleNames = ["Nodal Extra Calculation", "University Extra Calculation"];
+    const extraModuleNames = [
+      "Nodal Extra Calculation",
+      "University Extra Calculation",
+    ];
 
-    projectConfig.modules?.forEach(moduleId => {
-      const module = toolModules.find(m => m.id === moduleId);
+    projectConfig.modules?.forEach((moduleId) => {
+      const module = toolModules.find((m) => m.id === moduleId);
       if (module) {
         if (extraModuleNames.includes(module.name)) {
           enabledNames.add("Extra Configuration");
@@ -145,7 +148,7 @@ const ProjectConfiguration = () => {
     setEnabledModules(Array.from(enabledNames));
 
     // Envelope Setup
-    const envelopeParsed = JSON.parse(projectConfig.envelope || '{}');
+    const envelopeParsed = JSON.parse(projectConfig.envelope || "{}");
     setInnerEnvelopes(envelopeParsed.Inner ? [envelopeParsed.Inner] : []);
     setOuterEnvelopes(envelopeParsed.Outer ? [envelopeParsed.Outer] : []);
 
@@ -154,10 +157,14 @@ const ProjectConfiguration = () => {
 
     // Box Breaking Criteria
     setSelectedBoxFields(
-      fields.filter(f => projectConfig.boxBreakingCriteria?.includes(f.fieldId))
-            .map(f => f.fieldId)
+      fields
+        .filter((f) => projectConfig.boxBreakingCriteria?.includes(f.fieldId))
+        .map((f) => f.fieldId)
     );
-    setBoxBreakingCriteria(["capacity", ...(projectConfig.boxBreakingCriteria || [])]);
+    setBoxBreakingCriteria([
+      "capacity",
+      ...(projectConfig.boxBreakingCriteria || []),
+    ]);
   } else {
     setEnabledModules([]);
     setInnerEnvelopes([]);
@@ -171,11 +178,14 @@ const ProjectConfiguration = () => {
   const extraProcessingParsed = {};
   const extraSelections = {};
 
-  extrasConfig.forEach(item => {
-    const type = extraTypes.find(e => e.extraTypeId === item.extraType)?.type;
+  extrasConfig.forEach((item) => {
+    const type = extraTypes.find((e) => e.extraTypeId === item.extraType)?.type;
     if (!type) return;
 
-    const env = item.envelopeType ? JSON.parse(item.envelopeType) : { Inner: "", Outer: "" };
+    const env = item.envelopeType
+      ? JSON.parse(item.envelopeType)
+      : { Inner: "", Outer: "" };
+
     extraProcessingParsed[type] = {
       envelopeType: {
         inner: env.Inner ? [env.Inner] : [],
@@ -192,6 +202,13 @@ const ProjectConfiguration = () => {
   setExtraTypeSelection(extraSelections);
 };
 
+
+  const handleImport = async (importProjectId) => {
+    await fetchProjectConfigData(importProjectId);
+    message.success("Configuration imported successfully! Review and save.");
+    
+  };
+
   // Reset form function
   const resetForm = () => {
     setEnabledModules([]);
@@ -205,24 +222,24 @@ const ProjectConfiguration = () => {
   };
 
   // Save logic using custom hook
- const { handleSave } = useProjectConfigSave(
-  projectId,
-  enabledModules,
-  toolModules,
-  innerEnvelopes,
-  outerEnvelopes,
-  selectedBoxFields,
-  selectedEnvelopeFields,
-  extraTypeSelection,
-  extraTypes,
-  selectedCapacity,
-  extraProcessingConfig,
-  duplicateConfig,
-  fetchProjectConfigData,
-  showToast,
-  resetForm
-);
-  console.log(selectedCapacity)
+  const { handleSave } = useProjectConfigSave(
+    projectId,
+    enabledModules,
+    toolModules,
+    innerEnvelopes,
+    outerEnvelopes,
+    selectedBoxFields,
+    selectedEnvelopeFields,
+    extraTypeSelection,
+    extraTypes,
+    selectedCapacity,
+    extraProcessingConfig,
+    duplicateConfig,
+    fetchProjectConfigData,
+    showToast,
+    resetForm
+  );
+  console.log(selectedCapacity);
   console.log("Type of selectedCapacity:", typeof selectedCapacity);
 
   // Helper function
@@ -234,10 +251,9 @@ const ProjectConfiguration = () => {
   const extraConfigured = isEnabled(EXTRA_ALIAS_NAME);
   const duplicateConfigured = isEnabled("Duplicate Tool");
 
-
   useEffect(() => {
     if (!projectId) return;
-    fetchProjectConfigData();
+    fetchProjectConfigData(projectId);
   }, [projectId, token, extraTypes, fields, showToast, toolModules]);
 
   useEffect(() => {
@@ -247,9 +263,13 @@ const ProjectConfiguration = () => {
   return (
     <div style={{ padding: 16 }}>
       {/* === PAGE HEADER === */}
-      <Typography.Title level={3} style={{ marginBottom: 24}}>
-        Project Configuration
-      </Typography.Title>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+        <Typography.Title level={3} style={{ margin: 0 }}>
+          Project Configuration
+        </Typography.Title>
+
+        <ImportConfig onImport={handleImport} disabled={configExists} />
+      </div>
 
       <Row gutter={16} align="top">
         {/* LEFT SIDE */}
@@ -302,10 +322,10 @@ const ProjectConfiguration = () => {
             setBoxCapacity={setBoxCapacities}
           />
 
-          <DuplicateTool 
-          isEnabled = {isEnabled} 
-          duplicateConfig={duplicateConfig} 
-          setDuplicateConfig={setDuplicateConfig}
+          <DuplicateTool
+            isEnabled={isEnabled}
+            duplicateConfig={duplicateConfig}
+            setDuplicateConfig={setDuplicateConfig}
           />
 
           <ConfigSummaryCard
@@ -323,4 +343,4 @@ const ProjectConfiguration = () => {
   );
 };
 
-export default ProjectConfiguration; 
+export default ProjectConfiguration;

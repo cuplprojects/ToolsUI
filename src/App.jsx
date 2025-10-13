@@ -20,12 +20,9 @@ import ProtectedRoute from "./routes/ProtectedRoute";
 import { useUserToken, useUserTokenActions } from "./stores/UserToken";
 
 function isTokenExpired(token) {
-  console.log('checking token expiration',token);
   if (!token) return true;
   try {
-    console.log("Entering in loop",token)
     const decoded = jwtDecode(token);
-    console.log(decoded);
     return decoded.exp < Date.now() / 1000;
   } catch {
     return true;
@@ -45,7 +42,6 @@ function TokenChecker() {
     if (!token) return; // No token, no need to check
 
     const checkTokenValidity = () => {
-      console.log("Checking token validity...");
       if (isTokenExpired(token)) {
         clearToken();
         navigate("/login");
