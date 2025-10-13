@@ -1,6 +1,6 @@
 import React from "react";
 import { Card, Select, Typography, Tag, Checkbox } from "antd";
-import { InboxOutlined, LockOutlined } from "@ant-design/icons";
+import { DatabaseFilled, LockFilled } from "@ant-design/icons";
 import AnimatedCard from "./AnimatedCard";
 import { cardStyle, iconStyle, PRIMARY_COLOR } from "./constants";
 
@@ -41,7 +41,7 @@ const BoxBreakingCard = ({
         title={
           <div>
             <span>
-              <InboxOutlined style={iconStyle} /> Box Breaking Criteria
+              <DatabaseFilled style={iconStyle} /> Box Breaking Criteria
             </span>
             <br />
             <Text type="secondary">
@@ -51,7 +51,7 @@ const BoxBreakingCard = ({
         }
         extra={
           !isEnabled("Box Breaking") ? (
-            <Tag icon={<LockOutlined style={{ color: PRIMARY_COLOR }} />}>
+            <Tag icon={<LockFilled style={{ color: PRIMARY_COLOR }} />}>
               Disabled
             </Tag>
           ) : null

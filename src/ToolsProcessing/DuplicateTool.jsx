@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Card, Select, Checkbox, InputNumber, Typography, Space, Tag } from "antd";
 import API from "./../hooks/api";
 import useStore from "./../stores/ProjectData";
-import { InboxOutlined, LockOutlined } from "@ant-design/icons";
+import { CopyFilled, LockFilled} from "@ant-design/icons";
 import { iconStyle, PRIMARY_COLOR } from "../ProjectConfig/components/constants";
 
 const { Text } = Typography;
@@ -41,7 +41,7 @@ const DuplicateTool = ({ isEnabled, duplicateConfig = {}, setDuplicateConfig }) 
       title={
         <div>
           <span>
-            <InboxOutlined style={iconStyle} /> Duplicate Tool
+            <CopyFilled style={iconStyle} /> Duplicate Tool
           </span>
           <br />
           <Text type="secondary">
@@ -51,7 +51,7 @@ const DuplicateTool = ({ isEnabled, duplicateConfig = {}, setDuplicateConfig }) 
       }
       extra={
         !enabled ? (
-          <Tag icon={<LockOutlined style={{ color: PRIMARY_COLOR }} />}>Disabled</Tag>
+          <Tag icon={<LockFilled style={{ color: PRIMARY_COLOR }} />}>Disabled</Tag>
         ) : null
       }
       bordered

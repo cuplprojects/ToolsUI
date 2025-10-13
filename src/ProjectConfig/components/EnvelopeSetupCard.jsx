@@ -1,6 +1,6 @@
 import React from "react";
 import { Card, Select, Typography, Tag } from "antd";
-import { MailOutlined, LockOutlined } from "@ant-design/icons";
+import { MailFilled , LockFilled } from "@ant-design/icons";
 import AnimatedCard from "./AnimatedCard";
 import { cardStyle, iconStyle, PRIMARY_COLOR } from "./constants";
 
@@ -22,7 +22,7 @@ const EnvelopeSetupCard = ({
         title={
           <div>
             <span>
-              <MailOutlined style={iconStyle} /> Envelope Setup
+              <MailFilled  style={iconStyle} /> Envelope Setup
             </span>
             <br />
             <Text type="secondary">
@@ -32,7 +32,7 @@ const EnvelopeSetupCard = ({
         }
         extra={
           !isEnabled("Envelope Breaking") ? (
-            <Tag icon={<LockOutlined style={{ color: PRIMARY_COLOR }} />}>
+            <Tag icon={<LockFilled style={{ color: PRIMARY_COLOR }} />}>
               Disabled
             </Tag>
           ) : null

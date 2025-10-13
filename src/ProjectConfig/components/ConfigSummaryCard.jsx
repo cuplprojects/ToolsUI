@@ -1,6 +1,6 @@
 import React from "react";
 import { Card, List, Button, Typography, Row, Col } from "antd";
-import { ToolOutlined } from "@ant-design/icons";
+import { CarryOutFilled } from "@ant-design/icons";
 import AnimatedCard from "./AnimatedCard";
 import { cardStyle, iconStyle } from "./constants";
 
@@ -52,7 +52,7 @@ const ConfigSummaryCard = ({
         title={
           <div>
             <span>
-              <ToolOutlined style={iconStyle} />Configuration Summary
+              <CarryOutFilled style={iconStyle} />Configuration Summary
             </span>
             <br />
             <Text type="secondary">

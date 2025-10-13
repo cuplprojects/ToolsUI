@@ -1,6 +1,6 @@
 import React from "react";
 import { Card, Select, Typography, Tag } from "antd";
-import { InboxOutlined, LockOutlined } from "@ant-design/icons";
+import { ContainerFilled, LockFilled } from "@ant-design/icons";
 import AnimatedCard from "./AnimatedCard";
 import { cardStyle, iconStyle, PRIMARY_COLOR } from "./constants";
 
@@ -20,7 +20,7 @@ const EnvelopeMakingCriteriaCard = ({
         title={
           <div>
             <span>
-              <InboxOutlined style={iconStyle} /> Envelope Making Criteria (Serial Numbering)
+              <ContainerFilled style={iconStyle} /> Envelope Making Criteria (Serial Numbering)
             </span>
             <br />
             <Text type="secondary">
@@ -30,7 +30,7 @@ const EnvelopeMakingCriteriaCard = ({
         }
         extra={
           !isEnabled("Envelope Breaking") ? (
-            <Tag icon={<LockOutlined style={{ color: PRIMARY_COLOR }} />}>
+            <Tag icon={<LockFilled style={{ color: PRIMARY_COLOR }} />}>
               Disabled
             </Tag>
           ) : null

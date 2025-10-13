@@ -1,6 +1,6 @@
 import React from "react";
 import { Card, Select, Radio, Form, InputNumber, Typography, Tag, Divider, Row, Col } from "antd";
-import { ToolOutlined, LockOutlined } from "@ant-design/icons";
+import { FolderAddFilled, LockFilled} from "@ant-design/icons";
 import AnimatedCard from "./AnimatedCard";
 import { cardStyle, iconStyle, PRIMARY_COLOR, EXTRA_ALIAS_NAME } from "./constants";
 
@@ -23,7 +23,7 @@ const ExtraProcessingCard = ({
         title={
           <div>
             <span>
-              <ToolOutlined style={iconStyle} /> Extra Processing Configuration
+              <FolderAddFilled style={iconStyle} /> Extra Processing Configuration
             </span>
             <br />
             <Text type="secondary">Configure extra packet calculations</Text>
@@ -31,7 +31,7 @@ const ExtraProcessingCard = ({
         }
         extra={
           !isEnabled(EXTRA_ALIAS_NAME) ? (
-            <Tag icon={<LockOutlined style={{ color: PRIMARY_COLOR }} />}>
+            <Tag icon={<LockFilled style={{ color: PRIMARY_COLOR }} />}>
               Disabled
             </Tag>
           ) : null

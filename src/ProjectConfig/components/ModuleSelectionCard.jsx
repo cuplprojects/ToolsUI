@@ -1,6 +1,6 @@
 import React from "react";
 import { Card, Checkbox, Typography } from "antd";
-import { ToolOutlined } from "@ant-design/icons";
+import { SettingFilled  } from "@ant-design/icons";
 import AnimatedCard from "./AnimatedCard";
 import { cardStyle, iconStyle } from "./constants";
 
@@ -17,7 +17,7 @@ const ModuleSelectionCard = ({ mergedModules, enabledModules, setEnabledModules 
         title={
           <div>
             <span>
-              <ToolOutlined style={iconStyle} /> Module Selection
+              <SettingFilled  style={iconStyle} /> Module Selection
             </span>
             <br />
             <Text type="secondary">
