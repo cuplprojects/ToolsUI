@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Card, Select, Radio, Form, InputNumber, Typography, Tag, Divider, Row, Col } from "antd";
 import { FolderAddFilled, LockFilled} from "@ant-design/icons";
 import AnimatedCard from "./AnimatedCard";
@@ -16,6 +16,15 @@ const ExtraProcessingCard = ({
   setExtraProcessingConfig,
   envelopeOptions,
 }) => {
+
+  useEffect(() => {
+  const defaultSelection = {};
+  extraTypes.forEach((et) => {
+    defaultSelection[et.type] = "Fixed";
+  });
+  setExtraTypeSelection(defaultSelection);
+}, []);
+
   return (
     <AnimatedCard>
       <Card
@@ -122,7 +131,7 @@ const ExtraProcessingCard = ({
             </Radio.Group>
 
             {/* Inputs depending on type selection */}
-            {extraTypeSelection[et.type] === "Fixed" && (
+            {(extraTypeSelection[et.type]?? "Fixed") === "Fixed" && (
               <Form.Item style={{ marginTop: 12 }}>
                 <InputNumber
                   placeholder="Enter fixed quantity"
