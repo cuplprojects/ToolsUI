@@ -226,9 +226,9 @@ const ProcessingPipeline = () => {
         });
       }
 
-      message.success("Audit processing completed");
+      message.success("Data processing completed");
     } catch (err) {
-      console.error("Audit failed", err);
+      console.error("Processing failed", err);
       const failing = steps.find((s) => s.status === "in-progress") || null;
       if (failing) updateStepStatus(failing.key, { status: "failed" });
       message.error(err?.response?.data?.message || err?.message || "Processing failed");
@@ -299,7 +299,7 @@ const ProcessingPipeline = () => {
             <Badge status="default" text="Idle" color="gray" />
           )}
           <Button type="primary" onClick={handleAudit} disabled={!projectId || isProcessing}>
-            Audit
+            Start
           </Button>
         </div>
       </div>
