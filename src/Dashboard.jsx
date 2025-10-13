@@ -38,10 +38,12 @@ export default function Dashboard() {
       const projectNameResponses = await Promise.all(projectNameRequests);
 
       // Combine ID and name in one object
-      const combinedProjects = projectIds.map((id, index) => ({
-        id,
+      const combinedProjects = response.data.map((project, index) => ({
+        id: project.projectId,
         name: projectNameResponses[index].data.name,
+        timeAgo: project.timeAgo, // ✅ Now this works!
       }));
+
 
       setProjects(combinedProjects);  // Store array of { id, name }
     } catch (err) {
@@ -108,18 +110,21 @@ export default function Dashboard() {
         <div className="md:col-span-2">
           <h3 className="text-2xl font-semibold text-gray-800 mb-4">Select a Project</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {projects.map((project) => (
-              <div
-                key={project.id}
-                className="bg-white p-6 rounded-lg shadow-md border-l-4 border-gray-400 hover:shadow-xl hover:bg-gray-50 transition-all duration-300 cursor-pointer"
-                onClick={() => handleCardClick(project.id, project.name)}
-              >
-                <h3 className="text-gray-800 text-lg font-semibold mb-2 truncate" 
-                title={project.name}
-                >{project.name}</h3>
-                <p className="text-sm text-gray-500">Last accessed: 2 hours ago</p>
-              </div>
-            ))}
+            {console.log(projects)}
+            {!projects || projects.length === 0 ? (<p>No projects available.</p>
+            ) : (
+              projects.map((project) => (
+                <div
+                  key={project.id}
+                  className="bg-white p-6 rounded-lg shadow-md border-l-4 border-gray-400 hover:shadow-xl hover:bg-gray-50 transition-all duration-300 cursor-pointer"
+                  onClick={() => handleCardClick(project.id, project.name)}
+                >
+                  <h3 className="text-gray-800 text-lg font-semibold mb-2 truncate"
+                    title={project.name}
+                  >{project.name}</h3>
+                  <p className="text-sm text-gray-500">Last accessed: {project.timeAgo}</p>
+                </div>
+              )))}
           </div>
         </div>
         <div>
