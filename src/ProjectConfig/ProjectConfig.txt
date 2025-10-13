@@ -1,647 +1,326 @@
-import React, { useState, useEffect, useMemo } from "react";
-import {
-  Row,
-  Col,
-  Select,
-  Checkbox,
-  Divider,
-  InputNumber,
-  Typography,
-  Button,
-  Card,
-  Form,
-  Radio,
-  Tag,
-  List,
-} from "antd";
-import {
-  AppstoreOutlined,
-  ToolOutlined,
-  MailOutlined,
-  InboxOutlined,
-  LockOutlined,
-  NumberOutlined,
-} from "@ant-design/icons";
-import axios from "axios";
-import { div, span } from "framer-motion/client";
-
-const { Title, Text } = Typography;
-const { Option } = Select;
-
-const url = import.meta.env.VITE_API_BASE_URL;
-const url1 = import.meta.env.VITE_API_URL;
-
-const PRIMARY_COLOR = "#1677ff"; // Ant Design default primary color
-const EXTRA_ALIAS_NAME = "Extra Configuration";
-const NODAL_MODULE = "Nodal Extra Calculation";
-const UNIVERSITY_MODULE = "University Extra Calculation";
+import React, { useState, useEffect } from "react";
+import { Row, Col,Typography } from "antd";
+import { useToast } from '../hooks/useToast';
+import useStore from "../stores/ProjectData";
+import { useProjectConfigData } from "./hooks/useProjectConfigData";  // Custom hook for fetching config data
+import { useProjectConfigSave } from "./hooks/useProjectConfigSave";
+import ModuleSelectionCard from "./components/ModuleSelectionCard";
+import EnvelopeSetupCard from "./components/EnvelopeSetupCard";
+import EnvelopeMakingCriteriaCard from "./components/EnvelopeMakingCriteriaCard";
+import ExtraProcessingCard from "./components/ExtraProcessingCard";
+import BoxBreakingCard from "./components/BoxBreakingCard";
+import ConfigSummaryCard from "./components/ConfigSummaryCard";
+import { EXTRA_ALIAS_NAME } from "./components/constants";
+import DuplicateTool from "../ToolsProcessing/DuplicateTool";
+import API from "../hooks/api";
 
 const ProjectConfiguration = () => {
-  const [selectedProject, setSelectedProject] = useState(null);
-  const [enabledModules, setEnabledModules] = useState([]);
-  const [boxBreakingCriteria, setBoxBreakingCriteria] = useState(["capacity"]);
-  const [projects, setProjects] = useState([]);
-  const [toolModules, setToolModules] = useState([]);
-  const [nodalExtraType, setNodalExtraType] = useState("Fixed");
-  const [univExtraType, setUnivExtraType] = useState("Fixed");
-  const [innerEnvelopes, setInnerEnvelopes] = useState([]);
-  const [outerEnvelopes, setOuterEnvelopes] = useState([]);
-  const [envelopeOptions, setEnvelopeOptions] = useState([]);
-  const [extraTypes, setExtraTypes] = useState([]);
-  const [extraTypeSelection, setExtraTypeSelection] = useState({});
-  const [extraProcessingConfig, setExtraProcessingConfig] = useState({});
-
+  const { showToast } = useToast();
+  const projectId = useStore((state) => state.projectId);
   const token = localStorage.getItem("token");
 
-  // Fetch ExtraTypes
-  useEffect(() => {
-    axios
-      .get(`/ExtraTypes`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then((res) => {
-        setExtraTypes(res.data);
+  // State management
+  const [enabledModules, setEnabledModules] = useState([]);
+  const [boxBreakingCriteria, setBoxBreakingCriteria] = useState(["capacity"]);
+  const [innerEnvelopes, setInnerEnvelopes] = useState([]);
+  const [outerEnvelopes, setOuterEnvelopes] = useState([]);
+  const [extraProcessingConfig, setExtraProcessingConfig] = useState({});
+  const [selectedEnvelopeFields, setSelectedEnvelopeFields] = useState([]);
+  const [selectedBoxFields, setSelectedBoxFields] = useState([]);
+  const [boxCapacities, setBoxCapacities] = useState([]);
+  const [selectedCapacity, setSelectedCapacity] = useState(null);
+  const [duplicateConfig, setDuplicateConfig] = useState({
+  duplicateCriteria: [],
+  enhancement: 0,
+  enhancementEnabled: false,
+  enhancementType: "round",
+});
+  // Fetch data using custom hook
+  const {
+    toolModules,
+    envelopeOptions,
+    extraTypes,
+    fields,
+    mergedModules,
+    extraTypeSelection,
+    setExtraTypeSelection,
+  } = useProjectConfigData(token);
 
-        // Pre-fill selection with "Fixed"
-        const defaults = {};
-        res.data.forEach((et) => {
-          defaults[et.type] = "Fixed";
-        });
-        setExtraTypeSelection(defaults);
-      })
-      .catch((err) => console.error("Failed to fetch extra types", err));
-  }, []);
+  const fetchProjectConfigData = async () => {
+  console.log("Fetching config data for project:", projectId);
 
-  // Fetch Projects
-  useEffect(() => {
-    axios
-      .get(`${url}/Project`, { headers: { Authorization: `Bearer ${token}` } })
-      .then((res) => setProjects(res.data))
-      .catch((err) => console.error("Failed to fetch projects", err));
-  }, []);
+  let projectConfig = null;
+  let extrasConfig = [];
+  let duplicateConfigRes = null;
 
-  // Fetch Modules
-  useEffect(() => {
-    axios
-      .get(`/Modules`, { headers: { Authorization: `Bearer ${token}` } })
-      .then((res) => setToolModules(res.data))
-      .catch((err) => console.error("Failed to fetch modules", err));
-  }, []);
-
-  // Build a merged module list with a single Extra Configuration entry
-  const mergedModules = useMemo(() => {
-    const list = toolModules || [];
-    const others = list.filter(
-      (m) => m.name !== NODAL_MODULE && m.name !== UNIVERSITY_MODULE
-    );
-
-    // Determine description from any one of the original extra modules, if present
-    const extraDesc = list.find(
-      (m) => m.name === NODAL_MODULE || m.name === UNIVERSITY_MODULE
-    )?.description;
-
-    // Insert single alias if at least one extra module exists
-    const hasAnyExtra = list.some(
-      (m) => m.name === NODAL_MODULE || m.name === UNIVERSITY_MODULE
-    );
-
-    return hasAnyExtra
-      ? [
-        ...others,
-        { id: "extra-alias", name: EXTRA_ALIAS_NAME, description: extraDesc },
-      ]
-      : others;
-  }, [toolModules]);
-
-  // Fetch Envelope Types
-  useEffect(() => {
-    axios
-      .get(`/EnvelopeTypes`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then((res) => setEnvelopeOptions(res.data))
-      .catch((err) => console.error("Failed to fetch envelope types", err));
-  }, []);
-
-  const isEnabled = (toolName) => enabledModules.includes(toolName);
-
-  const handleSave = async () => {
-    if (!selectedProject) return;
-
-    try {
-      // 1️⃣ Save ProjectConfigs
-      const projectConfigPayload = {
-        id: 0,
-        projectId: selectedProject,
-        modules: enabledModules.map(
-          (m) => toolModules.find((tm) => tm.name === m)?.id
-        ),
-        envelope: JSON.stringify({
-          Inner: innerEnvelopes.join(","),
-          Outer: outerEnvelopes.join(","),
-        }),
-        boxBreaking: [0],
-      };
-
-      await API.post(`/ProjectConfigs`, projectConfigPayload, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      // 2️⃣ Save ExtrasConfigurations
-      const extrasPayloads = Object.entries(extraTypeSelection)
-        .map(([typeName, mode]) => {
-          const et = extraTypes.find((t) => t.type === typeName);
-          if (!et) return null;
-
-          const config = extraProcessingConfig[typeName] || {};
-          return {
-            id: 0,
-            projectId: selectedProject,
-            extraType: et.extraTypeId,
-            mode,
-            value:
-              mode === "Fixed"
-                ? String(config.fixedQty || 0)
-                : mode === "Range"
-                  ? String(config.range || 0)
-                  : String(config.percentage || 0),
-            envelopeType: JSON.stringify(config.envelopeType || { inner: [], outer: [] }),
-          };
-        })
-        .filter(Boolean);
-
-      if (extrasPayloads.length > 0) {
-        await Promise.all(
-          extrasPayloads.map((payload) =>
-            API.post(`/ExtrasConfigurations`, payload, {
-              headers: { Authorization: `Bearer ${token}` },
-            })
-          )
-        );
-      }
-
-      message.success("Configuration saved successfully!");
-      console.log("Saved:", { projectConfigPayload, extrasPayloads });
-    } catch (err) {
-      console.error("Failed to save configuration", err);
-      message.error("Failed to save configuration");
+  try {
+    // Fetch project config data
+    const projectConfigRes = await API.get(`/ProjectConfigs/ByProject/${projectId}`);
+    projectConfig = projectConfigRes.data;
+    console.log("Parsed Project Config:", projectConfig);
+  } catch (err) {
+    if (err.response?.status === 404) {
+      console.warn(`No existing configuration for ProjectId: ${projectId}`);
+    } else {
+      console.error("Failed to load project config", err.response?.data || err.message);
+      return;
     }
+  }
+
+  try {
+    // Fetch extra config data
+    const extrasConfigRes = await API.get(`/ExtrasConfigurations/ByProject/${projectId}`);
+    extrasConfig = extrasConfigRes.data;
+    console.log("Extras Config:", extrasConfig);
+  } catch (err) {
+    if (err.response?.status === 404) {
+      console.warn(`No extra configuration for ProjectId: ${projectId}`);
+    } else {
+      console.error("Failed to load extras config", err.response?.data || err.message);
+    }
+  }
+
+  try {
+  // Fetch duplicate tool config
+  const duplicateRes = await API.get(`/ProjectConfigs/ByProject/${projectId}`);
+  let duplicateConfigRes = duplicateRes.data || {
+    duplicateCriteria: [],
+    enhancement: 0,
   };
 
+  // Normalize data
+  duplicateConfigRes = {
+    duplicateCriteria: Array.isArray(duplicateConfigRes.duplicateCriteria)
+      ? duplicateConfigRes.duplicateCriteria
+      : JSON.parse(duplicateConfigRes.duplicateCriteria || "[]"),
+    enhancement: Number(duplicateConfigRes.enhancement) || 0,
+    enhancementEnabled: Number(duplicateConfigRes.enhancement) > 0,
+  };
+
+  setDuplicateConfig(duplicateConfigRes);
+  console.log("Duplicate Tool Config (Mapped):", duplicateConfigRes);
+} catch (err) {
+  if (err.response?.status === 404) {
+    console.warn(`No duplicate tool configuration for ProjectId: ${projectId}`);
+    setDuplicateConfig({
+      duplicateCriteria: [],
+      enhancement: 0,
+      enhancementEnabled: false,
+    });
+  } else {
+    console.error("Failed to load duplicate tool config", err.response?.data || err.message);
+  }
+}
 
 
+  try {
+    // Fetch box capacities
+    const boxConfigRes = await API.get(`/BoxCapacities`);
+    const boxConfig = boxConfigRes.data;
+    console.log("Box Capacities:", boxConfig);
+    setBoxCapacities(boxConfig);
 
-  const cardStyle = { marginBottom: 16 };
-  const iconStyle = { color: PRIMARY_COLOR, marginRight: 6 };
-  const selectedProjectName =
-    projects.find((p) => p.projectId === selectedProject)?.name || "None";
+    const selectedBoxCapacity = projectConfig?.boxCapacity;
+    setSelectedCapacity(selectedBoxCapacity || (boxConfig.length > 0 ? boxConfig[0].id : null));
+  } catch (err) {
+    console.error("Failed to load box capacities", err.response?.data || err.message);
+  }
+
+  // If project config exists, initialize states
+  if (projectConfig && toolModules.length > 0) {
+    const enabledNames = new Set();
+    const extraModuleNames = ["Nodal Extra Calculation", "University Extra Calculation"];
+
+    projectConfig.modules?.forEach(moduleId => {
+      const module = toolModules.find(m => m.id === moduleId);
+      if (module) {
+        if (extraModuleNames.includes(module.name)) {
+          enabledNames.add("Extra Configuration");
+        } else {
+          enabledNames.add(module.name);
+        }
+      }
+    });
+
+    setEnabledModules(Array.from(enabledNames));
+
+    // Envelope Setup
+    const envelopeParsed = JSON.parse(projectConfig.envelope || '{}');
+    setInnerEnvelopes(envelopeParsed.Inner ? [envelopeParsed.Inner] : []);
+    setOuterEnvelopes(envelopeParsed.Outer ? [envelopeParsed.Outer] : []);
+
+    // Envelope Making Criteria
+    setSelectedEnvelopeFields(projectConfig.envelopeMakingCriteria || []);
+
+    // Box Breaking Criteria
+    setSelectedBoxFields(
+      fields.filter(f => projectConfig.boxBreakingCriteria?.includes(f.fieldId))
+            .map(f => f.fieldId)
+    );
+    setBoxBreakingCriteria(["capacity", ...(projectConfig.boxBreakingCriteria || [])]);
+  } else {
+    setEnabledModules([]);
+    setInnerEnvelopes([]);
+    setOuterEnvelopes([]);
+    setSelectedEnvelopeFields([]);
+    setSelectedBoxFields([]);
+    setBoxBreakingCriteria(["capacity"]);
+  }
+
+  // Process Extra Configurations
+  const extraProcessingParsed = {};
+  const extraSelections = {};
+
+  extrasConfig.forEach(item => {
+    const type = extraTypes.find(e => e.extraTypeId === item.extraType)?.type;
+    if (!type) return;
+
+    const env = item.envelopeType ? JSON.parse(item.envelopeType) : { Inner: "", Outer: "" };
+    extraProcessingParsed[type] = {
+      envelopeType: {
+        inner: env.Inner ? [env.Inner] : [],
+        outer: env.Outer ? [env.Outer] : [],
+      },
+      fixedQty: item.mode === "Fixed" ? parseFloat(item.value) : 0,
+      range: item.mode === "Range" ? parseFloat(item.value) : 0,
+      percentage: item.mode === "Percentage" ? parseFloat(item.value) : 0,
+    };
+    extraSelections[type] = item.mode;
+  });
+
+  setExtraProcessingConfig(extraProcessingParsed);
+  setExtraTypeSelection(extraSelections);
+};
+
+  // Reset form function
+  const resetForm = () => {
+    setEnabledModules([]);
+    setInnerEnvelopes([]);
+    setOuterEnvelopes([]);
+    setSelectedBoxFields([]);
+    setSelectedEnvelopeFields([]);
+    setExtraTypeSelection({});
+    setBoxCapacities([]);
+    setSelectedCapacity();
+  };
+
+  // Save logic using custom hook
+ const { handleSave } = useProjectConfigSave(
+  projectId,
+  enabledModules,
+  toolModules,
+  innerEnvelopes,
+  outerEnvelopes,
+  selectedBoxFields,
+  selectedEnvelopeFields,
+  extraTypeSelection,
+  extraTypes,
+  selectedCapacity,
+  extraProcessingConfig,
+  duplicateConfig,
+  fetchProjectConfigData,
+  showToast,
+  resetForm
+);
+  console.log(selectedCapacity)
+  console.log("Type of selectedCapacity:", typeof selectedCapacity);
+
+  // Helper function
+  const isEnabled = (toolName) => enabledModules.includes(toolName);
+
+  // Configuration status
   const envelopeConfigured = isEnabled("Envelope Breaking");
   const boxConfigured = isEnabled("Box Breaking");
   const extraConfigured = isEnabled(EXTRA_ALIAS_NAME);
+  const duplicateConfigured = isEnabled("Duplicate Tool");
+
+
+  useEffect(() => {
+    if (!projectId) return;
+    fetchProjectConfigData();
+  }, [projectId, token, extraTypes, fields, showToast, toolModules]);
+
+  useEffect(() => {
+    console.log("Box Capacities Updated:", boxCapacities);
+  }, [boxCapacities]);
 
   return (
-    
-      <div style={{ padding: 2 }}>
-      <Row gutter={16} align="stretch">
+    <div style={{ padding: 16 }}>
+      {/* === PAGE HEADER === */}
+      <Typography.Title level={3} style={{ marginBottom: 24}}>
+        Project Configuration
+      </Typography.Title>
+
+      <Row gutter={16} align="top">
         {/* LEFT SIDE */}
         <Col xs={24} md={16}>
-          <Row gutter={16} align="stretch" style={{ marginBottom: 16 }}>
-            {/* Project Selection */}
-            <Col xs={24} md={12}>
-              <Card
+          <ModuleSelectionCard
+            mergedModules={mergedModules}
+            enabledModules={enabledModules}
+            setEnabledModules={setEnabledModules}
+          />
 
-                style={{ ...cardStyle, height: "100%" }}
-                title={
-                  <div className="py-1">
-                    <span>
-                      <AppstoreOutlined style={iconStyle} /> Project Selection
-                    </span>
-                    <br />
-                    <Text type="secondary">
-                      Select a project to configure its modules and settings
-                    </Text>
-                  </div>
-                }
-              >
-                <Form.Item style={{ marginTop: 16 }} required>
-                  <Select
-                    placeholder="Select Project"
-                    onChange={setSelectedProject}
-                    value={selectedProject}
-                    style={{ width: "100%" }}
-                  >
-                    {projects.map((p) => (
-                      <Option key={p.projectId} value={p.projectId}>
-                        {p.name}
-                      </Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-                {!selectedProject && (
-                  <Text type="warning">
-                    Please select a project to enable configuration options below.
-                  </Text>
-                )}
-              </Card>
-            </Col>
+          <EnvelopeSetupCard
+            isEnabled={isEnabled}
+            innerEnvelopes={innerEnvelopes}
+            setInnerEnvelopes={setInnerEnvelopes}
+            outerEnvelopes={outerEnvelopes}
+            setOuterEnvelopes={setOuterEnvelopes}
+            envelopeOptions={envelopeOptions}
+          />
 
-            {/* Module Selection */}
-            <Col xs={24} md={12}>
-              <Card
-                style={{ ...cardStyle, onHoverflowY: "auto",height: "100%" }}
-                title={
-                  <div className="py-1">
-                    <span>
-                      <ToolOutlined style={iconStyle} /> Module Selection
-                    </span>
-                    <br />
-                    <Text type="secondary">
-                      Enable or disable modules based on project requirements
-                    </Text>
-                  </div>
-                }
-              >
-                <Checkbox.Group
-                  style={{ display: "block", marginTop: 12 }}
-                  value={enabledModules}
-                  onChange={setEnabledModules}
-                >
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      columnGap: 12,
-                      rowGap: 8,
-                    }}
-                  >
-                    {mergedModules.map((tool) => (
-                      <Checkbox key={tool.id} value={tool.name}>
-                        <b>{tool.name}</b>
-                        <br />
-                        <Text type="secondary" style={{ fontSize: 12 }}>
-                          {tool.description}
-                        </Text>
-                      </Checkbox>
-                    ))}
-                  </div>
-                </Checkbox.Group>
-              </Card>
-            </Col>
-          </Row>
+          <EnvelopeMakingCriteriaCard
+            isEnabled={isEnabled}
+            fields={fields}
+            selectedEnvelopeFields={selectedEnvelopeFields}
+            setSelectedEnvelopeFields={setSelectedEnvelopeFields}
+          />
 
-          {/* 🔄 Extra Processing (moved to left side, where Envelope was) */}
-          <Card
-            style={cardStyle}
-            title={
-              <div className="py-1">
-                <span>
-                  <ToolOutlined style={iconStyle} /> Extra Processing Configuration
-                </span>
-                <br />
-                <Text type="secondary">Configure extra packet calculations</Text>
-              </div>
-            }
-            extra={
-              !isEnabled(EXTRA_ALIAS_NAME) ? (
-                <Tag icon={<LockOutlined style={{ color: PRIMARY_COLOR }} />}>
-                  Disabled
-                </Tag>
-              ) : null
-            }
-          >
-            <Row gutter={24} style={{ marginTop: 12 }}>
-              {extraTypes.map((et) => (
-                <Col span={8} key={et.extraTypeId}>
-                  {/* Column for each Extra type */}
-                  <Title level={5}>{et.type} Extra</Title>
-
-                  {/* Inner Envelope */}
-                  <Select
-                    placeholder="Select Inner Envelope"
-                    value={extraProcessingConfig[et.type]?.envelopeType?.inner || ""}
-                    onChange={(val) =>
-                      setExtraProcessingConfig((prev) => ({
-                        ...prev,
-                        [et.type]: {
-                          ...prev[et.type],
-                          envelopeType: {
-                            ...prev[et.type]?.envelopeType,
-                            inner: val,
-                          },
-                        },
-                      }))
-                    }
-                    style={{ width: "100%", marginBottom: 8 }}
-                  >
-                    {envelopeOptions.map((e) => (
-                      <Option key={e.envelopeId} value={e.envelopeId}>
-                        {e.envelopeName} (Cap: {e.capacity})
-                      </Option>
-                    ))}
-                  </Select>
-
-                  {/* Outer Envelope */}
-                  <Select
-                    placeholder="Select Outer Envelope"
-                    value={extraProcessingConfig[et.type]?.envelopeType?.outer || ""}
-                    onChange={(val) =>
-                      setExtraProcessingConfig((prev) => ({
-                        ...prev,
-                        [et.type]: {
-                          ...prev[et.type],
-                          envelopeType: {
-                            ...prev[et.type]?.envelopeType,
-                            outer: val,
-                          },
-                        },
-                      }))
-                    }
-                    style={{ width: "100%", marginBottom: 12 }}
-                  >
-                    {envelopeOptions.map((e) => (
-                      <Option key={e.envelopeId} value={e.envelopeId}>
-                        {e.envelopeName} (Cap: {e.capacity})
-                      </Option>
-                    ))}
-                  </Select>
-
-                  {/* Radio group */}
-                  <Radio.Group
-                    value={extraTypeSelection[et.type] || "Fixed"}
-                    onChange={(e) =>
-                      setExtraTypeSelection((prev) => ({
-                        ...prev,
-                        [et.type]: e.target.value,
-                      }))
-                    }
-                    disabled={!isEnabled(EXTRA_ALIAS_NAME)}
-                    style={{ marginBottom: 12 }}
-                  >
-                    <Radio value="Fixed">Fixed</Radio>
-                    <Radio value="Range">Range</Radio>
-                    <Radio value="Percentage">Percentage</Radio>
-                  </Radio.Group>
-
-                  {/* Input depending on selection */}
-                  {extraTypeSelection[et.type] === "Fixed" && (
-                    <InputNumber
-                      placeholder="Fixed Qty"
-                      min={0}
-                      value={extraProcessingConfig[et.type]?.fixedQty || 0}
-                      onChange={(v) =>
-                        setExtraProcessingConfig((prev) => ({
-                          ...prev,
-                          [et.type]: { ...prev[et.type], fixedQty: v ?? 0 },
-                        }))
-                      }
-                      style={{ width: "100%" }}
-                    />
-                  )}
-                  {extraTypeSelection[et.type] === "Range" && (
-                    <InputNumber
-                      placeholder="Range %"
-                      min={0}
-                      max={100}
-                      step={0.1}
-                      value={extraProcessingConfig[et.type]?.range || 0}
-                      onChange={(v) =>
-                        setExtraProcessingConfig((prev) => ({
-                          ...prev,
-                          [et.type]: { ...prev[et.type], range: v ?? 0 },
-                        }))
-                      }
-                      style={{ width: "100%" }}
-                    />
-                  )}
-                  {extraTypeSelection[et.type] === "Percentage" && (
-                    <InputNumber
-                      placeholder="Percentage %"
-                      min={0}
-                      max={100}
-                      step={0.1}
-                      value={extraProcessingConfig[et.type]?.percentage || 0}
-                      onChange={(v) =>
-                        setExtraProcessingConfig((prev) => ({
-                          ...prev,
-                          [et.type]: { ...prev[et.type], percentage: v ?? 0 },
-                        }))
-                      }
-                      style={{ width: "100%" }}
-                    />
-                  )}
-                </Col>
-              ))}
-            </Row>
-          </Card>
-
-
-          {/* Box Breaking */}
-          <Card
-            style={cardStyle}
-            title={
-              <div className="py-1">
-                <span>
-                  <InboxOutlined style={iconStyle} /> Box Breaking Criteria
-                </span>
-                <br />
-                <Text type="secondary">
-                  Define conditions that trigger creation of new boxes
-                </Text>
-              </div>
-
-            }
-            extra={
-              !isEnabled("Box Breaking") ? (
-                <Tag icon={<LockOutlined style={{ color: PRIMARY_COLOR }} />}>Disabled</Tag>
-              ) : null
-            }
-          >
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                columnGap: 12,
-                rowGap: 8,
-                marginTop: 12,
-              }}
-            >
-              {[
-                { key: "capacity", label: "Breaking by Capacity", always: true },
-                { key: "route", label: "Route Change" },
-                { key: "nodal", label: "Nodal Change" },
-                { key: "date", label: "Date Change" },
-                { key: "center", label: "Center Change" },
-              ].map((item) => (
-                <div key={item.key}>
-                  <Checkbox
-                    checked={item.always ? true : boxBreakingCriteria.includes(item.key)}
-                    disabled={item.always || !isEnabled("Box Breaking")}
-                    onChange={(e) => {
-                      const checked = e.target.checked;
-                      setBoxBreakingCriteria((prev) => {
-                        if (checked) {
-                          return Array.from(new Set([...(prev || []), item.key]));
-                        }
-                        return (prev || []).filter((k) => k !== item.key);
-                      });
-                    }}
-                  >
-                    {item.label} {item.always && (
-                      <Text type="secondary">(Always enabled)</Text>
-                    )}
-                  </Checkbox>
-                </div>
-              ))}
-            </div>
-          </Card>
+          <ExtraProcessingCard
+            isEnabled={isEnabled}
+            extraTypes={extraTypes}
+            extraTypeSelection={extraTypeSelection}
+            setExtraTypeSelection={setExtraTypeSelection}
+            extraProcessingConfig={extraProcessingConfig}
+            setExtraProcessingConfig={setExtraProcessingConfig}
+            envelopeOptions={envelopeOptions}
+          />
         </Col>
 
         {/* RIGHT SIDE */}
         <Col xs={24} md={8}>
-          {/* Envelope Setup */}
-          <Card
-            style={{ ...cardStyle }}
-            title={
-              <div className="py-1">
-                <span>
-                  <MailOutlined style={iconStyle} /> Envelope Setup
-                </span>
-                <br />
-                <Text type="secondary">
-                  Configure inner and outer envelope types and capacities
-                </Text>
-              </div>
-            }
-            extra={
-              !isEnabled("Envelope Breaking") ? (
-                <Tag icon={<LockOutlined style={{ color: PRIMARY_COLOR }} />}>
-                  Disabled
-                </Tag>
-              ) : null
-            }
-          >
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                columnGap: 12,
-                rowGap: 8,
-                marginTop: 12,
-              }}
-            >
-              <Text strong>Inner Envelopes</Text>
-              <Text strong>Outer Envelopes</Text>
-              <Select
-                mode="multiple"
-                disabled={!isEnabled("Envelope Breaking")}
-                value={innerEnvelopes}
-                onChange={setInnerEnvelopes}
-              >
-                {envelopeOptions.map((e) => (
-                  <Option key={e.envelopeId} value={e.envelopeId}>
-                    {e.envelopeName} (Cap: {e.capacity})
-                  </Option>
-                ))}
-              </Select>
-              <Select
-                mode="multiple"
-                disabled={!isEnabled("Envelope Breaking")}
-                value={outerEnvelopes}
-                onChange={setOuterEnvelopes}
-              >
-                {envelopeOptions.map((e) => (
-                  <Option key={e.envelopeId} value={e.envelopeId}>
-                    {e.envelopeName} (Cap: {e.capacity})
-                  </Option>
-                ))}
-              </Select>
-            </div>
-          </Card>
+          <BoxBreakingCard
+            isEnabled={isEnabled}
+            boxBreakingCriteria={boxBreakingCriteria}
+            setBoxBreakingCriteria={setBoxBreakingCriteria}
+            fields={fields}
+            selectedBoxFields={selectedBoxFields}
+            setSelectedBoxFields={setSelectedBoxFields}
+            boxCapacities={boxCapacities}
+            selectedCapacity={selectedCapacity}
+            setSelectedCapacity={setSelectedCapacity}
+            setBoxCapacity={setBoxCapacities}
+          />
 
+          <DuplicateTool 
+          isEnabled = {isEnabled} 
+          duplicateConfig={duplicateConfig} 
+          setDuplicateConfig={setDuplicateConfig}
+          />
 
-
-
-          {/* Config Summary */}
-          <Card
-            style={cardStyle}
-            title={
-              <div className="py-1">
-                <span>
-                  <ToolOutlined style={iconStyle} />Configuration Summary
-                </span>
-                <br />
-                <Text type="secondary">Please review the summary before saving configurations</Text>
-              </div>
-
-            }>
-            <List
-              size="small"
-              dataSource={[
-                {
-                  label: "Selected Project",
-                  value: selectedProjectName,
-                  strong: true,
-                },
-                {
-                  label: "Enabled Modules",
-                  value: enabledModules.length,
-                  strong: true,
-                },
-                {
-                  label: "Envelope Setup",
-                  value: envelopeConfigured ? "Configured" : "Not Configured",
-                  danger: !envelopeConfigured,
-                },
-                {
-                  label: "Box Breaking",
-                  value: boxConfigured ? "Configured" : "Not Configured",
-                  danger: !boxConfigured,
-                },
-                {
-                  label: "Extra Processing",
-                  value: extraConfigured ? "Configured" : "Not Configured",
-                  danger: !extraConfigured,
-                },
-              ]}
-              renderItem={(item) => (
-                <List.Item>
-                  <Row style={{ width: "100%" }}>
-                    <Col span={12}>
-                      <Text>{item.label}</Text>
-                    </Col>
-                    <Col span={12} style={{ textAlign: "right" }}>
-                      {item.danger ? (
-                        <Text type="danger">{item.value}</Text>
-                      ) : item.strong ? (
-                        <Text strong>{item.value}</Text>
-                      ) : (
-                        <Text>{item.value}</Text>
-                      )}
-                    </Col>
-                  </Row>
-                </List.Item>
-              )}
-            />
-          </Card>
-
-
-          <Card>
-            <Button
-              type="primary"
-              block
-              onClick={handleSave}
-              disabled={!selectedProject}
-            >
-              Save Configuration
-            </Button>
-          </Card>
+          <ConfigSummaryCard
+            enabledModules={enabledModules}
+            envelopeConfigured={envelopeConfigured}
+            boxConfigured={boxConfigured}
+            extraConfigured={extraConfigured}
+            duplicateConfigured={duplicateConfigured}
+            handleSave={handleSave}
+            projectId={projectId}
+          />
         </Col>
       </Row>
     </div>
- 
-    
   );
 };
 
-export default ProjectConfiguration;
+export default ProjectConfiguration; 
