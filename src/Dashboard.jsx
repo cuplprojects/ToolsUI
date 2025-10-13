@@ -10,10 +10,19 @@ const url = import.meta.env.VITE_API_BASE_URL; // Assuming this is the correct U
 export default function Dashboard() {
   const [projects, setProjects] = useState([]);
   const [correctionGroups, setCorrectionGroups] = useState(0);
+  const [recentProjects, setRecentProjects] = useState([]);
   const token = localStorage.getItem("token");
   const setProject = useStore((state) => state.setProject);
   const navigate = useNavigate();
 
+  const getRecentActivity = async () => {
+    try {
+      const response = await API.get('Projects/RecentProjects');
+      setRecentProjects(response.data);
+    } catch (error) {
+      console.error('Error fetching recent activity:', error);
+    }
+  }
 
   const getProjects = async () => {
     try {
@@ -55,13 +64,14 @@ export default function Dashboard() {
   useEffect(() => {
     getProjects();
     getCorrectionGroups();
+    getRecentActivity();
   }, []);
 
   const handleCardClick = (projectId, projectName) => {
     // Save selected projectId and projectName in localStorage
     localStorage.setItem("selectedProjectId", projectId);
     localStorage.setItem("selectedProjectName", projectName);
-    setProject(projectName,projectId);
+    setProject(projectName, projectId);
     navigate("/projectdashboard");
   };
 
@@ -87,7 +97,7 @@ export default function Dashboard() {
           <p className="text-3xl font-bold text-yellow-700">6 <span className="text-lg font-normal">Types</span></p>
           <Link to="/masters" className="text-sm text-yellow-800 hover:underline mt-1 block">Manage &rarr;</Link>
         </div>
-         <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-green-600">
+        <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-green-600">
           <h3 className="text-gray-600 text-sm">Correction Tool</h3>
           <p className="text-3xl font-bold text-green-800">{correctionGroups} <span className="text-lg font-normal">Groups Ready</span></p>
           <Link to="/correctiontool" className="text-sm text-green-700 hover:underline mt-1 block">Go to Tool &rarr;</Link>
@@ -116,18 +126,21 @@ export default function Dashboard() {
           <h3 className="text-2xl font-semibold text-gray-800 mb-4">Recent Activity</h3>
           <div className="bg-white p-4 rounded-lg shadow-md">
             <ul>
-              <li className="border-b py-2">
-                <p className="font-semibold">Project Alpha</p>
-                <p className="text-sm text-gray-500">Last accessed: 2 hours ago</p>
-              </li>
-              <li className="border-b py-2">
-                <p className="font-semibold">Project Beta</p>
-                <p className="text-sm text-gray-500">Last accessed: 1 day ago</p>
-              </li>
-              <li className="py-2">
-                <p className="font-semibold">Correction Tool</p>
-                <p className="text-sm text-gray-500">Data corrected: 3 hours ago</p>
-              </li>
+              {recentProjects.length === 0 ? (
+                <li className="py-2 text-gray-500">No recent activity found.</li>
+              ) : (
+                recentProjects.map((recent) => {
+                  const project = projects.find((p) => p.id === recent.projectId);
+                  return (
+                    <li key={recent.projectId} className="border-b py-2">
+                      <p className="font-semibold">{project ? project.name : 'Unknown Project'}</p>
+                      <p className="text-sm text-gray-500">
+                        Last accessed: {(recent.timeAgo)}
+                      </p>
+                    </li>
+                  );
+                })
+              )}
             </ul>
           </div>
         </div>
