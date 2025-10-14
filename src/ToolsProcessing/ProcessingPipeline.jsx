@@ -107,7 +107,7 @@ const ProcessingPipeline = () => {
     const loadEnabled = async () => {
       try {
         setLoadingModules(true);
-        const cfgRes = await API.get(`/ProjectConfigs?ProjectId=${projectId}`);
+        const cfgRes = await API.get(`/ProjectConfigs/ByProject/${projectId}`);
         const cfg = Array.isArray(cfgRes.data) ? cfgRes.data[0] : cfgRes.data;
         let moduleEntries = cfg?.modules || [];
 
@@ -288,13 +288,13 @@ const ProcessingPipeline = () => {
   return (
     <div className=" p-4">
       <div className="flex justify-between items-center mb-4">
-        <Typography.Title level={3} style={{ marginBottom: 24}}>
-                Project Configuration
-              </Typography.Title>
+        <Typography.Title level={3} style={{ marginBottom: 24 }}>
+          Project Configuration
+        </Typography.Title>
         <div className="text-sm flex items-center gap-2">
           <span>Status:</span>
           {isProcessing ? (
-            <Badge status="processing" text="Processing" color="blue"/>
+            <Badge status="processing" text="Processing" color="blue" />
           ) : (
             <Badge status="default" text="Idle" color="gray" />
           )}
@@ -326,13 +326,18 @@ const ProcessingPipeline = () => {
             boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
           }}
         >
-          <Table
-            columns={columns}
-            dataSource={data}
-            pagination={false}
-            loading={loadingModules}
-            rowKey="key"
-          />
+          
+          {enabledModuleNames.length === 0 ? (
+            <p>No modules selected for this project</p>
+          ) : (
+            <Table
+              columns={columns}
+              dataSource={data}
+              pagination={false}
+              loading={loadingModules}
+              rowKey="key"
+            />
+          )}
         </Card>
       </motion.div>
     </div>
