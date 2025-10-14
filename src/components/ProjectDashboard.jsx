@@ -125,7 +125,7 @@ const ProjectDashboard = () => {
     if (!projectId) return;
     try {
       setLoadingModules(true);
-      const cfgRes = await API.get(`/ProjectConfigs?ProjectId=${projectId}`);
+      const cfgRes = await API.get(`/ProjectConfigs/ByProject/${projectId}`);
       const cfg = Array.isArray(cfgRes.data) ? cfgRes.data[0] : cfgRes.data;
       let moduleEntries = cfg?.modules || [];
 
@@ -225,8 +225,8 @@ const ProjectDashboard = () => {
     () =>
       steps.length
         ? (steps.filter((s) => s.status === "completed").length /
-            steps.length) *
-          100
+          steps.length) *
+        100
         : 0,
     [steps]
   );
@@ -270,15 +270,15 @@ const ProjectDashboard = () => {
   ];
 
   const tooltipMessage = useMemo(() => {
-  if (!isProjectConfigured && existingData.length === 0) {
-    return "Please configure the project and import data to generate reports";
-  } else if (!isProjectConfigured) {
-    return "Please configure the project first";
-  } else if (existingData.length === 0) {
-    return "Please import data to generate reports";
-  }
-  return ""; // No tooltip if everything is ready
-}, [isProjectConfigured, existingData]);
+    if (!isProjectConfigured && existingData.length === 0) {
+      return "Please configure the project and import data to generate reports";
+    } else if (!isProjectConfigured) {
+      return "Please configure the project first";
+    } else if (existingData.length === 0) {
+      return "Please import data to generate reports";
+    }
+    return ""; // No tooltip if everything is ready
+  }, [isProjectConfigured, existingData]);
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
@@ -328,14 +328,18 @@ const ProjectDashboard = () => {
                   </span>
                 </Tooltip>
               </div>
-              <Table
-                columns={columns}
-                dataSource={steps}
-                pagination={false}
-                loading={loadingModules}
-                rowKey="key"
-                size="small"
-              />
+              {enabledModuleNames.length === 0 ? (
+                <p>No modules are currently enabled.</p>
+              ) : (
+                <Table
+                  columns={columns}
+                  dataSource={steps}
+                  pagination={false}
+                  loading={loadingModules}
+                  rowKey="key"
+                  size="small"
+                />
+              )}
             </Card>
           </motion.div>
         </div>
@@ -367,15 +371,14 @@ const ProjectDashboard = () => {
                   <div>
                     <Text strong>Data Conflicts</Text>
                     <p
-                      className={`text-3xl font-bold ${
-                        conflicts > 0
-                          ? "text-red-500"
-                          : "text-green-500"
-                      }`}
+                      className={`text-3xl font-bold ${conflicts > 0
+                        ? "text-red-500"
+                        : "text-green-500"
+                        }`}
                     >
                       {conflicts}
                     </p>
-                    {conflicts> 0 && (
+                    {conflicts > 0 && (
                       <Button
                         danger
                         onClick={() =>
