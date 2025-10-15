@@ -222,16 +222,16 @@ const DataImport = () => {
   const beforeUpload = (file) => {
     setFileList([file]); // Show the selected file
     setFileHeaders([]);
-  setFieldMappings({});
+    setFieldMappings({});
     proceedWithReading(file);
     return false; // prevent auto upload
   };
 
   const handleRemove = (file) => {
-  setFileList([]); // Since only one file is allowed
-  setFileHeaders([]);
-  setFieldMappings({});
-};
+    setFileList([]); // Since only one file is allowed
+    setFileHeaders([]);
+    setFieldMappings({});
+  };
 
   const isAnyFieldMapped = () => {
     return expectedFields.some(field => fieldMappings[field.fieldId]);
@@ -249,8 +249,17 @@ const DataImport = () => {
   };
 
   const handleUpload = () => {
-    setLoading(true)
+    if (!areRequiredFieldsMapped()) {
+      showToast("Please map all required fields: CatchNo, CenterCode, NRQuantity", "error");
+      return;
+    }
     let mappedData = getMappedData();
+    if (mappedData.length === 0) {
+      showToast("Required fields cannot be empty. Check your Excel data.", "error");
+      return;
+    }
+    setLoading(true)
+
     if (keepZeroQuantity) {
       mappedData = mappedData.map((row) => {
         if (row.NRQuantity === 0) {
@@ -291,11 +300,20 @@ const DataImport = () => {
       });
   };
 
+  const areRequiredFieldsMapped = () => {
+    const requiredFields = ["CatchNo", "CenterCode", "NRQuantity"];
+    return requiredFields.every(fieldName => {
+      const field = expectedFields.find(f => f.name === fieldName);
+      return field && fieldMappings[field.fieldId];
+    });
+  };
+
   const getMappedData = () => {
     if (!excelData.length || !fileHeaders.length) return [];
-
-    return excelData.map((row) => {
+    const requiredFields = ["CatchNo", "CenterCode", "NRQuantity"];
+    return excelData.map((row, rowIndex) => {
       const mappedRow = {};
+      let isRowValid = true;
       expectedFields.forEach((field) => {
         const column = fieldMappings[field.fieldId];  // e.g. "Name" or "Age"
         if (column) {
@@ -305,12 +323,15 @@ const DataImport = () => {
           if (field.name === "ExamDate" && value) {
             value = formatDateForBackend(parseDate(value));
           }
-
+          if (requiredFields.includes(field.name) && (value === null || value === "")) {
+            isRowValid = false;
+          }
           mappedRow[field.name] = value;
         }
       });
-      return mappedRow;
-    });
+      return isRowValid ? mappedRow : null;
+    })
+      .filter(row => row !== null);
   };
 
   const formatDateForBackend = (date) => {
@@ -415,17 +436,17 @@ const DataImport = () => {
     }
   };
   // Function to handle quantity change
-const handleQuantityChange = (e) => {
-  let newQuantity = parseInt(e.target.value, 10);
+  const handleQuantityChange = (e) => {
+    let newQuantity = parseInt(e.target.value, 10);
 
-  // Ensure quantity is a valid number and does not go below 0
-  if (newQuantity < 0) {
-    newQuantity = 0;
-  }
+    // Ensure quantity is a valid number and does not go below 0
+    if (newQuantity < 0) {
+      newQuantity = 0;
+    }
 
-  // Update the quantity state
-  setQuantity(newQuantity);
-};
+    // Update the quantity state
+    setQuantity(newQuantity);
+  };
 
 
   const handleSkipItemsChange = (e) => {
