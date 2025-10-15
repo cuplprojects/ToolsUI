@@ -253,14 +253,14 @@ const DataImport = () => {
     let mappedData = getMappedData();
     if (keepZeroQuantity) {
       mappedData = mappedData.map((row) => {
-        if (row.Quantity === 0) {
-          row.Quantity = quantity; // Replace with the updated quantity
+        if (row.NRQuantity === 0) {
+          row.NRQuantity = quantity; // Replace with the updated quantity
         }
         return row;
       });
     }
     if (skipItems) {
-      mappedData = mappedData.filter((row) => row.Quantity !== 0);
+      mappedData = mappedData.filter((row) => row.NRQuantity !== 0);
     }
     const payload = {
       projectId: Number(projectId),
