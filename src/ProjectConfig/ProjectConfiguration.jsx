@@ -12,7 +12,7 @@ import BoxBreakingCard from "./components/BoxBreakingCard";
 import ConfigSummaryCard from "./components/ConfigSummaryCard";
 import { EXTRA_ALIAS_NAME } from "./components/constants";
 import DuplicateTool from "../ToolsProcessing/DuplicateTool";
-import API from "../hooks/api"; 
+import API from "../hooks/api";
 import ImportConfig from "./components/ImportConfig";
 
 const ProjectConfiguration = () => {
@@ -31,6 +31,8 @@ const ProjectConfiguration = () => {
   const [boxCapacities, setBoxCapacities] = useState([]);
   const [selectedCapacity, setSelectedCapacity] = useState(null);
   const [configExists, setConfigExists] = useState(false);
+  const [startBoxNumber, setStartBoxNumber] = useState(0);
+  const [startOmrEnvelopeNumber, setStartOmrEnvelopeNumber] = useState(0);
   const [duplicateConfig, setDuplicateConfig] = useState({
     duplicateCriteria: [],
     enhancement: 0,
@@ -49,164 +51,165 @@ const ProjectConfiguration = () => {
   } = useProjectConfigData(token);
 
   const fetchProjectConfigData = async (projectId) => {
-  console.log("Fetching config data for project:", projectId);
+    console.log("Fetching config data for project:", projectId);
 
-  let projectConfig = null;
-  let extrasConfig = [];
-  let duplicateConfigRes = {
-    duplicateCriteria: [],
-    enhancement: 0,
-    enhancementEnabled: false,
-  };
-
-  // Fetch project config
-  try {
-    const res = await API.get(`/ProjectConfigs/ByProject/${projectId}`);
-    projectConfig = res.data;
-    console.log("Parsed Project Config:", projectConfig);
-    setConfigExists(true); // Config exists
-
-    // Normalize duplicate config from project config
-    duplicateConfigRes = {
-      duplicateCriteria: Array.isArray(projectConfig.duplicateCriteria)
-        ? projectConfig.duplicateCriteria
-        : JSON.parse(projectConfig.duplicateCriteria || "[]"),
-      enhancement: Number(projectConfig.enhancement) || 0,
-      enhancementEnabled: Number(projectConfig.enhancement) > 0,
+    let projectConfig = null;
+    let extrasConfig = [];
+    let duplicateConfigRes = {
+      duplicateCriteria: [],
+      enhancement: 0,
+      enhancementEnabled: false,
     };
-    setDuplicateConfig(duplicateConfigRes);
-    console.log("Duplicate Tool Config (Mapped):", duplicateConfigRes);
 
-  } catch (err) {
-    if (err.response?.status === 404) {
-      console.warn(`No existing configuration for ProjectId: ${projectId}`);
-      setConfigExists(false);
-      setDuplicateConfig(duplicateConfigRes); // Set defaults
-    } else {
-      console.error(
-        "Failed to load project config",
-        err.response?.data || err.message
-      );
-      setConfigExists(false);
-      return;
-    }
-  }
+    // Fetch project config
+    try {
+      const res = await API.get(`/ProjectConfigs/ByProject/${projectId}`);
+      projectConfig = res.data;
+      console.log("Parsed Project Config:", projectConfig);
+      setConfigExists(true); // Config exists
 
-  // Fetch extra config data
-  try {
-    const extrasRes = await API.get(`/ExtrasConfigurations/ByProject/${projectId}`);
-    extrasConfig = extrasRes.data;
-    console.log("Extras Config:", extrasConfig);
-  } catch (err) {
-    if (err.response?.status === 404) {
-      console.warn(`No extra configuration for ProjectId: ${projectId}`);
-    } else {
-      console.error(
-        "Failed to load extras config",
-        err.response?.data || err.message
-      );
-    }
-  }
+      // Normalize duplicate config from project config
+      duplicateConfigRes = {
+        duplicateCriteria: Array.isArray(projectConfig.duplicateCriteria)
+          ? projectConfig.duplicateCriteria
+          : JSON.parse(projectConfig.duplicateCriteria || "[]"),
+        enhancement: Number(projectConfig.enhancement) || 0,
+        enhancementEnabled: Number(projectConfig.enhancement) > 0,
+      };
+      setDuplicateConfig(duplicateConfigRes);
+      console.log("Duplicate Tool Config (Mapped):", duplicateConfigRes);
 
-  // Fetch box capacities
-  try {
-    const boxRes = await API.get(`/BoxCapacities`);
-    const boxConfig = boxRes.data;
-    console.log("Box Capacities:", boxConfig);
-    setBoxCapacities(boxConfig);
-
-    const selectedBoxCapacity = projectConfig?.boxCapacity;
-    setSelectedCapacity(
-      selectedBoxCapacity || (boxConfig.length > 0 ? boxConfig[0].id : null)
-    );
-  } catch (err) {
-    console.error(
-      "Failed to load box capacities",
-      err.response?.data || err.message
-    );
-  }
-
-  // Initialize project config states
-  if (projectConfig && toolModules.length > 0) {
-    const enabledNames = new Set();
-    const extraModuleNames = [
-      "Nodal Extra Calculation",
-      "University Extra Calculation",
-    ];
-
-    projectConfig.modules?.forEach((moduleId) => {
-      const module = toolModules.find((m) => m.id === moduleId);
-      if (module) {
-        if (extraModuleNames.includes(module.name)) {
-          enabledNames.add("Extra Configuration");
-        } else {
-          enabledNames.add(module.name);
-        }
+    } catch (err) {
+      if (err.response?.status === 404) {
+        console.warn(`No existing configuration for ProjectId: ${projectId}`);
+        setConfigExists(false);
+        setDuplicateConfig(duplicateConfigRes); // Set defaults
+      } else {
+        console.error(
+          "Failed to load project config",
+          err.response?.data || err.message
+        );
+        setConfigExists(false);
+        return;
       }
+    }
+
+    // Fetch extra config data
+    try {
+      const extrasRes = await API.get(`/ExtrasConfigurations/ByProject/${projectId}`);
+      extrasConfig = extrasRes.data;
+      console.log("Extras Config:", extrasConfig);
+    } catch (err) {
+      if (err.response?.status === 404) {
+        console.warn(`No extra configuration for ProjectId: ${projectId}`);
+      } else {
+        console.error(
+          "Failed to load extras config",
+          err.response?.data || err.message
+        );
+      }
+    }
+
+    // Fetch box capacities
+    try {
+      const boxRes = await API.get(`/BoxCapacities`);
+      const boxConfig = boxRes.data;
+      console.log("Box Capacities:", boxConfig);
+      setBoxCapacities(boxConfig);
+
+      const selectedBoxCapacity = projectConfig?.boxCapacity;
+      setSelectedCapacity(
+        selectedBoxCapacity || (boxConfig.length > 0 ? boxConfig[0].id : null)
+      );
+    } catch (err) {
+      console.error(
+        "Failed to load box capacities",
+        err.response?.data || err.message
+      );
+    }
+
+    // Initialize project config states
+    if (projectConfig && toolModules.length > 0) {
+      const enabledNames = new Set();
+      const extraModuleNames = [
+        "Nodal Extra Calculation",
+        "University Extra Calculation",
+      ];
+
+      projectConfig.modules?.forEach((moduleId) => {
+        const module = toolModules.find((m) => m.id === moduleId);
+        if (module) {
+          if (extraModuleNames.includes(module.name)) {
+            enabledNames.add("Extra Configuration");
+          } else {
+            enabledNames.add(module.name);
+          }
+        }
+      });
+
+      setEnabledModules(Array.from(enabledNames));
+
+      // Envelope Setup
+      const envelopeParsed = JSON.parse(projectConfig.envelope || "{}");
+      setInnerEnvelopes(envelopeParsed.Inner ? [envelopeParsed.Inner] : []);
+      setOuterEnvelopes(envelopeParsed.Outer ? [envelopeParsed.Outer] : []);
+
+      // Envelope Making Criteria
+      setSelectedEnvelopeFields(projectConfig.envelopeMakingCriteria || []);
+      setStartOmrEnvelopeNumber(projectConfig.omrSerialNumber);
+      // Box Breaking Criteria
+      setSelectedBoxFields(
+        fields
+          .filter((f) => projectConfig.boxBreakingCriteria?.includes(f.fieldId))
+          .map((f) => f.fieldId)
+      );
+      setStartBoxNumber(projectConfig.boxNumber)
+      setBoxBreakingCriteria([
+        "capacity",
+        ...(projectConfig.boxBreakingCriteria || []),
+      ]);
+    } else {
+      setEnabledModules([]);
+      setInnerEnvelopes([]);
+      setOuterEnvelopes([]);
+      setSelectedEnvelopeFields([]);
+      setSelectedBoxFields([]);
+      setBoxBreakingCriteria(["capacity"]);
+    }
+
+    // Process Extra Configurations
+    const extraProcessingParsed = {};
+    const extraSelections = {};
+
+    extrasConfig.forEach((item) => {
+      const type = extraTypes.find((e) => e.extraTypeId === item.extraType)?.type;
+      if (!type) return;
+
+      const env = item.envelopeType
+        ? JSON.parse(item.envelopeType)
+        : { Inner: "", Outer: "" };
+
+      extraProcessingParsed[type] = {
+        envelopeType: {
+          inner: env.Inner ? [env.Inner] : [],
+          outer: env.Outer ? [env.Outer] : [],
+        },
+        fixedQty: item.mode === "Fixed" ? parseFloat(item.value) : 0,
+        range: item.mode === "Range" ? parseFloat(item.value) : 0,
+        percentage: item.mode === "Percentage" ? parseFloat(item.value) : 0,
+      };
+      extraSelections[type] = item.mode;
     });
 
-    setEnabledModules(Array.from(enabledNames));
-
-    // Envelope Setup
-    const envelopeParsed = JSON.parse(projectConfig.envelope || "{}");
-    setInnerEnvelopes(envelopeParsed.Inner ? [envelopeParsed.Inner] : []);
-    setOuterEnvelopes(envelopeParsed.Outer ? [envelopeParsed.Outer] : []);
-
-    // Envelope Making Criteria
-    setSelectedEnvelopeFields(projectConfig.envelopeMakingCriteria || []);
-
-    // Box Breaking Criteria
-    setSelectedBoxFields(
-      fields
-        .filter((f) => projectConfig.boxBreakingCriteria?.includes(f.fieldId))
-        .map((f) => f.fieldId)
-    );
-    setBoxBreakingCriteria([
-      "capacity",
-      ...(projectConfig.boxBreakingCriteria || []),
-    ]);
-  } else {
-    setEnabledModules([]);
-    setInnerEnvelopes([]);
-    setOuterEnvelopes([]);
-    setSelectedEnvelopeFields([]);
-    setSelectedBoxFields([]);
-    setBoxBreakingCriteria(["capacity"]);
-  }
-
-  // Process Extra Configurations
-  const extraProcessingParsed = {};
-  const extraSelections = {};
-
-  extrasConfig.forEach((item) => {
-    const type = extraTypes.find((e) => e.extraTypeId === item.extraType)?.type;
-    if (!type) return;
-
-    const env = item.envelopeType
-      ? JSON.parse(item.envelopeType)
-      : { Inner: "", Outer: "" };
-
-    extraProcessingParsed[type] = {
-      envelopeType: {
-        inner: env.Inner ? [env.Inner] : [],
-        outer: env.Outer ? [env.Outer] : [],
-      },
-      fixedQty: item.mode === "Fixed" ? parseFloat(item.value) : 0,
-      range: item.mode === "Range" ? parseFloat(item.value) : 0,
-      percentage: item.mode === "Percentage" ? parseFloat(item.value) : 0,
-    };
-    extraSelections[type] = item.mode;
-  });
-
-  setExtraProcessingConfig(extraProcessingParsed);
-  setExtraTypeSelection(extraSelections);
-};
+    setExtraProcessingConfig(extraProcessingParsed);
+    setExtraTypeSelection(extraSelections);
+  };
 
 
   const handleImport = async (importProjectId) => {
     await fetchProjectConfigData(importProjectId);
     message.success("Configuration imported successfully! Review and save.");
-    
+
   };
 
   // Reset form function
@@ -218,6 +221,8 @@ const ProjectConfiguration = () => {
     setSelectedEnvelopeFields([]);
     setExtraTypeSelection({});
     setBoxCapacities([]);
+    setStartBoxNumber();
+    setStartOmrEnvelopeNumber();
     setSelectedCapacity();
   };
 
@@ -233,6 +238,8 @@ const ProjectConfiguration = () => {
     extraTypeSelection,
     extraTypes,
     selectedCapacity,
+    startBoxNumber,
+    startOmrEnvelopeNumber,
     extraProcessingConfig,
     duplicateConfig,
     fetchProjectConfigData,
@@ -294,6 +301,8 @@ const ProjectConfiguration = () => {
             fields={fields}
             selectedEnvelopeFields={selectedEnvelopeFields}
             setSelectedEnvelopeFields={setSelectedEnvelopeFields}
+            setStartOmrEnvelopeNumber={setStartOmrEnvelopeNumber}
+            startOmrEnvelopeNumber={startOmrEnvelopeNumber}
           />
 
           <ExtraProcessingCard
@@ -320,6 +329,8 @@ const ProjectConfiguration = () => {
             selectedCapacity={selectedCapacity}
             setSelectedCapacity={setSelectedCapacity}
             setBoxCapacity={setBoxCapacities}
+            startBoxNumber={startBoxNumber}
+            setStartBoxNumber={setStartBoxNumber}
           />
 
           <DuplicateTool
