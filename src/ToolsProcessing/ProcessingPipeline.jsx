@@ -211,21 +211,13 @@ const ProcessingPipeline = () => {
         const durationMs = Date.now() - (stepTimers.get(step.key) || Date.now());
         const mm = String(Math.floor(durationMs / 60000)).padStart(2, "0");
         const ss = String(Math.floor((durationMs % 60000) / 1000)).padStart(2, "0");
-
-        const fileMap = {
-          duplicate: `${url3}/${projectId}/DuplicateTool.xlsx`,
-          extra: `${url3}/${projectId}/ExtrasCalculation.xlsx`,
-          envelope: `${url3}/${projectId}/BreakingReport.xlsx`,
-          box: `${url3}/${projectId}/BoxBreaking.xlsx`,
-        };
-
         updateStepStatus(step.key, {
           status: "completed",
           duration: `${mm}:${ss}`,
-          fileUrl: fileMap[step.key],
+          fileUrl: null,
         });
       }
-
+      await checkReportExistence(projectId);
       message.success("Data processing completed");
     } catch (err) {
       console.error("Processing failed", err);
@@ -326,7 +318,7 @@ const ProcessingPipeline = () => {
             boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
           }}
         >
-          
+
           {enabledModuleNames.length === 0 ? (
             <p>No modules selected for this project</p>
           ) : (

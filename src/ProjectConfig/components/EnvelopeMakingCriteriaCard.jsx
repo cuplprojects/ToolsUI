@@ -1,5 +1,5 @@
 import React from "react";
-import { Card, Select, Typography, Tag } from "antd";
+import { Card, Select, Typography, Tag, InputNumber } from "antd";
 import { ContainerFilled, LockFilled } from "@ant-design/icons";
 import AnimatedCard from "./AnimatedCard";
 import { cardStyle, iconStyle, PRIMARY_COLOR } from "./constants";
@@ -12,6 +12,8 @@ const EnvelopeMakingCriteriaCard = ({
   fields,
   selectedEnvelopeFields,
   setSelectedEnvelopeFields,
+  startOmrEnvelopeNumber,
+  setStartOmrEnvelopeNumber,
 }) => {
   return (
     <AnimatedCard>
@@ -46,15 +48,28 @@ const EnvelopeMakingCriteriaCard = ({
           }}
         >
           <div>
+            <Text strong>Starting OMR Serial Number</Text>
+            <InputNumber
+              min={1}
+              disabled={!isEnabled("Envelope Breaking")}
+              value={startOmrEnvelopeNumber}
+              onChange={(value) => setStartOmrEnvelopeNumber(value)}
+              placeholder="Enter Start OMR Serial Number"
+              style={{ width: "100%" }}
+            />
+          </div>
+          <div>
             <Text strong>Select fields to concatenate</Text>
             <Select
               mode="multiple"
               disabled={!isEnabled("Envelope Breaking")}
               allowClear
+              showSearch
               style={{ width: "100%", marginTop: 4 }}
               placeholder="Select one or more fields"
               value={selectedEnvelopeFields}
               onChange={setSelectedEnvelopeFields}
+              optionFilterProp="children"
             >
               {fields.map((f) => (
                 <Option key={f.fieldId} value={f.fieldId}>

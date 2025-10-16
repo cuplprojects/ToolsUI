@@ -11,6 +11,8 @@ export const useProjectConfigSave = (
   extraTypeSelection,
   extraTypes,
   selectedCapacity,
+  startBoxNumber,
+  startOmrEnvelopeNumber,
   extraProcessingConfig,
   duplicateConfig,           // ✅ add duplicateConfig here
   fetchProjectConfigData,
@@ -30,6 +32,8 @@ export const useProjectConfigSave = (
           Outer: outerEnvelopes.join(","),
         }),
         BoxBreakingCriteria: selectedBoxFields,
+        BoxNumber: startBoxNumber,
+        OMRSerialNumber: startOmrEnvelopeNumber,
         EnvelopeMakingCriteria: selectedEnvelopeFields,
         BoxCapacity: selectedCapacity,
         DuplicateCriteria: duplicateConfig?.duplicateCriteria || [], // ✅
@@ -62,8 +66,8 @@ export const useProjectConfigSave = (
               mode === "Fixed"
                 ? String(config.fixedQty || 0)
                 : mode === "Range"
-                ? String(config.range || 0)
-                : String(config.percentage || 0),
+                  ? String(config.range || 0)
+                  : String(config.percentage || 0),
             envelopeType: JSON.stringify(normalizedEnvelope),
           };
         })
@@ -78,7 +82,7 @@ export const useProjectConfigSave = (
       }
 
       showToast("Configuration saved successfully!", "success");
-      fetchProjectConfigData();
+      fetchProjectConfigData(projectId);
       resetForm();
       console.log("Saved:", { projectConfigPayload, extrasPayloads });
     } catch (err) {
