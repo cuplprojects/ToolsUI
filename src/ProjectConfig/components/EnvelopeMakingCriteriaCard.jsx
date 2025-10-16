@@ -53,7 +53,7 @@ const EnvelopeMakingCriteriaCard = ({
               min={1}
               disabled={!isEnabled("Envelope Breaking")}
               value={startOmrEnvelopeNumber}
-             onChange={(value) => setStartOmrEnvelopeNumber(value)}
+              onChange={(value) => setStartOmrEnvelopeNumber(value)}
               placeholder="Enter Start OMR Serial Number"
               style={{ width: "100%" }}
             />
@@ -64,10 +64,12 @@ const EnvelopeMakingCriteriaCard = ({
               mode="multiple"
               disabled={!isEnabled("Envelope Breaking")}
               allowClear
+              showSearch
               style={{ width: "100%", marginTop: 4 }}
               placeholder="Select one or more fields"
               value={selectedEnvelopeFields}
               onChange={setSelectedEnvelopeFields}
+              optionFilterProp="children"
             >
               {fields.map((f) => (
                 <Option key={f.fieldId} value={f.fieldId}>

@@ -625,6 +625,14 @@ const DataImport = () => {
                                 [expectedField.fieldId]: value,
                               }));
                             }}
+                            allowClear
+                            onClear={() => {
+                              setFieldMappings((prev) => {
+                                const updated = { ...prev };
+                                delete updated[expectedField.fieldId];
+                                return updated;
+                              });
+                            }}
                           >
                             {fileHeaders
                               .filter(

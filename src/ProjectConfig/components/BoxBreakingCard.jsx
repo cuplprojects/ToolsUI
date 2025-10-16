@@ -35,7 +35,7 @@ const BoxBreakingCard = ({
       setBoxBreakingCriteria((prev) => prev.filter((item) => item !== "selectFields"));
     }
   };
-  {console.log(startBoxNumber)}
+  { console.log(startBoxNumber) }
 
   return (
     <AnimatedCard>
@@ -79,33 +79,33 @@ const BoxBreakingCard = ({
               >
                 Breaking by Capacity <Text type="secondary"></Text>
               </Checkbox>
-            
-                <Select
-                  disabled={!isEnabled("Box Breaking")}
-                  value={selectedCapacity}
-                  onChange={setSelectedCapacity}
-                  style={{ width: "100%" }}
-                  placeholder="Select or enter capacity"
-                >
-                  {boxCapacities.map((capacity) => (
-                    <Option key={capacity.boxCapacityId} value={capacity.boxCapacityId}>
-                      {capacity.capacity}
-                    </Option>
-                  ))}
-                </Select>
+
+              <Select
+                disabled={!isEnabled("Box Breaking")}
+                value={selectedCapacity}
+                onChange={setSelectedCapacity}
+                style={{ width: "100%" }}
+                placeholder="Select or enter capacity"
+              >
+                {boxCapacities.map((capacity) => (
+                  <Option key={capacity.boxCapacityId} value={capacity.boxCapacityId}>
+                    {capacity.capacity}
+                  </Option>
+                ))}
+              </Select>
             </div>
-              <div>
-                <Text type="secondary">Starting Box Number</Text>
-                <InputNumber
-                  disabled={!isEnabled("Box Breaking")}
-                  min={1}
-                  value={startBoxNumber}
-                 onChange={(value) => setStartBoxNumber(value)}
-                  placeholder="Enter Start Box Number"
-                  style={{ width: "100%" }}
-                />
-              </div>
-            
+            <div>
+              <Text type="secondary">Starting Box Number</Text>
+              <InputNumber
+                disabled={!isEnabled("Box Breaking")}
+                min={1}
+                value={startBoxNumber}
+                onChange={(value) => setStartBoxNumber(value)}
+                placeholder="Enter Start Box Number"
+                style={{ width: "100%" }}
+              />
+            </div>
+
           </div>
           {/* Select fields to concatenate */}
           <div>
@@ -114,6 +114,7 @@ const BoxBreakingCard = ({
               mode="multiple"
               disabled={!isEnabled("Box Breaking")}
               allowClear
+              showSearch
               style={{ width: "100%", marginTop: 4 }}
               placeholder="Select one or more fields"
               value={selectedBoxFields}
@@ -121,6 +122,7 @@ const BoxBreakingCard = ({
                 setSelectedBoxFields(selectedFields);
                 handleFieldConcatenation(selectedFields);
               }}
+              optionFilterProp="children"
             >
               {fields.map((f) => (
                 <Option key={f.fieldId} value={f.fieldId}>

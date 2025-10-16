@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Card, Select, Checkbox, InputNumber, Typography, Space, Tag } from "antd";
 import API from "./../hooks/api";
 import useStore from "./../stores/ProjectData";
-import { CopyFilled, LockFilled} from "@ant-design/icons";
+import { CopyFilled, LockFilled } from "@ant-design/icons";
 import { iconStyle, PRIMARY_COLOR } from "../ProjectConfig/components/constants";
 
 const { Text } = Typography;
@@ -63,11 +63,13 @@ const DuplicateTool = ({ isEnabled, duplicateConfig = {}, setDuplicateConfig }) 
           <Select
             mode="multiple"
             allowClear
+            showSearch
             disabled={!enabled}
             style={{ width: "100%", marginTop: 4 }}
             placeholder="Select one or more fields"
             value={duplicateConfig?.duplicateCriteria || []}
             onChange={handleFieldChange}
+            optionFilterProp="children"
           >
             {fields.map((f) => (
               <Option key={f.fieldId} value={f.fieldId}>
