@@ -17,13 +17,31 @@ const ExtraProcessingCard = ({
   envelopeOptions,
 }) => {
 
-  useEffect(() => {
-  const defaultSelection = {};
-  extraTypes.forEach((et) => {
-    defaultSelection[et.type] = "Fixed";
-  });
-  setExtraTypeSelection(defaultSelection);
-}, []);
+//   useEffect(() => {
+//   const defaultSelection = {};
+//   extraTypes.forEach((et) => {
+//     defaultSelection[et.type] = "Fixed";
+//   });
+//   setExtraTypeSelection(defaultSelection);
+// }, []);
+useEffect(() => {
+    const initialSelection = {};
+    extraTypes.forEach((et) => {
+      const existingConfig = extraProcessingConfig?.[et.type];
+      // ✅ If existing config has a known type, preserve it
+      if (existingConfig?.fixedQty !== undefined) {
+        initialSelection[et.type] = "Fixed";
+      } else if (existingConfig?.range !== undefined) {
+        initialSelection[et.type] = "Range";
+      } else if (existingConfig?.percentage !== undefined) {
+        initialSelection[et.type] = "Percentage";
+      } else {
+        // 🚫 No existing configuration → leave blank
+        initialSelection[et.type] = "";
+      }
+    });
+    setExtraTypeSelection(initialSelection);
+  }, [extraTypes, extraProcessingConfig, setExtraTypeSelection]);
 
   return (
     <AnimatedCard>
@@ -115,7 +133,7 @@ const ExtraProcessingCard = ({
 
             {/* Radio group for mode */}
             <Radio.Group
-              value={extraTypeSelection[et.type] || "Fixed"}
+              value={extraTypeSelection[et.type] }
               onChange={(e) =>
                 setExtraTypeSelection((prev) => ({
                   ...prev,
