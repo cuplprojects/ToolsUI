@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Table, Button, Modal, Form, Input, InputNumber, Space, Popconfirm, message } from "antd";
+import { Table, Button, Modal, Form, Input, InputNumber, Space, message } from "antd";
 import API from "../hooks/api";
 
 const NodalUnivExtra = () => {
@@ -61,17 +61,6 @@ const NodalUnivExtra = () => {
     }
   };
 
-  // Delete
-  const handleDelete = async (id) => {
-    try {
-      await API.delete(`/ExtraTypes/${id}`);
-      message.success("Extra deleted successfully.");
-      fetchExtras();
-    } catch (error) {
-      message.error("Delete failed. Please try again.");
-    }
-  };
-
   // Table columns
   const columns = [
     {
@@ -98,14 +87,6 @@ const NodalUnivExtra = () => {
           <Button type="link" onClick={() => openModal(record)}>
             Edit
           </Button>
-          <Popconfirm
-            title="Are you sure to delete?"
-            onConfirm={() => handleDelete(record.extraTypeId)}
-          >
-            <Button type="link" danger>
-              Delete
-            </Button>
-          </Popconfirm>
         </Space>
       ),
     },

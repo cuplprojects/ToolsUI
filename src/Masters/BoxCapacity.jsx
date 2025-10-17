@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Table, Button, Modal, Input, Space, message } from 'antd';
-import { EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
+import { EditOutlined, SearchOutlined } from '@ant-design/icons';
 import API from '../hooks/api';
 
 const BoxCapacity = () => {
@@ -36,16 +36,6 @@ const BoxCapacity = () => {
         setEditingItem(record);
         setCapacity(record.capacity);
         setModalVisible(true);
-    };
-
-    const handleDelete = async (id) => {
-        try {
-            await API.delete(`/BoxCapacities/${id}`);
-            message.success('Deleted successfully');
-            fetchBoxCapacities();
-        } catch {
-            message.error('Delete failed');
-        }
     };
 
     const handleSave = async () => {
@@ -132,7 +122,6 @@ const BoxCapacity = () => {
             render: (_, record) => (
                 <Space>
                     <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)} />
-                    <Button type="link" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.boxCapacityId)} />
                 </Space>
             ),
         },

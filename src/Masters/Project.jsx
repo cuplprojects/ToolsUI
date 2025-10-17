@@ -2,7 +2,6 @@ import { Table, Button, Select, Modal, Input, Space, message } from "antd";
 import React, { useEffect, useState } from "react";
 import {
     EditOutlined,
-    DeleteOutlined,
     SearchOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
@@ -74,16 +73,6 @@ const Project = () => {
         setSelectedProjectId(record.projectId); // Set project from existing record
         setSelectedUserIds(record.userAssigned || []); // Set selected users from existing record (assuming `userAssigned` is an array)
         setModalVisible(true);
-    };
-
-    const handleDelete = async (id) => {
-        try {
-            await API.delete(`/Projects/${id}`);
-            message.success("Deleted successfully");
-            fetchProjects(); // Refresh project data after deletion
-        } catch {
-            message.error("Delete failed");
-        }
     };
 
     const handleSave = async () => {
@@ -188,7 +177,6 @@ const Project = () => {
             render: (_, record) => (
                 <Space>
                     <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)} />
-                    <Button type="link" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.projectId)} />
                 </Space>
             ),
         },

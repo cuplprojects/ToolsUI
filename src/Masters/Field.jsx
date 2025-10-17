@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Table, Button, Modal, Input, Space, Switch, message } from 'antd';
-import { EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
+import { EditOutlined, SearchOutlined } from '@ant-design/icons';
 import API from '../hooks/api';
 
 const Field = () => {
@@ -39,16 +39,6 @@ const Field = () => {
         setName(record.name);
         setIsUnique(record.isUnique);
         setModalVisible(true);
-    };
-
-    const handleDelete = async (id) => {
-        try {
-            await API.delete(`/Fields/${id}`);
-            message.success('Deleted successfully');
-            fetchFields();
-        } catch {
-            message.error('Delete failed');
-        }
     };
 
     const handleSave = async () => {
@@ -151,7 +141,6 @@ const Field = () => {
             render: (_, record) => (
                 <Space>
                     <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)} />
-                    <Button type="link" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.fieldId)} />
                 </Space>
             ),
         },
