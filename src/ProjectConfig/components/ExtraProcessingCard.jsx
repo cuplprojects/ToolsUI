@@ -67,7 +67,7 @@ useEffect(() => {
         {extraTypes.map((et, index) => (
           <div key={et.extraTypeId}>
             {index > 0 && <Divider />}
-            <Title level={5}>{et.type} Extra</Title>
+            <Title level={5}>{et.type}</Title>
 
             {/* Envelope Dropdowns */}
             <div

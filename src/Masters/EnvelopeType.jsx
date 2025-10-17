@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Table, Button, Modal, Input, InputNumber, Space, message } from 'antd';
-import { EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
+import { EditOutlined, SearchOutlined } from '@ant-design/icons';
 import API from '../hooks/api';
 
 const EnvelopeType = () => {
@@ -39,16 +39,6 @@ const EnvelopeType = () => {
     setEnvelopeName(record.envelopeName);
     setCapacity(record.capacity);
     setModalVisible(true);
-  };
-
-  const handleDelete = async (id) => {
-    try {
-      await API.delete(`/EnvelopeTypes/${id}`);
-      message.success('Deleted successfully');
-      fetchEnvelopes();
-    } catch {
-      message.error('Failed to delete');
-    }
   };
 
   const handleSave = async () => {
@@ -150,7 +140,6 @@ const EnvelopeType = () => {
       render: (_, record) => (
         <Space>
           <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)} />
-          <Button type="link" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.envelopeId)} />
         </Space>
       )
     }
