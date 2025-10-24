@@ -18,23 +18,29 @@ const BoxBreakingCard = ({
   setSelectedCapacity,
   boxCapacities,
   startBoxNumber,
-  setStartBoxNumber
+  setStartBoxNumber,
+  selectedDuplicatefields,
+  setSelectedDuplicatefields
 }) => {
   // Helper function to manage field concatenation criteria
-  const handleFieldConcatenation = (selectedFields) => {
+  const handleBoxBreakingFields = (selectedFields) => {
+    setSelectedBoxFields(selectedFields);
     if (selectedFields.length > 0) {
-      // Ensure the concatenation criteria is enabled
-      setBoxBreakingCriteria((prev) => {
-        if (!prev.includes("selectFields")) {
-          return [...prev, "selectFields"];
-        }
-        return prev;
-      });
+      setBoxBreakingCriteria(prev => prev.includes("boxFields") ? prev : [...prev, "boxFields"]);
     } else {
-      // Disable field concatenation if no fields are selected
-      setBoxBreakingCriteria((prev) => prev.filter((item) => item !== "selectFields"));
+      setBoxBreakingCriteria(prev => prev.filter(i => i !== "boxFields"));
     }
   };
+
+  const handleDuplicateFields = (selectedFields) => {
+    setSelectedDuplicatefields(selectedFields);
+    if (selectedFields.length > 0) {
+      setBoxBreakingCriteria(prev => prev.includes("duplicateFields") ? prev : [...prev, "duplicateFields"]);
+    } else {
+      setBoxBreakingCriteria(prev => prev.filter(i => i !== "duplicateFields"));
+    }
+  };
+
   { console.log(startBoxNumber) }
 
   return (
@@ -109,6 +115,26 @@ const BoxBreakingCard = ({
           </div>
           {/* Select fields to concatenate */}
           <div>
+            <Text strong>Fields on which Duplicates has to be removed</Text>
+            <Select
+              mode="multiple"
+              disabled={!isEnabled("Box Breaking")}
+              allowClear
+              showSearch
+              style={{ width: "100%", marginTop: 4 }}
+              placeholder="Select one or more fields"
+              value={selectedDuplicatefields}
+              onChange={handleDuplicateFields}
+              optionFilterProp="children"
+            >
+              {fields.map((f) => (
+                <Option key={f.fieldId} value={f.fieldId}>
+                  {f.name}
+                </Option>
+              ))}
+            </Select>
+          </div>
+          <div>
             <Text strong>Select fields to concatenate</Text>
             <Select
               mode="multiple"
@@ -118,10 +144,7 @@ const BoxBreakingCard = ({
               style={{ width: "100%", marginTop: 4 }}
               placeholder="Select one or more fields"
               value={selectedBoxFields}
-              onChange={(selectedFields) => {
-                setSelectedBoxFields(selectedFields);
-                handleFieldConcatenation(selectedFields);
-              }}
+              onChange={handleBoxBreakingFields}
               optionFilterProp="children"
             >
               {fields.map((f) => (

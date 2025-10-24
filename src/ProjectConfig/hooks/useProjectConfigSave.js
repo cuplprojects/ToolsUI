@@ -13,6 +13,7 @@ export const useProjectConfigSave = (
   selectedCapacity,
   startBoxNumber,
   startOmrEnvelopeNumber,
+  selectedDuplicatefields,
   extraProcessingConfig,
   duplicateConfig,           // ✅ add duplicateConfig here
   fetchProjectConfigData,
@@ -32,6 +33,7 @@ export const useProjectConfigSave = (
           Outer: outerEnvelopes.join(","),
         }),
         BoxBreakingCriteria: selectedBoxFields,
+        DuplicateRemoveFields: selectedDuplicatefields,
         BoxNumber: startBoxNumber,
         OMRSerialNumber: startOmrEnvelopeNumber,
         EnvelopeMakingCriteria: selectedEnvelopeFields,
