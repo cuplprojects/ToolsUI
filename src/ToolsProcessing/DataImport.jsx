@@ -377,22 +377,56 @@ const DataImport = () => {
     : [];
 
   const autoMapField = (expectedField, fileHeaders) => {
-    // Check if manually mapped
+    // Skip if already manually mapped
     if (fieldMappings[expectedField.fieldId]) return null;
 
-    // Normalize both expected field name and file headers
-    const normalizedFieldName = expectedField.name.trim().toLowerCase();
+    const normalize = (str) => str.trim().toLowerCase().replace(/\s+/g, "");
 
-    // Find the first match from the file headers
-    const match = fileHeaders.find(header => header.trim().toLowerCase() === normalizedFieldName);
-    if (match) {
-      // Automatically update the fieldMappings state if a match is found
+    const normalizedExpected = normalize(expectedField.name);
+
+    // Map expected field IDs to keywords (manual override)
+    const keywordMappings = {
+      catchno: ["catch", "catch number"],
+      nodalcode: ["nodal", "nodal code"],
+      examdate: ["date", "exam date"],
+      examtime: ["time", "exam time"],
+      nrquantity: ["count", "Nr", "cnt"],
+      centercode: ["centre", "centre code"]
+    };
+
+    // Step 1: Try exact match (normalized)
+    const exactMatch = fileHeaders.find(
+      (header) => normalize(header) === normalizedExpected
+    );
+
+    if (exactMatch) {
       setFieldMappings((prev) => ({
         ...prev,
-        [expectedField.fieldId]: match,
+        [expectedField.fieldId]: exactMatch,
       }));
+      return exactMatch;
     }
-    return match || null;
+
+    // Step 2: Try keyword-based matching
+    const possibleKeywords = keywordMappings[normalizedExpected] || [];
+
+    const keywordMatch = fileHeaders.find((header) => {
+      const normalizedHeader = normalize(header);
+      return possibleKeywords.some((keyword) =>
+        normalizedHeader.includes(normalize(keyword))
+      );
+    });
+
+    if (keywordMatch) {
+      setFieldMappings((prev) => ({
+        ...prev,
+        [expectedField.fieldId]: keywordMatch,
+      }));
+      return keywordMatch;
+    }
+
+    // No match found
+    return null;
   };
 
   const deleteNRData = async (closeModal) => {
