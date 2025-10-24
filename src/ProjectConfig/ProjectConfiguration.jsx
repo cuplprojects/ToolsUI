@@ -33,6 +33,7 @@ const ProjectConfiguration = () => {
   const [configExists, setConfigExists] = useState(false);
   const [startBoxNumber, setStartBoxNumber] = useState(0);
   const [startOmrEnvelopeNumber, setStartOmrEnvelopeNumber] = useState(0);
+  const [selectedDuplicatefields, setSelectedDuplicatefields] = useState([]);
   const [duplicateConfig, setDuplicateConfig] = useState({
     duplicateCriteria: [],
     enhancement: 0,
@@ -163,11 +164,15 @@ const ProjectConfiguration = () => {
           .filter((f) => projectConfig.boxBreakingCriteria?.includes(f.fieldId))
           .map((f) => f.fieldId)
       );
+
       setStartBoxNumber(projectConfig.boxNumber)
       setBoxBreakingCriteria([
         "capacity",
         ...(projectConfig.boxBreakingCriteria || []),
       ]);
+      setSelectedDuplicatefields(
+        projectConfig.duplicateRemoveFields || []
+      );
     } else {
       setEnabledModules([]);
       setInnerEnvelopes([]);
@@ -175,6 +180,7 @@ const ProjectConfiguration = () => {
       setSelectedEnvelopeFields([]);
       setSelectedBoxFields([]);
       setBoxBreakingCriteria(["capacity"]);
+      setSelectedDuplicatefields([]);
     }
 
     // Process Extra Configurations
@@ -240,6 +246,7 @@ const ProjectConfiguration = () => {
     selectedCapacity,
     startBoxNumber,
     startOmrEnvelopeNumber,
+    selectedDuplicatefields,
     extraProcessingConfig,
     duplicateConfig,
     fetchProjectConfigData,
@@ -331,6 +338,8 @@ const ProjectConfiguration = () => {
             setBoxCapacity={setBoxCapacities}
             startBoxNumber={startBoxNumber}
             setStartBoxNumber={setStartBoxNumber}
+            selectedDuplicatefields={selectedDuplicatefields}
+            setSelectedDuplicatefields={setSelectedDuplicatefields}
           />
 
           <DuplicateTool
