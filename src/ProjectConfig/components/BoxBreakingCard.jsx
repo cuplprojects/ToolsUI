@@ -9,7 +9,6 @@ const { Option } = Select;
 
 const BoxBreakingCard = ({
   isEnabled,
-  boxBreakingCriteria,
   setBoxBreakingCriteria,
   fields,
   selectedBoxFields,
@@ -20,7 +19,9 @@ const BoxBreakingCard = ({
   startBoxNumber,
   setStartBoxNumber,
   selectedDuplicatefields,
-  setSelectedDuplicatefields
+  setSelectedDuplicatefields,
+  selectedSortingField,
+  setSelectedSortingField,
 }) => {
   // Helper function to manage field concatenation criteria
   const handleBoxBreakingFields = (selectedFields) => {
@@ -29,6 +30,15 @@ const BoxBreakingCard = ({
       setBoxBreakingCriteria(prev => prev.includes("boxFields") ? prev : [...prev, "boxFields"]);
     } else {
       setBoxBreakingCriteria(prev => prev.filter(i => i !== "boxFields"));
+    }
+  };
+
+  const handleSorting = (selectedFields) => {
+    setSelectedSortingField(selectedFields);
+    if (selectedFields.length > 0) {
+      setBoxBreakingCriteria(prev => prev.includes("sortingFields") ? prev : [...prev, "sortingFields"]);
+    } else {
+      setBoxBreakingCriteria(prev => prev.filter(i => i !== "sortingFields"));
     }
   };
 
@@ -125,6 +135,26 @@ const BoxBreakingCard = ({
               placeholder="Select one or more fields"
               value={selectedDuplicatefields}
               onChange={handleDuplicateFields}
+              optionFilterProp="children"
+            >
+              {fields.map((f) => (
+                <Option key={f.fieldId} value={f.fieldId}>
+                  {f.name}
+                </Option>
+              ))}
+            </Select>
+          </div>
+          <div>
+            <Text strong>Sorting Report way</Text>
+            <Select
+              mode="multiple"
+              disabled={!isEnabled("Box Breaking")}
+              allowClear
+              showSearch
+              style={{ width: "100%", marginTop: 4 }}
+              placeholder="Select one or more fields"
+              value={selectedSortingField}
+              onChange={handleSorting}
               optionFilterProp="children"
             >
               {fields.map((f) => (
