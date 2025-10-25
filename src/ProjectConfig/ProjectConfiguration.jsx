@@ -34,6 +34,7 @@ const ProjectConfiguration = () => {
   const [startBoxNumber, setStartBoxNumber] = useState(0);
   const [startOmrEnvelopeNumber, setStartOmrEnvelopeNumber] = useState(0);
   const [selectedDuplicatefields, setSelectedDuplicatefields] = useState([]);
+  const [selectedSortingField, setSelectedSortingField] = useState([]);
   const [duplicateConfig, setDuplicateConfig] = useState({
     duplicateCriteria: [],
     enhancement: 0,
@@ -173,6 +174,7 @@ const ProjectConfiguration = () => {
       setSelectedDuplicatefields(
         projectConfig.duplicateRemoveFields || []
       );
+      setSelectedSortingField(projectConfig.sortingBoxReport || []);
     } else {
       setEnabledModules([]);
       setInnerEnvelopes([]);
@@ -181,6 +183,7 @@ const ProjectConfiguration = () => {
       setSelectedBoxFields([]);
       setBoxBreakingCriteria(["capacity"]);
       setSelectedDuplicatefields([]);
+      setSelectedSortingField([]);
     }
 
     // Process Extra Configurations
@@ -230,6 +233,8 @@ const ProjectConfiguration = () => {
     setStartBoxNumber();
     setStartOmrEnvelopeNumber();
     setSelectedCapacity();
+    setSelectedDuplicatefields([]);
+    setSelectedSortingField([])
   };
 
   // Save logic using custom hook
@@ -247,6 +252,7 @@ const ProjectConfiguration = () => {
     startBoxNumber,
     startOmrEnvelopeNumber,
     selectedDuplicatefields,
+    selectedSortingField,
     extraProcessingConfig,
     duplicateConfig,
     fetchProjectConfigData,
@@ -340,6 +346,8 @@ const ProjectConfiguration = () => {
             setStartBoxNumber={setStartBoxNumber}
             selectedDuplicatefields={selectedDuplicatefields}
             setSelectedDuplicatefields={setSelectedDuplicatefields}
+            selectedSortingField={selectedSortingField}
+            setSelectedSortingField={setSelectedSortingField}
           />
 
           <DuplicateTool

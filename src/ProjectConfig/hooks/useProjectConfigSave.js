@@ -14,6 +14,7 @@ export const useProjectConfigSave = (
   startBoxNumber,
   startOmrEnvelopeNumber,
   selectedDuplicatefields,
+  selectedSortingField,
   extraProcessingConfig,
   duplicateConfig,           // ✅ add duplicateConfig here
   fetchProjectConfigData,
@@ -38,6 +39,7 @@ export const useProjectConfigSave = (
         OMRSerialNumber: startOmrEnvelopeNumber,
         EnvelopeMakingCriteria: selectedEnvelopeFields,
         BoxCapacity: selectedCapacity,
+        SortingBoxReport:selectedSortingField,
         DuplicateCriteria: duplicateConfig?.duplicateCriteria || [], // ✅
         Enhancement: duplicateConfig?.enhancementEnabled
           ? duplicateConfig?.enhancement || 0
