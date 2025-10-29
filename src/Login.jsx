@@ -51,7 +51,7 @@ export default function Login() {
   return (
     <div className="flex flex-col sm:flex-row h-screen w-screen bg-white overflow-hidden">
       {/* Left panel */}
-      <div className="hidden sm:flex w-1/2 bg-blue-600 items-center justify-center flex-col p-8">
+      <div className="hidden sm:flex w-1/2 bg-blue-950 items-center justify-center flex-col p-8">
         <motion.img
           src={loginImage}
           alt="Login Illustration"

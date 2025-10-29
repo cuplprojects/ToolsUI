@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import '@ant-design/v5-patch-for-react-19'
 import { Row, Col, Card, Select, Upload, Button, Typography, Space, Table, Tabs, Divider, Checkbox, Input, Modal } from 'antd';
 import { useToast } from '../hooks/useToast';
-import { CheckCircleOutlined, UploadOutlined, ToolOutlined } from '@ant-design/icons';
+import { CheckCircleOutlined, UploadOutlined, ToolOutlined, SearchOutlined } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
 import { motion } from 'framer-motion';
 import API from '../hooks/api';
@@ -35,6 +35,8 @@ const DataImport = () => {
     current: 1,
     pageSize: 10,
   });
+  const [searchText, setSearchText] = useState('');
+  const [searchedColumn, setSearchedColumn] = useState('');
   const toast = useToast()
   // Load projects
   useEffect(() => {
@@ -344,6 +346,11 @@ const DataImport = () => {
     return date; // Return the original value if it's not a valid date
   };
 
+  const handleSearch = (selectedKeys, confirm, dataIndex) => {
+    confirm();
+    setSearchText(selectedKeys[0]);
+    setSearchedColumn(dataIndex);
+  };
 
   // Render uploaded Excel preview
   const renderUploadedData = () => {
@@ -366,6 +373,58 @@ const DataImport = () => {
     }} />;
   };
 
+  const handleReset = clearFilters => {
+    clearFilters();
+    setSearchText('');
+    confirm();
+  };
+
+  const getColumnSearchProps = dataIndex => ({
+    filterDropdown: ({
+      setSelectedKeys,
+      selectedKeys,
+      confirm,
+      clearFilters,
+    }) => (
+      <div style={{ padding: 8 }}>
+        <Input
+          autoFocus
+          placeholder={`Search ${dataIndex}`}
+          value={selectedKeys[0]}
+          onChange={e => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+          onPressEnter={() => handleSearch(selectedKeys, confirm, dataIndex)}
+          style={{ width: 188, marginBottom: 8, display: 'block' }}
+        />
+        <div>
+          <Button
+            type="primary"
+            onClick={() => handleSearch(selectedKeys, confirm, dataIndex)}
+            icon={<SearchOutlined />}
+            size="small"
+            style={{ width: 90, marginRight: 8 }}
+          >
+            Search
+          </Button>
+          <Button onClick={() => handleReset(clearFilters, confirm)} size="small" style={{ width: 90 }}>
+            Reset
+          </Button>
+        </div>
+      </div>
+    ),
+    filterIcon: filtered => (
+      <SearchOutlined style={{ color: filtered ? '#1890ff' : undefined }} />
+    ),
+    onFilter: (value, record) => record[dataIndex]?.toString().toLowerCase().includes(value.toLowerCase()),
+    render: text =>
+      searchedColumn === dataIndex ? (
+        <span style={{ color: '#1890ff' }}>{text}</span>
+      ) : (
+        text
+      ),
+  });
+
+  // Add sorting to your columns
+
   // Columns for existing data
   const columns = existingData.length
     ? Object.keys(existingData[0]).map((col) => ({
@@ -375,6 +434,29 @@ const DataImport = () => {
       ellipsis: true,
     }))
     : [];
+
+  const enhancedColumns = columns.map(col => ({
+    ...col,
+    ...getColumnSearchProps(col.dataIndex),
+    sorter: (a, b) => {
+      const valA = a[col.dataIndex];
+      const valB = b[col.dataIndex];
+
+      // Handle undefined or null values safely
+      if (valA == null) return -1;
+      if (valB == null) return 1;
+
+      // If both values are numbers → numeric sort
+      if (!isNaN(valA) && !isNaN(valB)) {
+        return Number(valA) - Number(valB);
+      }
+      // Otherwise → alphabetical sort (case-insensitive)
+      return String(valA).localeCompare(String(valB), undefined, {
+        sensitivity: 'base',
+      });
+    },
+  }));
+
 
   const autoMapField = (expectedField, fileHeaders) => {
     // Skip if already manually mapped
@@ -781,7 +863,7 @@ const DataImport = () => {
                   {existingData.length > 0 ? (
                     <Table
                       dataSource={existingData}
-                      columns={columns}
+                      columns={enhancedColumns}
                       pagination={{
                         ...pagination,
                         showSizeChanger: true,
