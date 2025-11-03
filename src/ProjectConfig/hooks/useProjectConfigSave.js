@@ -60,18 +60,31 @@ export const useProjectConfigSave = (
             Inner: String(config.envelopeType?.inner || ""),
             Outer: String(config.envelopeType?.outer || ""),
           };
+const fixed = Number(config.fixedQty || 0);
+    const range = Number(config.range || 0);
+    const percentage = Number(config.percentage || 0);
 
+    const allZero =
+      fixed === 0 &&
+      range === 0 &&
+      percentage === 0 &&
+      !normalizedEnvelope.Inner &&
+      !normalizedEnvelope.Outer;
+
+    // 🚫 Skip if nothing configured
+    if (allZero) return null;
+    const value =
+      mode === "Fixed"
+        ? String(fixed)
+        : mode === "Range"
+        ? String(range)
+        : String(percentage);
           return {
             id: 0,
             projectId: Number(projectId),
             extraType: et.extraTypeId,
             mode,
-            value:
-              mode === "Fixed"
-                ? String(config.fixedQty || 0)
-                : mode === "Range"
-                  ? String(config.range || 0)
-                  : String(config.percentage || 0),
+            value,
             envelopeType: JSON.stringify(normalizedEnvelope),
           };
         })

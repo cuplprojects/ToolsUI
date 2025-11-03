@@ -12,7 +12,7 @@ export default function Sidebar({ collapsed }) {
   // Subscribe to Zustand store for projectName (optimizing re-renders)
   const projectName = useStore((state) => state.projectName);
   const resetProject = useStore((state) => state.resetProject);
-  
+
   // Handle collapse toggle
   const toggleGroup = (groupKey) => {
     setOpenGroups((prev) => ({
@@ -45,6 +45,16 @@ export default function Sidebar({ collapsed }) {
         },
       ]
       : []),
+    ...(projectName
+      ? [
+        {
+          label: "Horizontal To Vertical Tool",
+          icon: <FaWrench className="text-black" />, // Filled wrench icon
+          path: "/horizontalToVertical"
+        },
+      ]
+      : []
+    ),
     ...(projectName
       ? [] // Don't show "Correction Tool" if projectName exists
       : [
