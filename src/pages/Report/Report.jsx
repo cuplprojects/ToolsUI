@@ -21,7 +21,6 @@ const Report = () => {
   const [selectedProjectId, setSelectedProjectId] = useState(null);
   const [selectedProjectName, setSelectedProjectName] = useState("");
   const [loading, setLoading] = useState(false);
-  const [generatingReport, setGeneratingReport] = useState({}); // Track generation status per report
   const [projectStats, setProjectStats] = useState(null); // For project health dashboard
   const [availableReports, setAvailableReports] = useState({});
 

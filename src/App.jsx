@@ -6,7 +6,7 @@ import CorrectionTool from "./components/CorrectionTool";
 import ExcelUpload from "./components/ExcelUpload";
 import MainLayout from "./components/MainLayout";
 import axios from "axios";
-import {jwtDecode} from "jwt-decode";
+import { jwtDecode } from "jwt-decode";
 import { ToastProvider } from './services/notification/ToastProvider';
 import ProjectConfiguration from "./ProjectConfig/ProjectConfiguration";
 import DataImport from "./ToolsProcessing/DataImport";
@@ -14,10 +14,12 @@ import DuplicateTool from "./ToolsProcessing/DuplicateTool";
 import Master from "./Masters/Master";
 import EnvelopeBreaking from "./ToolsProcessing/Envelope/EnvelopeBreaking";
 import ProcessingPipeline from "./ToolsProcessing/ProcessingPipeline";
+import HorizontalToVertical from "./ToolsProcessing/HToV"
 import Report from "./pages/Report/Report";
 import ProjectDashboard from "./components/ProjectDashboard";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import { useUserToken, useUserTokenActions } from "./stores/UserToken";
+import HToV from "./ToolsProcessing/HToV";
 
 function isTokenExpired(token) {
   if (!token) return true;
@@ -129,6 +131,15 @@ export default function App() {
                   <ProtectedRoute token={token}>
                     <MainLayout >
                       <DuplicateTool />
+                    </MainLayout></ProtectedRoute>
+                }
+              />
+              <Route
+                path="/horizontalToVertical"
+                element={
+                  <ProtectedRoute token={token}>
+                    <MainLayout >
+                      <HToV />
                     </MainLayout></ProtectedRoute>
                 }
               />
