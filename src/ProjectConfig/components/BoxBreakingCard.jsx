@@ -165,7 +165,7 @@ const BoxBreakingCard = ({
             </Select>
           </div>
           <div>
-            <Text strong>Select fields to concatenate</Text>
+            <Text strong>Select Box Breaking field</Text>
             <Select
               mode="multiple"
               disabled={!isEnabled("Box Breaking")}
